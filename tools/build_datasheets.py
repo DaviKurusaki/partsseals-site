@@ -104,29 +104,32 @@ REFERENCE_SHEETS = [
         "source": "Fluoromasters Ind. Com. Imp. e Exp. Ltda. / Uniflon",
         "source_url": "Certificado de Análise 25110276016 - emitido em 13/11/2025",
         "document_kind": "supplier_certificate",
+        "issuer_short": "Fluoromasters / Uniflon",
     },
     {
-        "filename": "Ficha Técnica de Referência - PTFE Virgem - Parts Seals 2026.pdf",
-        "title": "PROPRIEDADES DO PTFE VIRGEM",
-        "subtitle": "Politetrafluoretileno não aditivado",
+        "filename": "Certificado DSD Brasil - PTFE Virgem - Lote 25-1297V.pdf",
+        "title": "CERTIFICADO DSD BRASIL - PTFE VIRGEM",
+        "subtitle": "Classe Free Flow - Código 02V0000101 - Lote 25-1297V",
         "description": (
-            "Material de baixíssimo atrito, elevada inércia química e ampla faixa térmica. "
-            "Indicado para anéis de vedação, sedes, back-ups, guias e componentes em contato "
-            "com fluidos agressivos."
+            "Transcrição dos resultados do Certificado de Inspeção emitido pela DSD Brasil "
+            "para 20 kg de PTFE 100% virgem, com dados extraídos do certificado original "
+            "da Polis Srl. NF-e 001609, de 31/03/2026."
         ),
         "properties": [
-            ("Densidade", "2,15 g/cm³", "DIN EN ISO 1183"),
-            ("Resistência à tração", "22 MPa", "ASTM D 4894"),
-            ("Alongamento na ruptura", "220%", "ASTM D 4894"),
-            ("Resistência à compressão", "5 MPa a 1% de deformação", "ASTM D 695"),
-            ("Dureza", "55 Shore D", "ASTM D 2240"),
-            ("Temperatura de serviço", "Até 260 °C, curta e longa duração", "Referência do grau"),
-            ("Condutividade térmica", "0,20 W/(m·K)", "ASTM C 177"),
-            ("Absorção de água", "0,01%", "ASTM D 570"),
+            ("Composição", "100% PTFE virgem", "Declaração do certificado"),
+            ("Densidade", "2,15 g/cm³ (espec. 2,16 ± 0,02)", "ASTM D 4894"),
+            ("Resistência à tração CD", "33,5 MPa (espec. mín. 32)", "ASTM D 4894"),
+            ("Alongamento CD", "314,5% (espec. mín. 300)", "ASTM D 4894"),
+            ("Dureza", "55 Shore D (espec. 53 a 57)", "ISO 868"),
+            ("Densidade aparente", "608 g/L (espec. 620 ± 50)", "ASTM D 4894"),
+            ("Contração diamétrica", "2,7% (espec. 3,0 ± 0,5)", "Método interno"),
+            ("Processamento do C.Q.", "300 kg/cm² / sinterização máx. 375 °C", "Tarugo Ø 57 x H 70 mm"),
         ],
-        "applications": "Anéis de vedação, sedes de válvula, back-ups, buchas, guias e isoladores.",
-        "source": "Ensinger - TECAFLON PTFE natural",
-        "source_url": "https://www.ensingerplastics.com/en-gb/shapes/tecaflon-ptfe-natural",
+        "applications": "Anéis de vedação, sedes, juntas, back-ups, buchas, guias e isoladores.",
+        "source": "DSD Brasil Ltda. - dados extraídos do certificado original da Polis Srl.",
+        "source_url": "Certificado de Inspeção do lote 25-1297V - emitido em 31/03/2026",
+        "document_kind": "supplier_certificate",
+        "issuer_short": "DSD Brasil",
     },
     {
         "filename": "Ficha Técnica de Referência - PTFE Grafite - Parts Seals 2026.pdf",
@@ -331,7 +334,12 @@ DOC_SPECS = [
     ("polioximetileno", "pom-certificado", "POM / Polioximetileno", "Certificado de inspeção"),
     ("poliuretano", "poliuretano", "Poliuretano", "Certificado de inspeção"),
     ("technyl", "technyl", "Technyl PA6 / PA66", "Certificado de qualidade"),
-    ("ptfe virgem", "ptfe-virgem", "PTFE virgem", "Ficha técnica de referência"),
+    (
+        "25-1297v",
+        "ptfe-virgem",
+        "PTFE virgem - lote DSD Brasil 25-1297V",
+        "Certificado de inspeção DSD Brasil",
+    ),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
     ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),
     ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
@@ -465,7 +473,8 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
 
     note_text = (
         "Esta página é uma transcrição para visualização no site e não substitui o documento "
-        "original emitido pela Fluoromasters / Uniflon. Os resultados se aplicam exclusivamente "
+        f"original emitido pela {spec.get('issuer_short', 'fornecedor')}. "
+        "Os resultados se aplicam exclusivamente "
         "ao produto, código e lote identificados acima. Para rastreabilidade documental, solicite "
         "à Parts Seals uma cópia do certificado original correspondente ao fornecimento."
         if is_supplier_certificate
