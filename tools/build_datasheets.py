@@ -82,6 +82,30 @@ FONT_REGULAR, FONT_BOLD = register_fonts()
 
 REFERENCE_SHEETS = [
     {
+        "filename": "Certificado Uniflon - Fluoroplex B40 - Lote 25110276016.pdf",
+        "title": "CERTIFICADO UNIFLON - FLUOROPLEX B40",
+        "subtitle": "Tipo GMA - Código 010014002 - Lote 25110276016",
+        "description": (
+            "Transcrição dos resultados do Certificado de Análise emitido pela "
+            "Fluoromasters / Uniflon para o produto Fluoroplex B40, aprovado em "
+            "13/11/2025."
+        ),
+        "properties": [
+            ("Peso específico", "3,09 g/cm³ (espec. 3,06 a 3,12)", "IT 14-005"),
+            ("Tensão de ruptura", "23,2 MPa (espec. ≥ 23,0)", "IT 14-006"),
+            ("Alongamento", "229% (espec. ≥ 180)", "IT 14-006"),
+            ("Densidade aparente", "1.019 g/L (espec. 900 a 1.100)", "IT 14-001"),
+            ("Dureza", "67 Shore D (espec. 65 a 70)", "IT 14-007"),
+            ("Contração na sinterização", "1,7% (espec. 1,4 a 2,4)", "IT 14-004"),
+            ("Fluidez", "1,6 s/50 g (espec. 1,3 a 2,3)", "IT 14-001"),
+            ("Tamanho médio de partícula", "623 µm (espec. 600 a 700)", "IT 14-011"),
+        ],
+        "applications": "PTFE com bronze para vedações, anéis, guias, buchas e componentes usinados.",
+        "source": "Fluoromasters Ind. Com. Imp. e Exp. Ltda. / Uniflon",
+        "source_url": "Certificado de Análise 25110276016 - emitido em 13/11/2025",
+        "document_kind": "supplier_certificate",
+    },
+    {
         "filename": "Ficha Técnica de Referência - PTFE Virgem - Parts Seals 2026.pdf",
         "title": "PROPRIEDADES DO PTFE VIRGEM",
         "subtitle": "Politetrafluoretileno não aditivado",
@@ -294,7 +318,12 @@ REFERENCE_SHEETS = [
 
 DOC_SPECS = [
     ("poliacetal - dados tecnicos", "poliacetal-dados", "Poliacetal - dados técnicos", "Ficha técnica"),
-    ("bronze", "ptfe-bronze", "PTFE com bronze", "Certificado de inspeção"),
+    (
+        "fluoroplex b40",
+        "ptfe-bronze",
+        "PTFE com bronze - Uniflon Fluoroplex B40",
+        "Certificado de análise Uniflon",
+    ),
     ("fibra de carbono", "ptfe-carbono", "PTFE com fibra de carbono", "Certificado de inspeção"),
     ("fibra de vidro", "ptfe-vidro", "PTFE com fibra de vidro", "Certificado de inspeção"),
     ("viton", "fkm-viton", "FKM / Viton", "Certificado de inspeção"),
@@ -375,11 +404,17 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     subtitle = wrap_paragraph(spec["subtitle"], subtitle_style, width - 40 * mm, 15 * mm)
     subtitle.drawOn(pdf, 20 * mm, height - 61 * mm)
 
+    is_supplier_certificate = spec.get("document_kind") == "supplier_certificate"
     pdf.setFillColor(colors.HexColor("#fff0f1"))
     pdf.roundRect(37 * mm, height - 72 * mm, width - 74 * mm, 7 * mm, 2 * mm, fill=1, stroke=0)
     pdf.setFillColor(RED)
     pdf.setFont(FONT_BOLD, 7.4)
-    pdf.drawCentredString(width / 2, height - 69.5 * mm, "FICHA TÉCNICA DE REFERÊNCIA - NÃO É CERTIFICADO DE LOTE")
+    banner_text = (
+        "DADOS TRANSCRITOS DO CERTIFICADO DO FORNECEDOR"
+        if is_supplier_certificate
+        else "FICHA TÉCNICA DE REFERÊNCIA - NÃO É CERTIFICADO DE LOTE"
+    )
+    pdf.drawCentredString(width / 2, height - 69.5 * mm, banner_text)
 
     description = wrap_paragraph(spec["description"], body_style, width - 36 * mm, 30 * mm)
     description.drawOn(pdf, 18 * mm, height - 94 * mm)
@@ -389,7 +424,8 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     pdf.line(18 * mm, y, width - 18 * mm, y)
     pdf.setFont(FONT_BOLD, 9)
     pdf.setFillColor(DARK)
-    pdf.drawCentredString(width / 2, y - 6 * mm, "PROPRIEDADES TÍPICAS DE REFERÊNCIA")
+    table_title = "RESULTADOS DO LOTE" if is_supplier_certificate else "PROPRIEDADES TÍPICAS DE REFERÊNCIA"
+    pdf.drawCentredString(width / 2, y - 6 * mm, table_title)
 
     data = [["Propriedade", "Valor típico", "Método / observação"]] + [
         [item[0], item[1], item[2]] for item in spec["properties"]
@@ -428,15 +464,31 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     applications.drawOn(pdf, 18 * mm, application_y - 8 * mm)
 
     note_text = (
-        "Valores típicos do grau de referência citado e não valores de especificação do material "
-        "fornecido pela Parts Seals. Propriedades variam conforme fabricante, formulação, "
-        "processamento, condição de ensaio, umidade e lote. A seleção final exige validação da "
-        "aplicação e, quando necessário, certificado do lote efetivamente fornecido."
+        "Esta página é uma transcrição para visualização no site e não substitui o documento "
+        "original emitido pela Fluoromasters / Uniflon. Os resultados se aplicam exclusivamente "
+        "ao produto, código e lote identificados acima. Para rastreabilidade documental, solicite "
+        "à Parts Seals uma cópia do certificado original correspondente ao fornecimento."
+        if is_supplier_certificate
+        else (
+            "Valores típicos do grau de referência citado e não valores de especificação do material "
+            "fornecido pela Parts Seals. Propriedades variam conforme fabricante, formulação, "
+            "processamento, condição de ensaio, umidade e lote. A seleção final exige validação da "
+            "aplicação e, quando necessário, certificado do lote efetivamente fornecido."
+        )
     )
     note = wrap_paragraph(note_text, small_style, width - 36 * mm, 30 * mm)
     note.drawOn(pdf, 18 * mm, 42 * mm)
 
-    source_text = f"<b>Fonte de referência:</b> {spec['source']}<br/>{spec['source_url']}<br/>Consulta: 27/07/2026"
+    source_label = "Emissor do certificado" if is_supplier_certificate else "Fonte de referência"
+    source_date = (
+        "Transcrição preparada pela Parts Seals em 27/07/2026"
+        if is_supplier_certificate
+        else "Consulta: 27/07/2026"
+    )
+    source_text = (
+        f"<b>{source_label}:</b> {spec['source']}<br/>{spec['source_url']}<br/>"
+        f"{source_date}"
+    )
     source = wrap_paragraph(source_text, small_style, width - 36 * mm, 25 * mm)
     source.drawOn(pdf, 18 * mm, 25 * mm)
 
