@@ -132,6 +132,35 @@ REFERENCE_SHEETS = [
         "issuer_short": "DSD Brasil",
     },
     {
+        "filename": "Declaracao Heroflon - MG4-FFHD - Atoxicidade.pdf",
+        "title": "DECLARAÇÃO DE ATOXICIDADE - PTFE VIRGEM",
+        "subtitle": "Heroflon MG4-FF/HD - 100% PTFE virgem - 01/03/2021",
+        "description": (
+            "Transcrição da declaração emitida pela Heroflon S.p.A. à HF do Brasil, "
+            "confirmando que o grau MG4-FF/HD é fabricado exclusivamente com as matérias-primas "
+            "declaradas e sem adição intencional de outras substâncias."
+        ),
+        "properties": [
+            ("Material", "Heroflon MG4-FF/HD", "Grau declarado"),
+            ("Composição", "100% PTFE virgem", "Declaração do fabricante"),
+            ("Substâncias tóxicas", "Ausentes", "Toxic substances free"),
+            ("Outras substâncias", "Nenhuma adicionada intencionalmente", "Condição declarada"),
+            ("Condição abrangida", "Material na embalagem original", "Conforme fornecido"),
+            ("Produtos transformados", "Não abrangidos automaticamente", "Com ou sem aditivos"),
+            ("Data de emissão", "01/03/2021", "Collebeato, Itália"),
+            ("Responsável", "Moncef Allagui", "Quality and Plant Manager"),
+        ],
+        "applications": (
+            "A declaração se aplica somente ao MG4-FF/HD conforme fornecido na embalagem original. "
+            "Não constitui garantia de adequação para uma aplicação específica."
+        ),
+        "applications_title": "ESCOPO DE USO",
+        "source": "Heroflon S.p.A.",
+        "source_url": "Declaração MG4-FF/HD emitida à HF do Brasil em 01/03/2021",
+        "document_kind": "supplier_declaration",
+        "issuer_short": "Heroflon S.p.A.",
+    },
+    {
         "filename": "Ficha Técnica de Referência - PTFE Grafite - Parts Seals 2026.pdf",
         "title": "PROPRIEDADES DO PTFE COM GRAFITE",
         "subtitle": "Referência para composto com aproximadamente 15% de grafite",
@@ -340,6 +369,12 @@ DOC_SPECS = [
         "PTFE virgem - lote DSD Brasil 25-1297V",
         "Certificado de inspeção DSD Brasil",
     ),
+    (
+        "mg4-ffhd",
+        "ptfe-virgem-atoxidade",
+        "PTFE virgem - Heroflon MG4-FF/HD",
+        "Declaração de atoxicidade",
+    ),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
     ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),
     ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
@@ -412,16 +447,20 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     subtitle = wrap_paragraph(spec["subtitle"], subtitle_style, width - 40 * mm, 15 * mm)
     subtitle.drawOn(pdf, 20 * mm, height - 61 * mm)
 
-    is_supplier_certificate = spec.get("document_kind") == "supplier_certificate"
+    document_kind = spec.get("document_kind")
+    is_supplier_certificate = document_kind == "supplier_certificate"
+    is_supplier_declaration = document_kind == "supplier_declaration"
+    is_supplier_document = is_supplier_certificate or is_supplier_declaration
     pdf.setFillColor(colors.HexColor("#fff0f1"))
     pdf.roundRect(37 * mm, height - 72 * mm, width - 74 * mm, 7 * mm, 2 * mm, fill=1, stroke=0)
     pdf.setFillColor(RED)
     pdf.setFont(FONT_BOLD, 7.4)
-    banner_text = (
-        "DADOS TRANSCRITOS DO CERTIFICADO DO FORNECEDOR"
-        if is_supplier_certificate
-        else "FICHA TÉCNICA DE REFERÊNCIA - NÃO É CERTIFICADO DE LOTE"
-    )
+    if is_supplier_certificate:
+        banner_text = "DADOS TRANSCRITOS DO CERTIFICADO DO FORNECEDOR"
+    elif is_supplier_declaration:
+        banner_text = "DADOS TRANSCRITOS DA DECLARAÇÃO DO FABRICANTE"
+    else:
+        banner_text = "FICHA TÉCNICA DE REFERÊNCIA - NÃO É CERTIFICADO DE LOTE"
     pdf.drawCentredString(width / 2, height - 69.5 * mm, banner_text)
 
     description = wrap_paragraph(spec["description"], body_style, width - 36 * mm, 30 * mm)
@@ -432,7 +471,12 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     pdf.line(18 * mm, y, width - 18 * mm, y)
     pdf.setFont(FONT_BOLD, 9)
     pdf.setFillColor(DARK)
-    table_title = "RESULTADOS DO LOTE" if is_supplier_certificate else "PROPRIEDADES TÍPICAS DE REFERÊNCIA"
+    if is_supplier_certificate:
+        table_title = "RESULTADOS DO LOTE"
+    elif is_supplier_declaration:
+        table_title = "CONTEÚDO DECLARADO"
+    else:
+        table_title = "PROPRIEDADES TÍPICAS DE REFERÊNCIA"
     pdf.drawCentredString(width / 2, y - 6 * mm, table_title)
 
     data = [["Propriedade", "Valor típico", "Método / observação"]] + [
@@ -467,31 +511,45 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     pdf.line(18 * mm, application_y + 8 * mm, width - 18 * mm, application_y + 8 * mm)
     pdf.setFont(FONT_BOLD, 8.5)
     pdf.setFillColor(DARK)
-    pdf.drawString(18 * mm, application_y + 2.5 * mm, "APLICAÇÕES TÍPICAS")
+    pdf.drawString(18 * mm, application_y + 2.5 * mm, spec.get("applications_title", "APLICAÇÕES TÍPICAS"))
     applications = wrap_paragraph(spec["applications"], body_style, width - 36 * mm, 20 * mm)
     applications.drawOn(pdf, 18 * mm, application_y - 8 * mm)
 
-    note_text = (
-        "Esta página é uma transcrição para visualização no site e não substitui o documento "
-        f"original emitido pela {spec.get('issuer_short', 'fornecedor')}. "
-        "Os resultados se aplicam exclusivamente "
-        "ao produto, código e lote identificados acima. Para rastreabilidade documental, solicite "
-        "à Parts Seals uma cópia do certificado original correspondente ao fornecimento."
-        if is_supplier_certificate
-        else (
+    if is_supplier_certificate:
+        note_text = (
+            "Esta página é uma transcrição para visualização no site e não substitui o documento "
+            f"original emitido pela {spec.get('issuer_short', 'fornecedor')}. "
+            "Os resultados se aplicam exclusivamente ao produto, código e lote identificados acima. "
+            "Para rastreabilidade documental, solicite à Parts Seals uma cópia do certificado "
+            "original correspondente ao fornecimento."
+        )
+    elif is_supplier_declaration:
+        note_text = (
+            "Esta página é uma tradução e transcrição para visualização no site e não substitui a "
+            f"declaração original emitida pela {spec.get('issuer_short', 'fabricante')}. "
+            "A informação se refere apenas ao material identificado em sua embalagem original. "
+            "Não se estende automaticamente a produtos transformados, com ou sem auxiliares de "
+            "processo, cargas ou corantes, nem garante adequação a uma aplicação específica."
+        )
+    else:
+        note_text = (
             "Valores típicos do grau de referência citado e não valores de especificação do material "
             "fornecido pela Parts Seals. Propriedades variam conforme fabricante, formulação, "
             "processamento, condição de ensaio, umidade e lote. A seleção final exige validação da "
             "aplicação e, quando necessário, certificado do lote efetivamente fornecido."
         )
-    )
     note = wrap_paragraph(note_text, small_style, width - 36 * mm, 30 * mm)
     note.drawOn(pdf, 18 * mm, 42 * mm)
 
-    source_label = "Emissor do certificado" if is_supplier_certificate else "Fonte de referência"
+    if is_supplier_certificate:
+        source_label = "Emissor do certificado"
+    elif is_supplier_declaration:
+        source_label = "Emissor da declaração"
+    else:
+        source_label = "Fonte de referência"
     source_date = (
         "Transcrição preparada pela Parts Seals em 27/07/2026"
-        if is_supplier_certificate
+        if is_supplier_document
         else "Consulta: 27/07/2026"
     )
     source_text = (
