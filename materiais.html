@@ -28,6 +28,7 @@
       </button>
       <div class="site-nav" id="siteMenu" data-menu>
         <a href="index.html">Início</a>
+        <a href="#seletor">Seletor</a>
         <a href="#elastomeros">Elastômeros</a>
         <a href="#ptfe">PTFE</a>
         <a href="#polimeros">Polímeros</a>
@@ -61,11 +62,13 @@
           <span>19 documentos técnicos</span>
           <span>4 famílias de aplicação</span>
         </div>
+        <a class="btn btn-primary materials-hero__cta" href="#seletor">Encontrar o material ideal</a>
       </div>
     </section>
 
     <nav class="materials-nav" aria-label="Famílias de materiais">
       <div class="container">
+        <a href="#seletor">Seletor técnico</a>
         <a href="#elastomeros">Elastômeros</a>
         <a href="#ptfe">PTFE e compostos</a>
         <a href="#polimeros">Polímeros</a>
@@ -73,6 +76,141 @@
         <a href="#biblioteca">Sobre os documentos</a>
       </div>
     </nav>
+
+    <section class="section material-selector" id="seletor" aria-labelledby="selectorTitle">
+      <div class="container">
+        <div class="material-selector__intro">
+          <div>
+            <p class="eyebrow">Triagem técnica</p>
+            <h2 id="selectorTitle">Encontre materiais compatíveis com sua aplicação.</h2>
+          </div>
+          <p>Preencha as condições principais para receber uma seleção preliminar. O resultado ajuda a iniciar a análise, mas a especificação final depende das condições completas do equipamento.</p>
+        </div>
+
+        <div class="material-selector__shell">
+          <form class="selector-form" data-material-selector>
+            <div class="selector-form__heading">
+              <span>01</span>
+              <div><strong>Condições de trabalho</strong><small>Todos os campos com * são obrigatórios.</small></div>
+            </div>
+
+            <div class="selector-form__grid">
+              <label class="selector-field">
+                <span>Fluido ou ambiente *</span>
+                <select name="fluid" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="oleo">Óleo mineral, hidráulico ou graxa</option>
+                  <option value="combustivel">Combustível ou hidrocarboneto</option>
+                  <option value="agua">Água ou solução aquosa</option>
+                  <option value="vapor">Vapor ou água quente</option>
+                  <option value="quimico">Produto químico agressivo</option>
+                  <option value="alimento">Alimentos ou farmacêutico</option>
+                  <option value="ar">Ar ou gás</option>
+                  <option value="seco">Trabalho a seco, sem lubrificação</option>
+                  <option value="desconhecido">Ainda não sei</option>
+                </select>
+              </label>
+
+              <label class="selector-field">
+                <span>Temperatura de trabalho *</span>
+                <select name="temperature" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="criogenica">Abaixo de -20 °C</option>
+                  <option value="baixa">-20 a 0 °C</option>
+                  <option value="normal">0 a 80 °C</option>
+                  <option value="media">80 a 120 °C</option>
+                  <option value="alta">120 a 200 °C</option>
+                  <option value="extrema">200 a 260 °C</option>
+                  <option value="desconhecida">Ainda não sei</option>
+                </select>
+              </label>
+
+              <label class="selector-field">
+                <span>Pressão aproximada *</span>
+                <select name="pressure" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="baixa">Até 10 bar</option>
+                  <option value="media">10 a 100 bar</option>
+                  <option value="alta">100 a 250 bar</option>
+                  <option value="muito-alta">Acima de 250 bar</option>
+                  <option value="desconhecida">Ainda não sei</option>
+                </select>
+              </label>
+
+              <label class="selector-field">
+                <span>Tipo de movimento *</span>
+                <select name="motion" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="estatico">Sem movimento / vedação estática</option>
+                  <option value="alternado">Linear alternado / haste ou êmbolo</option>
+                  <option value="rotativo">Rotativo</option>
+                  <option value="oscilante">Oscilante</option>
+                  <option value="estrutural">Peça estrutural, guia ou bucha</option>
+                  <option value="desconhecido">Ainda não sei</option>
+                </select>
+              </label>
+
+              <label class="selector-field">
+                <span>Velocidade *</span>
+                <select name="speed" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="baixa">Baixa, até 0,5 m/s</option>
+                  <option value="media">Média, de 0,5 a 2 m/s</option>
+                  <option value="alta">Alta, acima de 2 m/s</option>
+                  <option value="desconhecida">Ainda não sei</option>
+                </select>
+              </label>
+
+              <label class="selector-field">
+                <span>Exigência documental *</span>
+                <select name="compliance" required>
+                  <option value="" selected disabled>Selecione</option>
+                  <option value="nenhuma">Nenhuma exigência específica</option>
+                  <option value="atoxicidade">Declaração de atoxicidade</option>
+                  <option value="alimenticia">Contato alimentício ou farmacêutico</option>
+                  <option value="lote">Certificado do lote fornecido</option>
+                  <option value="desconhecida">Ainda não sei</option>
+                </select>
+              </label>
+            </div>
+
+            <fieldset class="selector-priorities">
+              <legend>O que é mais importante? <small>Marque até três opções.</small></legend>
+              <div>
+                <label><input type="checkbox" name="priority" value="desgaste"><span>Resistência ao desgaste</span></label>
+                <label><input type="checkbox" name="priority" value="atrito"><span>Baixo atrito</span></label>
+                <label><input type="checkbox" name="priority" value="quimica"><span>Resistência química</span></label>
+                <label><input type="checkbox" name="priority" value="dimensional"><span>Estabilidade dimensional</span></label>
+                <label><input type="checkbox" name="priority" value="impacto"><span>Impacto e tenacidade</span></label>
+                <label><input type="checkbox" name="priority" value="custo"><span>Custo-benefício</span></label>
+              </div>
+            </fieldset>
+
+            <div class="selector-form__footer">
+              <p><strong>Importante:</strong> compatibilidade química, folgas, acabamento, geometria e duração do ciclo ainda precisam ser validados.</p>
+              <button class="btn btn-primary" type="submit">Analisar aplicação</button>
+            </div>
+          </form>
+
+          <section class="selector-results" data-selector-results hidden aria-live="polite" aria-labelledby="selectorResultsTitle">
+            <div class="selector-results__heading">
+              <div><span>02</span><div><p class="eyebrow">Resultado preliminar</p><h3 id="selectorResultsTitle">Materiais mais relevantes</h3></div></div>
+              <button type="button" class="selector-results__edit" data-selector-edit>Editar respostas</button>
+            </div>
+            <p class="selector-results__summary" data-selector-summary></p>
+            <div class="selector-results__grid" data-selector-cards></div>
+            <div class="selector-results__notice">
+              <strong>Indicação preliminar</strong>
+              <p>Não utilize este resultado como especificação final. Fluido exato, concentração, temperatura de pico, pressão, velocidade, folga, acabamento e geometria podem alterar a escolha.</p>
+            </div>
+            <div class="selector-results__actions">
+              <a class="btn btn-primary" href="https://wa.me/5519983011817" target="_blank" rel="noopener noreferrer" data-selector-whatsapp>Validar com um especialista</a>
+              <a class="btn btn-secondary" href="#biblioteca">Consultar datasheets</a>
+            </div>
+          </section>
+        </div>
+      </div>
+    </section>
 
     <section class="section material-family" id="elastomeros" aria-labelledby="elastomerosTitle">
       <div class="container">

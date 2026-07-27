@@ -16,11 +16,11 @@ Também é possível abrir `index.html` diretamente no navegador, mas o Live Ser
 - `index.html`: versão em português brasileiro da landing page.
 - `en.html`: versão em inglês da landing page.
 - `es.html`: versão em espanhol da landing page.
-- `materiais.html`: guia técnico de materiais e visualizador protegido de datasheets.
+- `materiais.html`: seletor técnico, guia de materiais e visualizador protegido de datasheets.
 - `css/style.css`: identidade visual, responsividade e animações.
 - `css/materials.css`: estilos da biblioteca de materiais e do visualizador.
 - `js/script.js`: menu mobile, FAQ, animações e links editáveis de contato.
-- `js/materials.js`: abertura, zoom e controles do visualizador de datasheets.
+- `js/materials.js`: recomendações do seletor, mensagem de WhatsApp e controles do visualizador.
 - `assets/logo.png`: logo da Parts Seals.
 - `assets/logo-header-white.png`: versão recortada para o cabeçalho em fundo escuro.
 - `assets/logo-footer-white.png`: versão da logo para fundo escuro, usada no rodapé.
