@@ -128,6 +128,33 @@ REFERENCE_SHEETS = [
         "source_url": "https://www.shop.amsler-frey.ch/en?category=54&cmd=generate_datasheet",
     },
     {
+        "filename": "Ficha Técnica de Referência - PTFE T46 - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO PTFE T-46",
+        "subtitle": "Referência baseada no composto Turcon T46 com carga de bronze",
+        "description": (
+            "Composto de PTFE com bronze desenvolvido para hidráulica lubrificada em "
+            "movimento linear. Apresenta alta resistência à compressão e à extrusão, "
+            "além de propriedades favoráveis de deslizamento e desgaste."
+        ),
+        "properties": [
+            ("Composição", "PTFE modificado com carga média de bronze", "Descrição do fabricante"),
+            ("Cor", "Cinza a marrom escuro", "Variações de tonalidade são normais"),
+            ("Densidade", "3,03 a 3,11 g/cm³", "ASTM D 792, a 23 °C"),
+            ("Resistência à tração na ruptura", "≥ 22 MPa", "ASTM D 4894, a 23 °C"),
+            ("Alongamento na ruptura", "≥ 225%", "ASTM D 4894, a 23 °C"),
+            ("Dureza por indentação de esfera", "≥ 29 MPa", "ISO 2039-1, a 23 °C"),
+            ("Temperatura do material", "-200 a +260 °C", "Faixa geral do fabricante"),
+            ("Comportamento", "Alta compressão, desgaste e extrusão", "Aplicação hidráulica"),
+        ],
+        "applications": "Vedações de haste e êmbolo, anéis e perfis para hidráulica linear lubrificada.",
+        "source": "Trelleborg Sealing Solutions - Turcon T46 Material Specification e Product Range",
+        "source_url": (
+            "https://static.mercateo.com/52/f4f84ba960664ded97368782d09ef07a/pdf/t46n.pdf?v=8"
+            "<br/>https://www.trelleborg.com/seals/-/media/tss-media-repository/"
+            "tss_website/pdf-and-other-literature/catalogs/product_range_en.pdf"
+        ),
+    },
+    {
         "filename": "Ficha Técnica de Referência - PTFE Molibdenio - Parts Seals 2026.pdf",
         "title": "PROPRIEDADES DO PTFE COM MOLIBDÊNIO",
         "subtitle": "Referência para composto com 3% de dissulfeto de molibdênio - MoS2",
@@ -277,6 +304,7 @@ DOC_SPECS = [
     ("technyl", "technyl", "Technyl PA6 / PA66", "Certificado de qualidade"),
     ("ptfe virgem", "ptfe-virgem", "PTFE virgem", "Ficha técnica de referência"),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
+    ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),
     ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
     ("pead", "pead", "PEAD", "Ficha técnica de referência"),
     ("celeron", "celeron", "Celeron", "Ficha técnica de referência"),
