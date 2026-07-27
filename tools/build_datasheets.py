@@ -105,6 +105,52 @@ REFERENCE_SHEETS = [
         "source_url": "https://www.ensingerplastics.com/en-gb/shapes/tecaflon-ptfe-natural",
     },
     {
+        "filename": "Ficha Técnica de Referência - PTFE Grafite - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO PTFE COM GRAFITE",
+        "subtitle": "Referência para composto com aproximadamente 15% de grafite",
+        "description": (
+            "Composto de PTFE com maior condutividade térmica e comportamento de atrito "
+            "aprimorado. Indicado para componentes deslizantes, especialmente quando a "
+            "superfície contraposta não deve receber uma carga muito abrasiva."
+        ),
+        "properties": [
+            ("Densidade", "2,14 g/cm³", "DIN EN ISO 1183-1"),
+            ("Absorção de água", "0,05%", "DIN EN ISO 62"),
+            ("Tensão de escoamento", "16 MPa", "DIN EN ISO 527"),
+            ("Alongamento na ruptura", "180%", "DIN EN ISO 527"),
+            ("Condutividade térmica", "0,75 W/(m·K)", "DIN 52612-2"),
+            ("Temperatura de serviço", "260 °C contínua / 300 °C curta", "Referência do grau"),
+            ("Flamabilidade", "V-0 a 3 mm", "UL 94"),
+            ("Resistividade volumétrica", "10⁷ Ω·cm", "IEC 60093"),
+        ],
+        "applications": "Anéis de vedação, juntas, sedes, buchas e componentes de deslizamento.",
+        "source": "Amsler & Frey AG - PTFE 15% Graphite",
+        "source_url": "https://www.shop.amsler-frey.ch/en?category=54&cmd=generate_datasheet",
+    },
+    {
+        "filename": "Ficha Técnica de Referência - PTFE Molibdenio - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO PTFE COM MOLIBDÊNIO",
+        "subtitle": "Referência para composto com 3% de dissulfeto de molibdênio - MoS2",
+        "description": (
+            "A adição de MoS2 reforça o PTFE, reduz o atrito e melhora resistência ao "
+            "desgaste, compressão e fluência. É aplicada especialmente em movimentos "
+            "dinâmicos secos ou intermitentes."
+        ),
+        "properties": [
+            ("Densidade", "2,20 a 2,25 g/cm³", "ASTM D 792"),
+            ("Absorção de água", "0,03%", "ASTM D 570"),
+            ("Resistência à tração", "≥ 25 MPa", "ASTM D 4745"),
+            ("Alongamento", "≥ 250%", "ASTM D 4745"),
+            ("Dureza", "≥ 55 Shore D", "ASTM D 2240"),
+            ("Deformação sob carga", "9 a 12%", "ASTM D 621"),
+            ("Coeficiente de atrito", "0,08-0,10 estático / 0,06-0,08 dinâmico", "ASTM D 1894"),
+            ("Condutividade térmica", "0,25 W/(m·K)", "ASTM C 177"),
+        ],
+        "applications": "Vedações dinâmicas, buchas, guias e peças para movimento seco ou intermitente.",
+        "source": "Diflon Technology - PTFE 3% MoS2",
+        "source_url": "https://www.diflon.it/en/products/virgin-ptfe/ptfe-materials/3-percent-mos2",
+    },
+    {
         "filename": "Ficha Técnica de Referência - PEAD - Parts Seals 2026.pdf",
         "title": "PROPRIEDADES DO PEAD",
         "subtitle": "Polietileno de alta densidade - PE 300",
@@ -230,6 +276,8 @@ DOC_SPECS = [
     ("poliuretano", "poliuretano", "Poliuretano", "Certificado de inspeção"),
     ("technyl", "technyl", "Technyl PA6 / PA66", "Certificado de qualidade"),
     ("ptfe virgem", "ptfe-virgem", "PTFE virgem", "Ficha técnica de referência"),
+    ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
+    ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
     ("pead", "pead", "PEAD", "Ficha técnica de referência"),
     ("celeron", "celeron", "Celeron", "Ficha técnica de referência"),
     ("referencia - pa6 -", "pa6", "Nylon PA6", "Ficha técnica de referência"),
@@ -384,8 +432,7 @@ def generate_reference_sheets() -> None:
     for spec in REFERENCE_SHEETS:
         output_path = SOURCE_DIR / spec["filename"]
         assert_in_workspace(output_path)
-        if not output_path.exists():
-            create_reference_sheet(spec, output_path)
+        create_reference_sheet(spec, output_path)
 
 
 def make_watermark_png() -> bytes:

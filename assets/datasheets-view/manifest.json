@@ -80,6 +80,22 @@
     ]
   },
   {
+    "slug": "ptfe-grafite",
+    "title": "PTFE com grafite",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/ptfe-grafite-p1.webp"
+    ]
+  },
+  {
+    "slug": "ptfe-molibdenio",
+    "title": "PTFE com molibdênio",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/ptfe-molibdenio-p1.webp"
+    ]
+  },
+  {
     "slug": "pead",
     "title": "PEAD",
     "type": "Ficha técnica de referência",
