@@ -1,0 +1,122 @@
+[
+  {
+    "slug": "poliacetal-dados",
+    "title": "Poliacetal - dados técnicos",
+    "type": "Ficha técnica",
+    "pages": [
+      "assets/datasheets-view/poliacetal-dados-p1.webp"
+    ]
+  },
+  {
+    "slug": "ptfe-bronze",
+    "title": "PTFE com bronze",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/ptfe-bronze-p1.webp"
+    ]
+  },
+  {
+    "slug": "ptfe-carbono",
+    "title": "PTFE com fibra de carbono",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/ptfe-carbono-p1.webp"
+    ]
+  },
+  {
+    "slug": "ptfe-vidro",
+    "title": "PTFE com fibra de vidro",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/ptfe-vidro-p1.webp"
+    ]
+  },
+  {
+    "slug": "fkm-viton",
+    "title": "FKM / Viton",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/fkm-viton-p1.webp"
+    ]
+  },
+  {
+    "slug": "nbr",
+    "title": "NBR",
+    "type": "Certificado de qualidade",
+    "pages": [
+      "assets/datasheets-view/nbr-p1.webp"
+    ]
+  },
+  {
+    "slug": "pom-certificado",
+    "title": "POM / Polioximetileno",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/pom-certificado-p1.webp"
+    ]
+  },
+  {
+    "slug": "poliuretano",
+    "title": "Poliuretano",
+    "type": "Certificado de inspeção",
+    "pages": [
+      "assets/datasheets-view/poliuretano-p1.webp"
+    ]
+  },
+  {
+    "slug": "technyl",
+    "title": "Technyl PA6 / PA66",
+    "type": "Certificado de qualidade",
+    "pages": [
+      "assets/datasheets-view/technyl-p1.webp"
+    ]
+  },
+  {
+    "slug": "ptfe-virgem",
+    "title": "PTFE virgem",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/ptfe-virgem-p1.webp"
+    ]
+  },
+  {
+    "slug": "pead",
+    "title": "PEAD",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/pead-p1.webp"
+    ]
+  },
+  {
+    "slug": "celeron",
+    "title": "Celeron",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/celeron-p1.webp"
+    ]
+  },
+  {
+    "slug": "pa6",
+    "title": "Nylon PA6",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/pa6-p1.webp"
+    ]
+  },
+  {
+    "slug": "pa66",
+    "title": "Nylon PA66",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/pa66-p1.webp"
+    ]
+  },
+  {
+    "slug": "peek",
+    "title": "PEEK",
+    "type": "Ficha técnica de referência",
+    "pages": [
+      "assets/datasheets-view/peek-p1.webp"
+    ]
+  }
+]

@@ -16,8 +16,11 @@ Também é possível abrir `index.html` diretamente no navegador, mas o Live Ser
 - `index.html`: versão em português brasileiro da landing page.
 - `en.html`: versão em inglês da landing page.
 - `es.html`: versão em espanhol da landing page.
+- `materiais.html`: guia técnico de materiais e visualizador protegido de datasheets.
 - `css/style.css`: identidade visual, responsividade e animações.
+- `css/materials.css`: estilos da biblioteca de materiais e do visualizador.
 - `js/script.js`: menu mobile, FAQ, animações e links editáveis de contato.
+- `js/materials.js`: abertura, zoom e controles do visualizador de datasheets.
 - `assets/logo.png`: logo da Parts Seals.
 - `assets/logo-header-white.png`: versão recortada para o cabeçalho em fundo escuro.
 - `assets/logo-footer-white.png`: versão da logo para fundo escuro, usada no rodapé.
@@ -26,6 +29,18 @@ Também é possível abrir `index.html` diretamente no navegador, mas o Live Ser
 - `assets/folder-parts-seals.pdf`: folder institucional.
 - `assets/sobre-nos-parts-seals.pdf`: PDF "Sobre nós".
 - `assets/parts-seals-contato.vcf`: cartão de contato.
+- `assets/datasheets-view/`: páginas com marca d'água exibidas no site, em formato WebP.
+- `assets/DataSheets/`: área local dos documentos-fonte; os PDFs não são publicados.
+- `tools/build_datasheets.py`: recria as fichas de referência, aplica a marca d'água e gera as imagens públicas.
+
+## Como atualizar os datasheets
+
+1. Coloque os PDFs recebidos em `assets/DataSheets/_originais/`.
+2. Ajuste o cadastro em `tools/build_datasheets.py` caso o nome ou o material seja novo.
+3. Execute `python tools/build_datasheets.py`.
+4. Confira visualmente os arquivos gerados em `assets/datasheets-view/`.
+
+Os PDFs originais e as cópias PDF protegidas estão no `.gitignore`. O site publica apenas imagens rasterizadas com a marca d'água incorporada. As fichas criadas pelo projeto são identificadas como referência e não substituem um certificado de inspeção ou de lote.
 
 ## Como alterar textos
 
