@@ -1449,7 +1449,7 @@ ul {
 
 .testimonials-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.25rem;
 }
 
@@ -1563,6 +1563,19 @@ ul {
   font-style: normal;
   font-weight: 900;
   line-height: 1.2;
+}
+
+.testimonial-author cite a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.testimonial-author cite a:hover,
+.testimonial-author cite a:focus-visible {
+  color: #ffb3b9;
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
 }
 
 .testimonial-author small {
