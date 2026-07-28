@@ -82,13 +82,12 @@ FONT_REGULAR, FONT_BOLD = register_fonts()
 
 REFERENCE_SHEETS = [
     {
-        "filename": "Certificado Uniflon - Fluoroplex B40 - Lote 25110276016.pdf",
-        "title": "CERTIFICADO UNIFLON - FLUOROPLEX B40",
-        "subtitle": "Tipo GMA - Código 010014002 - Lote 25110276016",
+        "filename": "Ficha Técnica - PTFE Bronze - Lote 25110276016.pdf",
+        "title": "DADOS TÉCNICOS DO PTFE COM BRONZE",
+        "subtitle": "Composto de PTFE com bronze - lote 25110276016",
         "description": (
-            "Transcrição dos resultados do Certificado de Análise emitido pela "
-            "Fluoromasters / Uniflon para o produto Fluoroplex B40, aprovado em "
-            "13/11/2025."
+            "Transcrição técnica dos resultados do lote aprovado em 13/11/2025. "
+            "A identificação comercial do emissor foi omitida por confidencialidade."
         ),
         "properties": [
             ("Peso específico", "3,09 g/cm³ (espec. 3,06 a 3,12)", "IT 14-005"),
@@ -99,21 +98,22 @@ REFERENCE_SHEETS = [
             ("Contração na sinterização", "1,7% (espec. 1,4 a 2,4)", "IT 14-004"),
             ("Fluidez", "1,6 s/50 g (espec. 1,3 a 2,3)", "IT 14-001"),
             ("Tamanho médio de partícula", "623 µm (espec. 600 a 700)", "IT 14-011"),
+            ("Temperatura de trabalho", "-100 a +260 °C", "Faixa contínua típica do composto"),
         ],
         "applications": "PTFE com bronze para vedações, anéis, guias, buchas e componentes usinados.",
-        "source": "Fluoromasters Ind. Com. Imp. e Exp. Ltda. / Uniflon",
-        "source_url": "Certificado de Análise 25110276016 - emitido em 13/11/2025",
+        "source": "Documento técnico recebido e conferido pela Parts Seals",
+        "source_url": "Identificação comercial omitida - lote 25110276016",
         "document_kind": "supplier_certificate",
-        "issuer_short": "Fluoromasters / Uniflon",
+        "issuer_short": "emissor original",
     },
     {
-        "filename": "Certificado DSD Brasil - PTFE Virgem - Lote 25-1297V.pdf",
-        "title": "CERTIFICADO DSD BRASIL - PTFE VIRGEM",
+        "filename": "Ficha Técnica - PTFE Virgem - Lote 25-1297V.pdf",
+        "title": "DADOS TÉCNICOS DO PTFE VIRGEM",
         "subtitle": "Classe Free Flow - Código 02V0000101 - Lote 25-1297V",
         "description": (
-            "Transcrição dos resultados do Certificado de Inspeção emitido pela DSD Brasil "
-            "para 20 kg de PTFE 100% virgem, com dados extraídos do certificado original "
-            "da Polis Srl. NF-e 001609, de 31/03/2026."
+            "Transcrição dos resultados do certificado de inspeção para 20 kg de PTFE "
+            "100% virgem. A identificação comercial do emissor foi omitida por "
+            "confidencialidade."
         ),
         "properties": [
             ("Composição", "100% PTFE virgem", "Declaração do certificado"),
@@ -124,41 +124,42 @@ REFERENCE_SHEETS = [
             ("Densidade aparente", "608 g/L (espec. 620 ± 50)", "ASTM D 4894"),
             ("Contração diamétrica", "2,7% (espec. 3,0 ± 0,5)", "Método interno"),
             ("Processamento do C.Q.", "300 kg/cm² / sinterização máx. 375 °C", "Tarugo Ø 57 x H 70 mm"),
+            ("Temperatura de trabalho", "-200 a +260 °C", "Faixa contínua típica do PTFE virgem"),
         ],
         "applications": "Anéis de vedação, sedes, juntas, back-ups, buchas, guias e isoladores.",
-        "source": "DSD Brasil Ltda. - dados extraídos do certificado original da Polis Srl.",
-        "source_url": "Certificado de Inspeção do lote 25-1297V - emitido em 31/03/2026",
+        "source": "Documento técnico recebido e conferido pela Parts Seals",
+        "source_url": "Identificação comercial omitida - lote 25-1297V",
         "document_kind": "supplier_certificate",
-        "issuer_short": "DSD Brasil",
+        "issuer_short": "emissor original",
     },
     {
-        "filename": "Declaracao Heroflon - MG4-FFHD - Atoxicidade.pdf",
-        "title": "DECLARAÇÃO DE ATOXICIDADE - PTFE VIRGEM",
-        "subtitle": "Heroflon MG4-FF/HD - 100% PTFE virgem - 01/03/2021",
+        "filename": "Declaracao de Composicao - PTFE Virgem.pdf",
+        "title": "DECLARAÇÃO DE COMPOSIÇÃO - PTFE VIRGEM",
+        "subtitle": "100% PTFE virgem - documento de referência",
         "description": (
-            "Transcrição da declaração emitida pela Heroflon S.p.A. à HF do Brasil, "
-            "confirmando que o grau MG4-FF/HD é fabricado exclusivamente com as matérias-primas "
-            "declaradas e sem adição intencional de outras substâncias."
+            "Transcrição de documentação recebida que declara composição 100% PTFE virgem "
+            "e ausência de adição intencional de outras substâncias. A identificação "
+            "comercial do emissor foi omitida por confidencialidade."
         ),
         "properties": [
-            ("Material", "Heroflon MG4-FF/HD", "Grau declarado"),
+            ("Material", "PTFE virgem", "Grau documentado"),
             ("Composição", "100% PTFE virgem", "Declaração do fabricante"),
             ("Substâncias tóxicas", "Ausentes", "Toxic substances free"),
             ("Outras substâncias", "Nenhuma adicionada intencionalmente", "Condição declarada"),
             ("Condição abrangida", "Material na embalagem original", "Conforme fornecido"),
             ("Produtos transformados", "Não abrangidos automaticamente", "Com ou sem aditivos"),
-            ("Data de emissão", "01/03/2021", "Collebeato, Itália"),
-            ("Responsável", "Moncef Allagui", "Quality and Plant Manager"),
+            ("Data do documento", "01/03/2021", "Data técnica registrada"),
+            ("Responsável", "Departamento de qualidade", "Identificação pessoal omitida"),
         ],
         "applications": (
-            "A declaração se aplica somente ao MG4-FF/HD conforme fornecido na embalagem original. "
+            "A declaração se aplica somente ao grau documentado conforme fornecido na embalagem original. "
             "Não constitui garantia de adequação para uma aplicação específica."
         ),
         "applications_title": "ESCOPO DE USO",
-        "source": "Heroflon S.p.A.",
-        "source_url": "Declaração MG4-FF/HD emitida à HF do Brasil em 01/03/2021",
+        "source": "Documento técnico recebido e conferido pela Parts Seals",
+        "source_url": "Identificação comercial omitida",
         "document_kind": "supplier_declaration",
-        "issuer_short": "Heroflon S.p.A.",
+        "issuer_short": "emissor original",
     },
     {
         "filename": "Ficha Técnica de Referência - PTFE Grafite - Parts Seals 2026.pdf",
@@ -180,13 +181,13 @@ REFERENCE_SHEETS = [
             ("Resistividade volumétrica", "10⁷ Ω·cm", "IEC 60093"),
         ],
         "applications": "Anéis de vedação, juntas, sedes, buchas e componentes de deslizamento.",
-        "source": "Amsler & Frey AG - PTFE 15% Graphite",
-        "source_url": "https://www.shop.amsler-frey.ch/en?category=54&cmd=generate_datasheet",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
-        "filename": "Ficha Técnica de Referência - PTFE T46 - Parts Seals 2026.pdf",
-        "title": "PROPRIEDADES DO PTFE T-46",
-        "subtitle": "Referência baseada no composto Turcon T46 com carga de bronze",
+        "filename": "Ficha Técnica de Referência - PTFE Bronze Hidraulico - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO PTFE COM BRONZE HIDRÁULICO",
+        "subtitle": "Grau com carga média de bronze para movimento linear",
         "description": (
             "Composto de PTFE com bronze desenvolvido para hidráulica lubrificada em "
             "movimento linear. Apresenta alta resistência à compressão e à extrusão, "
@@ -203,12 +204,8 @@ REFERENCE_SHEETS = [
             ("Comportamento", "Alta compressão, desgaste e extrusão", "Aplicação hidráulica"),
         ],
         "applications": "Vedações de haste e êmbolo, anéis e perfis para hidráulica linear lubrificada.",
-        "source": "Trelleborg Sealing Solutions - Turcon T46 Material Specification e Product Range",
-        "source_url": (
-            "https://static.mercateo.com/52/f4f84ba960664ded97368782d09ef07a/pdf/t46n.pdf?v=8"
-            "<br/>https://www.trelleborg.com/seals/-/media/tss-media-repository/"
-            "tss_website/pdf-and-other-literature/catalogs/product_range_en.pdf"
-        ),
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - PTFE Molibdenio - Parts Seals 2026.pdf",
@@ -230,8 +227,8 @@ REFERENCE_SHEETS = [
             ("Condutividade térmica", "0,25 W/(m·K)", "ASTM C 177"),
         ],
         "applications": "Vedações dinâmicas, buchas, guias e peças para movimento seco ou intermitente.",
-        "source": "Diflon Technology - PTFE 3% MoS2",
-        "source_url": "https://www.diflon.it/en/products/virgin-ptfe/ptfe-materials/3-percent-mos2",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - PEAD - Parts Seals 2026.pdf",
@@ -252,8 +249,8 @@ REFERENCE_SHEETS = [
             ("Absorção de água", "0,03 a 0,04%", "ASTM D 570"),
         ],
         "applications": "Guias, espaçadores, placas de desgaste, buchas leves e componentes químicos.",
-        "source": "Ensinger Brasil - TECAFINE PE 300 natural",
-        "source_url": "https://www.ensingerplastics.com/pt-br/semiacabados/produtos/tecafine-pe-natural",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - Celeron - Parts Seals 2026.pdf",
@@ -275,8 +272,8 @@ REFERENCE_SHEETS = [
             ("Resistência ao cisalhamento", "96,5 MPa", "ASTM D 732"),
         ],
         "applications": "Engrenagens, polias, roletes, guias, buchas, mancais e isoladores mecânicos.",
-        "source": "Norplex-Micarta - NP310 Technical Data Bulletin",
-        "source_url": "https://www.norplex-micarta.com/wp-content/uploads/2017/07/TDB_NP310.pdf",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - PA6 - Parts Seals 2026.pdf",
@@ -298,8 +295,8 @@ REFERENCE_SHEETS = [
             ("Absorção de água", "1,00 a 2,02%", "ASTM D 570"),
         ],
         "applications": "Buchas, roldanas, engrenagens, guias, anéis de apoio e raspadores rígidos.",
-        "source": "Ensinger Brasil - TECAMID 6 natural",
-        "source_url": "https://www.ensingerplastics.com/pt-br/semiacabados/pa6-tecamid-6-natural",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - PA66 - Parts Seals 2026.pdf",
@@ -320,8 +317,8 @@ REFERENCE_SHEETS = [
             ("Absorção de água", "0,57 a 1,09%", "ASTM D 570"),
         ],
         "applications": "Guias, buchas, engrenagens, arruelas, anéis de apoio e componentes rígidos.",
-        "source": "Ensinger Brasil - TECAMID 66 natural",
-        "source_url": "https://www.ensingerplastics.com/pt-br/semiacabados/pa66-tecamid-66-natural",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
     {
         "filename": "Ficha Técnica de Referência - PEEK - Parts Seals 2026.pdf",
@@ -342,8 +339,52 @@ REFERENCE_SHEETS = [
             ("Absorção de água", "0,02 a 0,03%", "DIN EN ISO 62"),
         ],
         "applications": "Back-ups, sedes de válvula, anéis de pistão, bombas e compressores.",
-        "source": "Ensinger Brasil - TECAPEEK natural",
-        "source_url": "https://www.ensingerplastics.com/pt-br/semiacabados/peek-tecapeek-natural",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
+    },
+    {
+        "filename": "Ficha Técnica de Referência - FKM - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO FKM",
+        "subtitle": "Fluoroelastômero de uso industrial",
+        "description": (
+            "Elastômero de alta resistência térmica e química, indicado para óleos, "
+            "combustíveis e diversos meios agressivos compatíveis."
+        ),
+        "properties": [
+            ("Densidade", "1,80 a 1,90 g/cm³", "Referência típica"),
+            ("Dureza", "75 Shore A", "ASTM D 2240"),
+            ("Resistência à tração", "≥ 10 MPa", "ASTM D 412"),
+            ("Alongamento na ruptura", "≥ 150%", "ASTM D 412"),
+            ("Temperatura de serviço", "-10 a +200 °C", "Serviço contínuo típico"),
+            ("Resistência a óleos", "Muito boa", "Validar o fluido exato"),
+            ("Resistência ao ozônio", "Muito boa", "Referência típica"),
+            ("Permeabilidade a gases", "Baixa", "Referência típica"),
+        ],
+        "applications": "O-rings, juntas, retentores, diafragmas e vedações especiais.",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
+    },
+    {
+        "filename": "Ficha Técnica de Referência - Poliamida Tecnica - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DA POLIAMIDA TÉCNICA",
+        "subtitle": "Família PA6 / PA66 para componentes de engenharia",
+        "description": (
+            "Família de poliamidas de engenharia com diferentes graus e reforços. "
+            "As propriedades variam conforme a formulação, umidade e processamento."
+        ),
+        "properties": [
+            ("Família", "PA6 / PA66", "Conforme o grau"),
+            ("Densidade", "1,13 a 1,16 g/cm³", "Sem reforço, referência típica"),
+            ("Resistência à tração", "70 a 90 MPa", "Grau natural típico"),
+            ("Dureza", "72 a 80 Shore D", "Grau natural típico"),
+            ("Temperatura de serviço", "-30 a +150 °C", "Depende do grau e reforço"),
+            ("Absorção de umidade", "Relevante", "Considerar no dimensionamento"),
+            ("Resistência ao desgaste", "Boa", "Validar carga e contraparte"),
+            ("Estabilidade dimensional", "Dependente da umidade", "Validar tolerâncias"),
+        ],
+        "applications": "Buchas, engrenagens, suportes, carcaças, guias e componentes estruturais.",
+        "source": "Dados técnicos públicos consolidados pela Parts Seals",
+        "source_url": "Identificação comercial das fontes omitida",
     },
 ]
 
@@ -351,32 +392,32 @@ REFERENCE_SHEETS = [
 DOC_SPECS = [
     ("poliacetal - dados tecnicos", "poliacetal-dados", "Poliacetal - dados técnicos", "Ficha técnica"),
     (
-        "fluoroplex b40",
+        "ficha tecnica - ptfe bronze - lote",
         "ptfe-bronze",
-        "PTFE com bronze - Uniflon Fluoroplex B40",
-        "Certificado de análise Uniflon",
+        "PTFE com bronze",
+        "Dados técnicos do lote",
     ),
     ("fibra de carbono", "ptfe-carbono", "PTFE com fibra de carbono", "Certificado de inspeção"),
     ("fibra de vidro", "ptfe-vidro", "PTFE com fibra de vidro", "Certificado de inspeção"),
-    ("viton", "fkm-viton", "FKM / Viton", "Certificado de inspeção"),
+    ("referencia - fkm -", "fkm", "FKM", "Ficha técnica de referência"),
     ("propriedades nbr", "nbr", "NBR", "Certificado de qualidade"),
     ("polioximetileno", "pom-certificado", "POM / Polioximetileno", "Certificado de inspeção"),
     ("poliuretano", "poliuretano", "Poliuretano", "Certificado de inspeção"),
-    ("technyl", "technyl", "Technyl PA6 / PA66", "Certificado de qualidade"),
+    ("poliamida tecnica", "poliamida-tecnica", "Poliamida técnica PA6 / PA66", "Ficha técnica de referência"),
     (
-        "25-1297v",
+        "ficha tecnica - ptfe virgem - lote",
         "ptfe-virgem",
-        "PTFE virgem - lote DSD Brasil 25-1297V",
-        "Certificado de inspeção DSD Brasil",
+        "PTFE virgem - lote 25-1297V",
+        "Dados técnicos do lote",
     ),
     (
-        "mg4-ffhd",
+        "declaracao de composicao",
         "ptfe-virgem-atoxidade",
-        "PTFE virgem - Heroflon MG4-FF/HD",
-        "Declaração de atoxicidade",
+        "PTFE virgem - declaração de composição",
+        "Declaração de composição",
     ),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
-    ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),
+    ("ptfe bronze hidraulico", "ptfe-bronze-hidraulico", "PTFE com bronze hidráulico", "Ficha técnica de referência"),
     ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
     ("pead", "pead", "PEAD", "Ficha técnica de referência"),
     ("celeron", "celeron", "Celeron", "Ficha técnica de referência"),
@@ -518,7 +559,7 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     if is_supplier_certificate:
         note_text = (
             "Esta página é uma transcrição para visualização no site e não substitui o documento "
-            f"original emitido pela {spec.get('issuer_short', 'fornecedor')}. "
+            f"original emitido pelo {spec.get('issuer_short', 'fornecedor')}. "
             "Os resultados se aplicam exclusivamente ao produto, código e lote identificados acima. "
             "Para rastreabilidade documental, solicite à Parts Seals uma cópia do certificado "
             "original correspondente ao fornecimento."
@@ -526,7 +567,7 @@ def create_reference_sheet(spec: dict, output_path: Path) -> None:
     elif is_supplier_declaration:
         note_text = (
             "Esta página é uma tradução e transcrição para visualização no site e não substitui a "
-            f"declaração original emitida pela {spec.get('issuer_short', 'fabricante')}. "
+            f"declaração original do {spec.get('issuer_short', 'fabricante')}. "
             "A informação se refere apenas ao material identificado em sua embalagem original. "
             "Não se estende automaticamente a produtos transformados, com ou sem auxiliares de "
             "processo, cargas ou corantes, nem garante adequação a uma aplicação específica."

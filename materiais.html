@@ -28,6 +28,7 @@
       </button>
       <div class="site-nav" id="siteMenu" data-menu>
         <a href="index.html">Início</a>
+        <a href="#pergunte">Pergunte</a>
         <a href="#seletor">Seletor</a>
         <a href="#elastomeros">Elastômeros</a>
         <a href="#ptfe">PTFE</a>
@@ -68,6 +69,7 @@
 
     <nav class="materials-nav" aria-label="Famílias de materiais">
       <div class="container">
+        <a href="#pergunte">Pergunte sobre materiais</a>
         <a href="#seletor">Seletor técnico</a>
         <a href="#elastomeros">Elastômeros</a>
         <a href="#ptfe">PTFE e compostos</a>
@@ -76,6 +78,32 @@
         <a href="#biblioteca">Sobre os documentos</a>
       </div>
     </nav>
+
+    <section class="section material-question" id="pergunte" aria-labelledby="materialQuestionTitle">
+      <div class="container material-question__layout">
+        <div class="material-question__intro">
+          <p class="eyebrow">Resposta técnica imediata</p>
+          <h2 id="materialQuestionTitle">Pergunte e compare materiais.</h2>
+          <p>Escreva como você perguntaria para nossa equipe. O comparador reconhece nomes e abreviações comuns e responde com as faixas de temperatura cadastradas.</p>
+          <div class="material-question__examples" aria-label="Perguntas sugeridas">
+            <button type="button" data-question-example="Qual aguenta mais temperatura: PTFE com bronze ou PTFE com grafite?">PTFE bronze x grafite</button>
+            <button type="button" data-question-example="Qual aguenta mais temperatura: NBR ou FKM?">NBR x FKM</button>
+            <button type="button" data-question-example="Qual a temperatura de trabalho do PEEK?">Temperatura do PEEK</button>
+          </div>
+        </div>
+        <div class="material-question__panel">
+          <form data-material-question>
+            <label for="materialQuestionInput">Sua pergunta</label>
+            <div class="material-question__field">
+              <input id="materialQuestionInput" name="question" type="text" autocomplete="off" placeholder="Ex.: Qual aguenta mais temperatura, tef/bze ou tef/gra?" required>
+              <button class="btn btn-primary" type="submit">Perguntar</button>
+            </div>
+          </form>
+          <div class="material-question__answer" data-material-answer hidden aria-live="polite"></div>
+          <p class="material-question__note">As respostas são comparações preliminares. Fluido, pressão, tempo de exposição, picos térmicos e o grau exato do composto devem ser validados.</p>
+        </div>
+      </div>
+    </section>
 
     <section class="section material-selector" id="seletor" aria-labelledby="selectorTitle">
       <div class="container">
@@ -223,6 +251,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">NBR</span><div><h3>Borracha nitrílica</h3><span class="material-library-card__family">Vedação para óleos</span></div></header>
             <p>Elastômero de uso industrial amplo, com boa resistência a óleos minerais, graxas e combustíveis, além de bom equilíbrio entre custo e desempenho.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-30 a +100 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Sistemas hidráulicos e pneumáticos, lubrificantes e vedação estática.</dd></div>
               <div><dt>Perfis e peças</dt><dd>O-rings, retentores, juntas, diafragmas, gaxetas e vedações moldadas.</dd></div>
               <div><dt>Atenções</dt><dd>Não é a primeira opção para ozônio, intempéries ou temperaturas muito altas.</dd></div>
@@ -231,14 +260,15 @@
           </article>
 
           <article class="material-library-card">
-            <header class="material-library-card__header"><span class="material-library-card__code">FKM</span><div><h3>FKM / Viton®</h3><span class="material-library-card__family">Alta temperatura e química</span></div></header>
+            <header class="material-library-card__header"><span class="material-library-card__code">FKM</span><div><h3>FKM</h3><span class="material-library-card__family">Alta temperatura e química</span></div></header>
             <p>Fluoroelastômero selecionado para condições térmicas e químicas mais severas, com bom desempenho em óleos, combustíveis e diversos agentes agressivos.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-10 a +200 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Temperaturas elevadas, hidrocarbonetos, vácuo e processos químicos compatíveis.</dd></div>
               <div><dt>Perfis e peças</dt><dd>O-rings, juntas, retentores, diafragmas e vedações especiais.</dd></div>
               <div><dt>Atenções</dt><dd>O grau correto depende do fluido; vapor, bases e baixas temperaturas exigem análise.</dd></div>
             </dl>
-            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="FKM / Viton — dados técnicos" data-sheet-images="assets/datasheets-view/fkm-viton-p1.webp">Visualizar datasheet</button></div>
+            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="FKM — dados técnicos" data-sheet-images="assets/datasheets-view/fkm-p1.webp">Visualizar datasheet</button></div>
           </article>
         </div>
       </div>
@@ -252,34 +282,37 @@
         </div>
         <div class="material-library-grid">
           <article class="material-library-card">
-            <header class="material-library-card__header"><span class="material-library-card__code">PTFE</span><div><h3>PTFE virgem</h3><span class="material-library-card__family">DSD Brasil · 100% PTFE virgem</span></div></header>
-            <p>Material real do lote 25-1297V, classe Free Flow, fornecido pela DSD Brasil, com certificado de inspeção e declaração de atoxicidade Heroflon para PTFE 100% virgem.</p>
+            <header class="material-library-card__header"><span class="material-library-card__code">PTFE</span><div><h3>PTFE virgem</h3><span class="material-library-card__family">100% PTFE virgem</span></div></header>
+            <p>Material de baixíssimo atrito, elevada estabilidade química e ampla faixa térmica, indicado para vedações e componentes em contato com fluidos agressivos.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-200 a +260 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Indústria química, alimentícia, farmacêutica, baixa fricção e isolação.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Anéis de vedação, sedes, juntas, mancais, guias e componentes usinados.</dd></div>
               <div><dt>Atenções</dt><dd>Fluência e desgaste podem exigir energizador, geometria ou composto específico.</dd></div>
             </dl>
             <div class="material-library-card__actions">
-              <button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="PTFE virgem — certificado DSD Brasil do lote 25-1297V" data-sheet-images="assets/datasheets-view/ptfe-virgem-p1.webp">Visualizar datasheet</button>
-              <button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="PTFE virgem — declaração de atoxicidade Heroflon MG4-FF/HD" data-sheet-images="assets/datasheets-view/ptfe-virgem-atoxidade-p1.webp">Declaração de atoxicidade</button>
+              <button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="PTFE virgem — dados técnicos" data-sheet-images="assets/datasheets-view/ptfe-virgem-p1.webp">Visualizar datasheet</button>
+              <button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="PTFE virgem — declaração de composição" data-sheet-images="assets/datasheets-view/ptfe-virgem-atoxidade-p1.webp">Declaração de composição</button>
             </div>
           </article>
 
           <article class="material-library-card">
-            <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>BR</span><div><h3>PTFE com bronze</h3><span class="material-library-card__family">Uniflon Fluoroplex B40</span></div></header>
-            <p>Material fornecido pela Uniflon, com resultados reais do lote 25110276016 aprovado em 13/11/2025. A carga de bronze favorece desgaste, condução térmica e estabilidade sob compressão.</p>
+            <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>BR</span><div><h3>PTFE com bronze</h3><span class="material-library-card__family">Desgaste e estabilidade</span></div></header>
+            <p>A carga de bronze favorece resistência ao desgaste, condução térmica e estabilidade sob compressão em aplicações hidráulicas e componentes deslizantes.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-100 a +260 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Sistemas hidráulicos, cargas elevadas e contato com superfícies metálicas.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Anéis guia, buchas, bandas de desgaste, vedações e mancais.</dd></div>
               <div><dt>Atenções</dt><dd>Compatibilidade química e possível abrasividade do composto devem ser avaliadas.</dd></div>
             </dl>
-            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="Uniflon Fluoroplex B40 — certificado do lote 25110276016" data-sheet-images="assets/datasheets-view/ptfe-bronze-p1.webp">Visualizar datasheet</button></div>
+            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="PTFE com bronze — dados técnicos" data-sheet-images="assets/datasheets-view/ptfe-bronze-p1.webp">Visualizar datasheet</button></div>
           </article>
 
           <article class="material-library-card">
             <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>GR</span><div><h3>PTFE com grafite</h3><span class="material-library-card__family">Lubricidade e condução térmica</span></div></header>
             <p>A carga de grafite melhora o comportamento de atrito e a condução de calor, com bom desempenho em contato com superfícies metálicas mais macias.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-100 a +260 °C contínuos; até +300 °C por curto período.</dd></div>
               <div><dt>Indicado para</dt><dd>Movimento deslizante, baixa fricção e aplicações nas quais se deseja dissipar calor.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Anéis de vedação, juntas, sedes, buchas e componentes de deslizamento.</dd></div>
               <div><dt>Atenções</dt><dd>O percentual de grafite e o meio químico alteram o desempenho do composto.</dd></div>
@@ -288,20 +321,22 @@
           </article>
 
           <article class="material-library-card">
-            <header class="material-library-card__header"><span class="material-library-card__code">T-46</span><div><h3>PTFE T-46</h3><span class="material-library-card__family">PTFE com carga de bronze</span></div></header>
-            <p>Composto baseado no Turcon T46: PTFE modificado com carga média de bronze, desenvolvido para hidráulica lubrificada em movimento linear.</p>
+            <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>BR-H</span><div><h3>PTFE com bronze hidráulico</h3><span class="material-library-card__family">Grau para movimento linear</span></div></header>
+            <p>PTFE modificado com carga média de bronze, desenvolvido para hidráulica lubrificada, movimento linear e alta resistência à extrusão.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-200 a +260 °C, conforme o grau de referência.</dd></div>
               <div><dt>Indicado para</dt><dd>Hidráulica lubrificada, movimento linear, pressão e alta exigência contra extrusão.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Vedações de haste e êmbolo, anéis e perfis técnicos usinados.</dd></div>
               <div><dt>Atenções</dt><dd>Confirmar origem, compatibilidade, condições da aplicação e certificado do lote fornecido.</dd></div>
             </dl>
-            <div class="material-library-card__actions"><button type="button" class="datasheet-open datasheet-open--reference" data-datasheet-open data-sheet-title="PTFE T-46 — ficha técnica de referência" data-sheet-images="assets/datasheets-view/ptfe-t46-p1.webp">Ficha de referência</button></div>
+            <div class="material-library-card__actions"><button type="button" class="datasheet-open datasheet-open--reference" data-datasheet-open data-sheet-title="PTFE com bronze hidráulico — ficha técnica de referência" data-sheet-images="assets/datasheets-view/ptfe-bronze-hidraulico-p1.webp">Ficha de referência</button></div>
           </article>
 
           <article class="material-library-card">
             <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>CF</span><div><h3>PTFE com fibra de carbono</h3><span class="material-library-card__family">Estabilidade e desempenho dinâmico</span></div></header>
             <p>Composto desenvolvido para maior resistência ao desgaste e menor deformação, mantendo baixo atrito em diversas aplicações dinâmicas.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-100 a +260 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Movimento alternado ou rotativo, pressão e aplicações com exigência dimensional.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Vedações energizadas, anéis, buchas, guias e componentes de desgaste.</dd></div>
               <div><dt>Atenções</dt><dd>Percentual e tipo de carga alteram propriedades; validar a especificação do composto.</dd></div>
@@ -313,6 +348,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>MoS2</span><div><h3>PTFE com molibdênio</h3><span class="material-library-card__family">Baixo atrito e reforço mecânico</span></div></header>
             <p>O dissulfeto de molibdênio atua como reforço e lubrificante sólido, melhorando desgaste, compressão, fluência e atrito em aplicações dinâmicas.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-100 a +250 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Movimentos secos ou intermitentes, guias e aplicações com exigência mecânica.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Vedações dinâmicas, buchas, guias, anéis de apoio e peças de deslizamento.</dd></div>
               <div><dt>Atenções</dt><dd>Validar percentual de MoS2, fluido, contraparte, temperatura e regime de trabalho.</dd></div>
@@ -324,6 +360,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PTFE<br>FV</span><div><h3>PTFE com fibra de vidro</h3><span class="material-library-card__family">Rigidez e resistência ao desgaste</span></div></header>
             <p>A fibra de vidro melhora resistência à compressão, rigidez e desgaste. Alguns graus combinam MoS2 para aprimorar o comportamento de atrito.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-100 a +260 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Guias, apoio mecânico, movimento e condições que exigem menor fluência.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Anéis guia, buchas, gaxetas, vedações e peças usinadas.</dd></div>
               <div><dt>Atenções</dt><dd>A superfície contraposta e a compatibilidade com o fluido devem ser verificadas.</dd></div>
@@ -345,6 +382,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PU</span><div><h3>Poliuretano</h3><span class="material-library-card__family">Polímero de alta resistência</span></div></header>
             <p>Combina elasticidade com elevada resistência à abrasão, ao rasgo e à extrusão, sendo frequente em sistemas hidráulicos e aplicações dinâmicas.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-20 a +80 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Óleo hidráulico, movimento alternado, carga elevada e ambientes abrasivos.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Gaxetas, raspadores, vedações de haste e êmbolo, amortecedores e anéis.</dd></div>
               <div><dt>Atenções</dt><dd>Temperatura, hidrólise, compatibilidade química e dureza devem ser validadas.</dd></div>
@@ -356,6 +394,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">POM</span><div><h3>POM / Poliacetal</h3><span class="material-library-card__family">Precisão dimensional</span></div></header>
             <p>Termoplástico rígido, estável e de excelente usinabilidade, usado em componentes dimensionais com baixo atrito e boa resistência ao desgaste.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-40 a +100 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Peças de precisão, mecanismos, guias e contato com umidade moderada.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Buchas, engrenagens, roletes, anéis guia, sedes e espaçadores.</dd></div>
               <div><dt>Atenções</dt><dd>Ácidos fortes, radiação UV e temperatura contínua devem ser considerados.</dd></div>
@@ -370,6 +409,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PEAD</span><div><h3>Polietileno de alta densidade</h3><span class="material-library-card__family">Leve e resistente</span></div></header>
             <p>Termoplástico de baixa densidade, boa resistência química e baixa absorção de água, adequado a peças de desgaste moderado e contato deslizante.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-50 a +80 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Ambientes úmidos, indústria alimentícia quando o grau for aprovado e química leve.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Guias, calços, placas, roletes, raspadores rígidos e revestimentos.</dd></div>
               <div><dt>Atenções</dt><dd>Rigidez, fluência, temperatura de serviço e expansão térmica limitam a precisão.</dd></div>
@@ -381,6 +421,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PA6</span><div><h3>Nylon 6</h3><span class="material-library-card__family">Tenacidade e usinabilidade</span></div></header>
             <p>Poliamida de boa resistência mecânica e ao impacto, utilizada em peças deslizantes e estruturais submetidas a esforços moderados.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-40 a +100 °C contínuos; até +160 °C por curto período.</dd></div>
               <div><dt>Indicado para</dt><dd>Máquinas, transporte, manutenção e componentes sujeitos a impacto.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Buchas, engrenagens, roletes, polias, guias e sapatas.</dd></div>
               <div><dt>Atenções</dt><dd>Absorve umidade, o que altera dimensões e propriedades; considerar folgas.</dd></div>
@@ -392,6 +433,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">PA66</span><div><h3>Nylon 6.6</h3><span class="material-library-card__family">Maior rigidez</span></div></header>
             <p>Poliamida com boa rigidez, resistência mecânica e térmica, indicada para peças que pedem estabilidade superior à de graus mais tenazes.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-30 a +100 °C contínuos; até +170 °C por curto período.</dd></div>
               <div><dt>Indicado para</dt><dd>Componentes mecânicos, suportes, transmissão e peças técnicas usinadas.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Engrenagens, buchas, espaçadores, roletes, guias e isoladores.</dd></div>
               <div><dt>Atenções</dt><dd>Também absorve umidade; impacto, temperatura e tolerâncias pedem validação.</dd></div>
@@ -400,20 +442,22 @@
           </article>
 
           <article class="material-library-card">
-            <header class="material-library-card__header"><span class="material-library-card__code">PA<br>TECH</span><div><h3>Technyl® PA6 / PA66</h3><span class="material-library-card__family">Poliamida de engenharia</span></div></header>
+            <header class="material-library-card__header"><span class="material-library-card__code">PA<br>TEC</span><div><h3>Poliamida técnica PA6 / PA66</h3><span class="material-library-card__family">Poliamida de engenharia</span></div></header>
             <p>Família de poliamidas de engenharia com diferentes graus e reforços, destinada a componentes mecânicos conforme a formulação especificada.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-30 a +150 °C, conforme o grau e o reforço.</dd></div>
               <div><dt>Indicado para</dt><dd>Aplicações automotivas, industriais, elétricas e componentes estruturais.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Carcaças, suportes, engrenagens, conectores, buchas e componentes moldados.</dd></div>
               <div><dt>Atenções</dt><dd>O nome cobre muitos graus; usar os dados do código exato e do lote adquirido.</dd></div>
             </dl>
-            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="Technyl PA6 / PA66 — dados técnicos" data-sheet-images="assets/datasheets-view/technyl-p1.webp">Visualizar datasheet</button></div>
+            <div class="material-library-card__actions"><button type="button" class="datasheet-open" data-datasheet-open data-sheet-title="Poliamida técnica PA6 / PA66 — dados técnicos" data-sheet-images="assets/datasheets-view/poliamida-tecnica-p1.webp">Visualizar datasheet</button></div>
           </article>
 
           <article class="material-library-card">
             <header class="material-library-card__header"><span class="material-library-card__code">PEEK</span><div><h3>PEEK</h3><span class="material-library-card__family">Polímero de alta performance</span></div></header>
             <p>Termoplástico semicristalino de alta resistência térmica, mecânica e química, indicado para componentes críticos nos quais polímeros comuns atingem o limite.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-60 a +260 °C contínuos; até +300 °C por curto período.</dd></div>
               <div><dt>Indicado para</dt><dd>Alta temperatura, química severa, energia, óleo e gás, saúde e semicondutores.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Anéis de encosto, sedes, buchas, isoladores, guias e peças de precisão.</dd></div>
               <div><dt>Atenções</dt><dd>O custo e o grau exigem especificação criteriosa; cargas mudam o desempenho.</dd></div>
@@ -435,6 +479,7 @@
             <header class="material-library-card__header"><span class="material-library-card__code">CEL</span><div><h3>Celeron / laminado fenólico</h3><span class="material-library-card__family">Suporte e isolamento</span></div></header>
             <p>Laminado de tecido de algodão e resina fenólica com boa resistência mecânica, amortecimento e isolamento elétrico, conforme o grau escolhido.</p>
             <dl class="material-spec-list">
+              <div><dt>Temperatura de trabalho</dt><dd>-20 a +120 °C, em serviço contínuo típico.</dd></div>
               <div><dt>Indicado para</dt><dd>Componentes de apoio, desgaste, isolamento e ambientes industriais.</dd></div>
               <div><dt>Perfis e peças</dt><dd>Buchas, mancais, engrenagens, guias, arruelas e calços.</dd></div>
               <div><dt>Atenções</dt><dd>Absorção de umidade, orientação do laminado e classe do material afetam o uso.</dd></div>

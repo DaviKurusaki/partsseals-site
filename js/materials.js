@@ -115,6 +115,145 @@
 (function () {
   "use strict";
 
+  var form = document.querySelector("[data-material-question]");
+  if (!form) return;
+
+  var input = form.elements.question;
+  var answer = document.querySelector("[data-material-answer]");
+  var examples = document.querySelectorAll("[data-question-example]");
+  var materials = [
+    { name: "PTFE com bronze", aliases: ["ptfe com bronze", "ptfe bronze", "teflon com bronze", "teflon bronze", "tef bze", "tef bronze"], min: -100, max: 260, detail: "Favorece desgaste, condução térmica e estabilidade sob compressão." },
+    { name: "PTFE com grafite", aliases: ["ptfe com grafite", "ptfe grafite", "teflon com grafite", "teflon grafite", "tef gra", "tef grafite"], min: -100, max: 260, short: 300, detail: "Favorece baixo atrito e condução de calor; o grau de referência admite pico curto de 300 °C." },
+    { name: "PTFE com fibra de carbono", aliases: ["ptfe com fibra de carbono", "ptfe carbono", "teflon carbono", "tef carbono"], min: -100, max: 260, detail: "Favorece estabilidade e resistência ao desgaste em aplicações dinâmicas." },
+    { name: "PTFE com fibra de vidro", aliases: ["ptfe com fibra de vidro", "ptfe vidro", "teflon vidro", "tef vidro"], min: -100, max: 260, detail: "Favorece rigidez, compressão e menor fluência." },
+    { name: "PTFE com molibdênio", aliases: ["ptfe com molibdenio", "ptfe molibdenio", "teflon molibdenio", "tef mos2", "ptfe mos2"], min: -100, max: 250, detail: "Favorece baixo atrito e desgaste em movimento seco ou intermitente." },
+    { name: "PTFE com bronze hidráulico", aliases: ["ptfe com bronze hidraulico", "ptfe bronze hidraulico", "bronze hidraulico"], min: -200, max: 260, detail: "Grau voltado a hidráulica lubrificada, movimento linear e resistência à extrusão." },
+    { name: "PTFE virgem", aliases: ["ptfe virgem", "teflon virgem", "tef virgem", "ptfe puro", "teflon puro"], min: -200, max: 260, detail: "Oferece ampla compatibilidade química e baixíssimo atrito." },
+    { name: "Poliamida técnica PA6 / PA66", aliases: ["poliamida tecnica", "pa tecnica", "pa6 pa66"], min: -30, max: 150, detail: "A faixa depende do grau, reforço, umidade e condição de carga." },
+    { name: "Nylon 6.6", aliases: ["nylon 6 6", "nylon 66", "pa66", "pa 66"], min: -30, max: 100, short: 170, detail: "Boa rigidez, mas a absorção de umidade altera dimensões e propriedades." },
+    { name: "Nylon 6", aliases: ["nylon 6", "pa6", "pa 6"], min: -40, max: 100, short: 160, detail: "Boa tenacidade, mas a absorção de umidade deve ser considerada." },
+    { name: "Poliuretano", aliases: ["poliuretano", "pu"], min: -20, max: 80, detail: "A resistência térmica varia com dureza, formulação e presença de água." },
+    { name: "POM / Poliacetal", aliases: ["poliacetal", "polioximetileno", "pom"], min: -40, max: 100, detail: "Boa estabilidade dimensional e usinabilidade." },
+    { name: "PEAD", aliases: ["polietileno de alta densidade", "pead", "hdpe"], min: -50, max: 80, detail: "Indicado para baixa carga e boa resistência química." },
+    { name: "PEEK", aliases: ["peek"], min: -60, max: 260, short: 300, detail: "Polímero de alto desempenho para temperatura, química e carga." },
+    { name: "Celeron / laminado fenólico", aliases: ["laminado fenolico", "celeron"], min: -20, max: 120, detail: "A classe do laminado e a orientação do tecido afetam o limite." },
+    { name: "FKM", aliases: ["fluoroelastomero", "fkm"], min: -10, max: 200, detail: "Adequado a temperaturas elevadas e diversos óleos e combustíveis compatíveis." },
+    { name: "NBR", aliases: ["borracha nitrilica", "nitrilica", "nbr"], min: -30, max: 100, detail: "Boa opção para óleos minerais, graxas e aplicações hidráulicas usuais." },
+  ];
+
+  function normalize(value) {
+    return value
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+  }
+
+  function findMaterials(question) {
+    var normalizedQuestion = normalize(question);
+    return materials.filter(function (material) {
+      return material.aliases.some(function (alias) {
+        return (" " + normalizedQuestion + " ").includes(" " + normalize(alias) + " ");
+      });
+    });
+  }
+
+  function temperatureText(material) {
+    var text = material.min + " a +" + material.max + " °C contínuos";
+    if (material.short) text += "; até +" + material.short + " °C por curto período";
+    return text;
+  }
+
+  function addComparison(materialsToShow) {
+    var comparison = document.createElement("div");
+    comparison.className = "material-question__comparison";
+    materialsToShow.forEach(function (material) {
+      var item = document.createElement("div");
+      var label = document.createElement("span");
+      var value = document.createElement("b");
+      label.textContent = material.name;
+      value.textContent = temperatureText(material);
+      item.append(label, value);
+      comparison.appendChild(item);
+    });
+    answer.appendChild(comparison);
+  }
+
+  function addExpertLink(question) {
+    var link = document.createElement("a");
+    link.href = "https://wa.me/5519983011817?text=" + encodeURIComponent(
+      "Olá! Gostaria de validar esta dúvida sobre materiais: " + question
+    );
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+    link.textContent = "Validar esta comparação com a Parts Seals";
+    answer.appendChild(link);
+  }
+
+  function renderAnswer(question) {
+    var matches = findMaterials(question);
+    answer.textContent = "";
+    answer.hidden = false;
+
+    var heading = document.createElement("strong");
+    var text = document.createElement("p");
+
+    if (matches.length >= 2) {
+      var first = matches[0];
+      var second = matches[1];
+      if (first.max === second.max) {
+        heading.textContent = "Na temperatura contínua, os dois têm o mesmo limite cadastrado.";
+        text.textContent =
+          first.name + " e " + second.name + " trabalham tipicamente até +" + first.max +
+          " °C. A escolha não deve ser feita só pela temperatura: " + first.detail + " " + second.detail;
+      } else {
+        var hotter = first.max > second.max ? first : second;
+        var cooler = hotter === first ? second : first;
+        heading.textContent = hotter.name + " suporta a maior temperatura contínua.";
+        text.textContent =
+          "O limite típico cadastrado é +" + hotter.max + " °C, contra +" + cooler.max +
+          " °C de " + cooler.name + ". O fluido e as condições mecânicas ainda podem mudar a escolha.";
+      }
+      answer.append(heading, text);
+      addComparison([first, second]);
+      addExpertLink(question);
+      return;
+    }
+
+    if (matches.length === 1) {
+      var material = matches[0];
+      heading.textContent = "Faixa típica de " + material.name;
+      text.textContent = temperatureText(material) + ". " + material.detail;
+      answer.append(heading, text);
+      addExpertLink(question);
+      return;
+    }
+
+    heading.textContent = "Não identifiquei o material com segurança.";
+    text.textContent = "Tente usar o nome completo ou comparar dois itens da biblioteca. Se preferir, envie a pergunta para nossa equipe.";
+    answer.append(heading, text);
+    addExpertLink(question);
+  }
+
+  form.addEventListener("submit", function (event) {
+    event.preventDefault();
+    var question = input.value.trim();
+    if (!question) return;
+    renderAnswer(question);
+  });
+
+  examples.forEach(function (button) {
+    button.addEventListener("click", function () {
+      input.value = button.getAttribute("data-question-example") || "";
+      renderAnswer(input.value);
+    });
+  });
+})();
+
+(function () {
+  "use strict";
+
   var form = document.querySelector("[data-material-selector]");
   if (!form) return;
 
@@ -166,7 +305,7 @@
       versatility: 3,
     },
     {
-      name: "FKM / Viton",
+      name: "FKM",
       code: "FKM",
       family: "Elastômeros",
       anchor: "elastomeros",
@@ -226,8 +365,8 @@
       versatility: 3,
     },
     {
-      name: "PTFE T-46",
-      code: "T-46",
+      name: "PTFE com bronze hidráulico",
+      code: "PTFE BR-H",
       family: "PTFE e compostos",
       anchor: "ptfe",
       summary: "PTFE com bronze voltado à hidráulica lubrificada em movimento linear, pressão e resistência à extrusão.",
@@ -337,7 +476,7 @@
       anchor: "polimeros",
       summary: "Maior rigidez e resistência térmica para componentes mecânicos e estruturais.",
       fluids: ["oleo", "ar", "seco"],
-      temperatures: [-30, 120],
+      temperatures: [-30, 100],
       pressures: ["baixa", "media"],
       motions: ["rotativo", "oscilante", "estrutural"],
       speeds: ["baixa", "media"],
@@ -346,8 +485,8 @@
       versatility: 2,
     },
     {
-      name: "Technyl PA6 / PA66",
-      code: "TECHNYL",
+      name: "Poliamida técnica PA6 / PA66",
+      code: "PA TEC",
       family: "Polímeros",
       anchor: "polimeros",
       summary: "Família de poliamidas de engenharia para componentes estruturais conforme o grau e o reforço especificados.",
@@ -461,7 +600,7 @@
 
     var highHydraulicPressure = values.pressure === "alta" || values.pressure === "muito-alta";
     if (values.fluid === "oleo" && values.motion === "alternado" && highHydraulicPressure) {
-      if (material.name === "PTFE T-46") score += 6;
+      if (material.name === "PTFE com bronze hidráulico") score += 6;
       if (material.name === "PTFE com bronze") score += 4;
       if (material.name === "Poliuretano") score += 3;
     }
@@ -474,7 +613,7 @@
       if (material.name === "Poliuretano") score += 2;
     }
     if (values.motion === "estrutural") {
-      if (["POM / Poliacetal", "Nylon 6", "Nylon 6.6", "Technyl PA6 / PA66", "PEEK", "Celeron"].includes(material.name)) {
+      if (["POM / Poliacetal", "Nylon 6", "Nylon 6.6", "Poliamida técnica PA6 / PA66", "PEEK", "Celeron"].includes(material.name)) {
         score += 3;
       }
     }
@@ -496,7 +635,7 @@
       reasons.push("Comportamento aplicável ao tipo de movimento selecionado.");
     }
     if (values.compliance === "atoxicidade" && material.compliance.includes("atoxicidade")) {
-      reasons.push("Há declaração de atoxicidade disponível para o grau Heroflon MG4-FF/HD.");
+      reasons.push("Há declaração de composição disponível para o grau documentado.");
     } else if (values.compliance === "alimenticia" && material.compliance.includes("alimenticia")) {
       reasons.push("Existem graus potencialmente aplicáveis, sujeitos à comprovação regulatória específica.");
     }

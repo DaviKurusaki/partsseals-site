@@ -185,9 +185,173 @@
 }
 
 .material-selector,
+.material-question,
 .material-family,
 #biblioteca {
   scroll-margin-top: calc(var(--header-height) + 58px);
+}
+
+.material-question {
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid var(--line);
+  background:
+    radial-gradient(circle at 10% 10%, rgba(215, 34, 47, 0.16), transparent 31%),
+    linear-gradient(145deg, #12161d, #090b0f);
+}
+
+.material-question__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(420px, 1fr);
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.material-question__intro h2 {
+  max-width: 650px;
+  margin-top: 0.45rem;
+  font-size: clamp(2.1rem, 4vw, 3.6rem);
+  line-height: 1.02;
+}
+
+.material-question__intro > p:not(.eyebrow) {
+  max-width: 650px;
+  margin-top: 1rem;
+  color: var(--muted);
+}
+
+.material-question__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 1.3rem;
+}
+
+.material-question__examples button {
+  min-height: 38px;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: #e6e9ee;
+  background: rgba(255, 255, 255, 0.045);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.material-question__examples button:hover,
+.material-question__examples button:focus-visible {
+  border-color: var(--red);
+  color: #fff;
+  outline: none;
+}
+
+.material-question__panel {
+  padding: clamp(1.2rem, 3vw, 2rem);
+  border: 1px solid var(--line-strong);
+  border-radius: 16px;
+  background: rgba(18, 22, 29, 0.96);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.34);
+}
+
+.material-question__panel label {
+  display: block;
+  margin-bottom: 0.55rem;
+  color: #f0f2f5;
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.material-question__field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.65rem;
+}
+
+.material-question__field input {
+  min-width: 0;
+  min-height: 50px;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: #fff;
+  background: #1a1f27;
+  font: inherit;
+}
+
+.material-question__field input:focus-visible {
+  border-color: var(--red);
+  outline: 3px solid rgba(215, 34, 47, 0.18);
+}
+
+.material-question__answer {
+  margin-top: 1rem;
+  padding: 1rem;
+  border: 1px solid rgba(215, 34, 47, 0.35);
+  border-radius: 10px;
+  color: #e8ebef;
+  background: rgba(215, 34, 47, 0.08);
+}
+
+.material-question__answer[hidden] {
+  display: none;
+}
+
+.material-question__answer strong {
+  display: block;
+  color: #fff;
+  font-size: 1.05rem;
+}
+
+.material-question__answer p {
+  margin-top: 0.5rem;
+  color: #d8dde4;
+}
+
+.material-question__comparison {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+  margin-top: 0.85rem;
+}
+
+.material-question__comparison div {
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.material-question__comparison span,
+.material-question__comparison b {
+  display: block;
+}
+
+.material-question__comparison span {
+  color: var(--muted-2);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.material-question__comparison b {
+  margin-top: 0.2rem;
+  color: #fff;
+}
+
+.material-question__answer a {
+  display: inline-flex;
+  margin-top: 0.8rem;
+  color: #ff9299;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.material-question__note {
+  margin-top: 0.85rem;
+  color: var(--muted-2);
+  font-size: 0.75rem;
 }
 
 .material-selector {
@@ -872,6 +1036,7 @@ body.datasheet-modal-open {
 
 @media (max-width: 900px) {
   .datasheet-feature__layout,
+  .material-question__layout,
   .material-selector__intro,
   .material-family__intro,
   .material-library-grid {
@@ -895,6 +1060,20 @@ body.datasheet-modal-open {
 
   .material-selector__intro {
     gap: 1rem;
+  }
+
+  .material-question__layout {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .material-question__field,
+  .material-question__comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .material-question__field .btn {
+    width: 100%;
   }
 
   .selector-form__grid,

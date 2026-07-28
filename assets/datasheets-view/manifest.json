@@ -9,8 +9,8 @@
   },
   {
     "slug": "ptfe-bronze",
-    "title": "PTFE com bronze - Uniflon Fluoroplex B40",
-    "type": "Certificado de análise Uniflon",
+    "title": "PTFE com bronze",
+    "type": "Dados técnicos do lote",
     "pages": [
       "assets/datasheets-view/ptfe-bronze-p1.webp"
     ]
@@ -32,11 +32,11 @@
     ]
   },
   {
-    "slug": "fkm-viton",
-    "title": "FKM / Viton",
-    "type": "Certificado de inspeção",
+    "slug": "fkm",
+    "title": "FKM",
+    "type": "Ficha técnica de referência",
     "pages": [
-      "assets/datasheets-view/fkm-viton-p1.webp"
+      "assets/datasheets-view/fkm-p1.webp"
     ]
   },
   {
@@ -64,25 +64,25 @@
     ]
   },
   {
-    "slug": "technyl",
-    "title": "Technyl PA6 / PA66",
-    "type": "Certificado de qualidade",
+    "slug": "poliamida-tecnica",
+    "title": "Poliamida técnica PA6 / PA66",
+    "type": "Ficha técnica de referência",
     "pages": [
-      "assets/datasheets-view/technyl-p1.webp"
+      "assets/datasheets-view/poliamida-tecnica-p1.webp"
     ]
   },
   {
     "slug": "ptfe-virgem",
-    "title": "PTFE virgem - lote DSD Brasil 25-1297V",
-    "type": "Certificado de inspeção DSD Brasil",
+    "title": "PTFE virgem - lote 25-1297V",
+    "type": "Dados técnicos do lote",
     "pages": [
       "assets/datasheets-view/ptfe-virgem-p1.webp"
     ]
   },
   {
     "slug": "ptfe-virgem-atoxidade",
-    "title": "PTFE virgem - Heroflon MG4-FF/HD",
-    "type": "Declaração de atoxicidade",
+    "title": "PTFE virgem - declaração de composição",
+    "type": "Declaração de composição",
     "pages": [
       "assets/datasheets-view/ptfe-virgem-atoxidade-p1.webp"
     ]
@@ -96,11 +96,11 @@
     ]
   },
   {
-    "slug": "ptfe-t46",
-    "title": "PTFE T-46",
+    "slug": "ptfe-bronze-hidraulico",
+    "title": "PTFE com bronze hidráulico",
     "type": "Ficha técnica de referência",
     "pages": [
-      "assets/datasheets-view/ptfe-t46-p1.webp"
+      "assets/datasheets-view/ptfe-bronze-hidraulico-p1.webp"
     ]
   },
   {
