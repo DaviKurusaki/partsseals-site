@@ -133,8 +133,8 @@ REFERENCE_SHEETS = [
         "issuer_short": "emissor original",
     },
     {
-        "filename": "Declaracao de Composicao - PTFE Virgem.pdf",
-        "title": "DECLARAÇÃO DE COMPOSIÇÃO - PTFE VIRGEM",
+        "filename": "Certificado de Atoxicidade - PTFE Virgem.pdf",
+        "title": "CERTIFICADO DE ATOXICIDADE - PTFE VIRGEM",
         "subtitle": "100% PTFE virgem - documento de referência",
         "description": (
             "Transcrição de documentação recebida que declara composição 100% PTFE virgem "
@@ -411,10 +411,10 @@ DOC_SPECS = [
         "Dados técnicos do lote",
     ),
     (
-        "declaracao de composicao",
+        "certificado de atoxicidade",
         "ptfe-virgem-atoxidade",
-        "PTFE virgem - declaração de composição",
-        "Declaração de composição",
+        "PTFE virgem - certificado de atoxicidade",
+        "Certificado de atoxicidade",
     ),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
     ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),

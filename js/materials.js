@@ -635,7 +635,7 @@
       reasons.push("Comportamento aplicável ao tipo de movimento selecionado.");
     }
     if (values.compliance === "atoxicidade" && material.compliance.includes("atoxicidade")) {
-      reasons.push("Há declaração de composição disponível para o grau documentado.");
+      reasons.push("Há certificado de atoxicidade disponível para o grau documentado.");
     } else if (values.compliance === "alimenticia" && material.compliance.includes("alimenticia")) {
       reasons.push("Existem graus potencialmente aplicáveis, sujeitos à comprovação regulatória específica.");
     }
