@@ -127,7 +127,7 @@
     { name: "PTFE com fibra de carbono", aliases: ["ptfe com fibra de carbono", "ptfe carbono", "teflon carbono", "tef carbono"], min: -100, max: 260, detail: "Favorece estabilidade e resistência ao desgaste em aplicações dinâmicas." },
     { name: "PTFE com fibra de vidro", aliases: ["ptfe com fibra de vidro", "ptfe vidro", "teflon vidro", "tef vidro"], min: -100, max: 260, detail: "Favorece rigidez, compressão e menor fluência." },
     { name: "PTFE com molibdênio", aliases: ["ptfe com molibdenio", "ptfe molibdenio", "teflon molibdenio", "tef mos2", "ptfe mos2"], min: -100, max: 250, detail: "Favorece baixo atrito e desgaste em movimento seco ou intermitente." },
-    { name: "PTFE T-46", aliases: ["ptfe t 46", "t 46", "t46"], min: -200, max: 260, detail: "Grau de PTFE com bronze voltado a hidráulica lubrificada, movimento linear e resistência à extrusão." },
+    { name: "PTFE TURCON® T46 C/ CARGA MÉDIA DE BRONZE", aliases: ["ptfe turcon t46", "turcon t46", "ptfe t 46", "t 46", "t46"], min: -200, max: 260, detail: "A matriz de PTFE modificada com carga média de bronze favorece compressão, desgaste, extrusão e deslizamento em hidráulica lubrificada." },
     { name: "PTFE virgem", aliases: ["ptfe virgem", "teflon virgem", "tef virgem", "ptfe puro", "teflon puro"], min: -200, max: 260, detail: "Oferece ampla compatibilidade química e baixíssimo atrito." },
     { name: "Poliamida técnica PA6 / PA66", aliases: ["poliamida tecnica", "pa tecnica", "pa6 pa66"], min: -30, max: 150, detail: "A faixa depende do grau, reforço, umidade e condição de carga." },
     { name: "Nylon 6.6", aliases: ["nylon 6 6", "nylon 66", "pa66", "pa 66"], min: -30, max: 100, short: 170, detail: "Boa rigidez, mas a absorção de umidade altera dimensões e propriedades." },
@@ -365,11 +365,11 @@
       versatility: 3,
     },
     {
-      name: "PTFE T-46",
-      code: "T-46",
+      name: "PTFE TURCON® T46 C/ CARGA MÉDIA DE BRONZE",
+      code: "T46",
       family: "PTFE e compostos",
       anchor: "ptfe",
-      summary: "PTFE com bronze voltado à hidráulica lubrificada em movimento linear, pressão e resistência à extrusão.",
+      summary: "Matriz de PTFE modificada com carga média de bronze para hidráulica lubrificada, movimento linear, pressão e resistência à extrusão.",
       fluids: ["oleo"],
       temperatures: [-200, 260],
       pressures: ["alta", "muito-alta"],
@@ -600,7 +600,7 @@
 
     var highHydraulicPressure = values.pressure === "alta" || values.pressure === "muito-alta";
     if (values.fluid === "oleo" && values.motion === "alternado" && highHydraulicPressure) {
-      if (material.name === "PTFE T-46") score += 6;
+      if (material.name === "PTFE TURCON® T46 C/ CARGA MÉDIA DE BRONZE") score += 6;
       if (material.name === "PTFE com bronze") score += 4;
       if (material.name === "Poliuretano") score += 3;
     }
