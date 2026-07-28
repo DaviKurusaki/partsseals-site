@@ -185,8 +185,8 @@ REFERENCE_SHEETS = [
         "source_url": "Identificação comercial das fontes omitida",
     },
     {
-        "filename": "Ficha Técnica de Referência - PTFE Bronze Hidraulico - Parts Seals 2026.pdf",
-        "title": "PROPRIEDADES DO PTFE COM BRONZE HIDRÁULICO",
+        "filename": "Ficha Técnica de Referência - PTFE T46 - Parts Seals 2026.pdf",
+        "title": "PROPRIEDADES DO PTFE T-46",
         "subtitle": "Grau com carga média de bronze para movimento linear",
         "description": (
             "Composto de PTFE com bronze desenvolvido para hidráulica lubrificada em "
@@ -417,7 +417,7 @@ DOC_SPECS = [
         "Declaração de composição",
     ),
     ("ptfe grafite", "ptfe-grafite", "PTFE com grafite", "Ficha técnica de referência"),
-    ("ptfe bronze hidraulico", "ptfe-bronze-hidraulico", "PTFE com bronze hidráulico", "Ficha técnica de referência"),
+    ("ptfe t46", "ptfe-t46", "PTFE T-46", "Ficha técnica de referência"),
     ("ptfe molibdenio", "ptfe-molibdenio", "PTFE com molibdênio", "Ficha técnica de referência"),
     ("pead", "pead", "PEAD", "Ficha técnica de referência"),
     ("celeron", "celeron", "Celeron", "Ficha técnica de referência"),
