@@ -1,5 +1,6 @@
 tmp/
 dist/
+dist-legado/
 node_modules/
 .netlify/
 .env

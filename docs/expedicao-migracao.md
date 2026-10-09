@@ -37,19 +37,38 @@ código do servidor, testes e PDFs-fonte não entram no diretório publicado.
 4. No Kuru, altere `SITE_EXPEDICAO` em `src/main/etiquetasAuto.js` para
    `https://parts-seals.com.br/expedicao`. As etiquetas novas passarão a usar
    `/expedicao/e/CODIGO`. Faça essa troca somente depois de conferir o portal.
-5. No projeto antigo `parts-seals-expedicao.netlify.app`, substitua os
-   redirecionamentos por estas regras e publique uma última vez:
+5. O projeto antigo `parts-seals-expedicao.netlify.app` passa a servir somente
+   o redirecionador gerado por `node tools/build_legacy_redirect.cjs`:
 
    ```text
-   /api/*  https://parts-seals.com.br/expedicao/api/:splat  307!
+   /api/*  https://parts-seals-links.netlify.app/.netlify/functions/expedicao-api/:splat  200!
    /*      https://parts-seals.com.br/expedicao/:splat      301!
    ```
+
+   O proxy da API preserva autenticação, corpo e método das chamadas de abas
+   antigas. Um redirecionamento da API entre domínios perderia o cabeçalho de
+   autenticação. As páginas e etiquetas usam o redirecionamento permanente.
+   Para republicar esse redirecionador, execute dentro de `dist-legado/`:
+
+   ```text
+   npx netlify-cli deploy --prod --no-build --dir public --functions functions --site 4f24d4ba-68ee-4fa1-af56-932fcf926894
+   ```
+
+   Os builds automáticos do projeto antigo ficam parados na Netlify, para
+   que mudanças no Kuru não substituam o redirecionador. O projeto principal
+   continua vinculado ao `partsseals-site` com os builds ativos.
 
 O endereço antigo deve permanecer como redirecionador: as etiquetas já
 impressas usam esse domínio. Depois da troca, a página, a API e as futuras
 atualizações ficam no `partsseals-site`. O leitor novo aceita tanto os links
 antigos quanto os links de `/expedicao/e/`. Links `/e/CODIGO` no domínio
 principal também são encaminhados para a expedição.
+
+A migração foi publicada em 9 de outubro de 2026. A API de estado respondeu
+com configuração válida; consultas sem PIN retornaram 401. As suítes locais
+usam dados simulados: nenhuma entrega ou coleta real foi registrada na
+verificação. Reinicie o Kuru atualizado para gerar novos QR Codes com o
+endereço oficial.
 
 ## Buscas e páginas públicas
 
