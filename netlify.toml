@@ -1,0 +1,12 @@
+# Site institucional e expedição publicados pelo mesmo projeto.
+[build]
+  base = "."
+  command = "node tools/build_site.cjs"
+  publish = "dist"
+  functions = "netlify/functions"
+
+[functions]
+  node_bundler = "esbuild"
+
+[build.processing]
+  skip_processing = true
