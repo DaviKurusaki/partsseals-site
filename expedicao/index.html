@@ -1,0 +1,1687 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="theme-color" content="#E0102A">
+<meta name="color-scheme" content="light dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Expedição">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Parts Seals · Expedição</title>
+<meta name="description" content="Portal operacional de expedição da Parts Seals: conferência de etiquetas, entregas e coletas com acesso por PIN.">
+<link rel="manifest" href="/expedicao/manifest.webmanifest">
+<link rel="icon" href="/expedicao/icone.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/expedicao/icone-180.png">
+<link rel="preload" href="/expedicao/logo.png" as="image">
+<style>
+  /* ===========================================================================
+     Página do motorista. Pensada pra uma mão só, no sol ou à noite, às vezes
+     de luva e com sinal fraco: alvos grandes, contraste alto, teclado de PIN
+     próprio, leitor de QR na própria página e o que falta sempre primeiro.
+     Sem fonte nem script de fora (a CSP da Netlify só deixa a própria
+     origem), então tudo aqui é CSS e SVG inline.
+     ========================================================================= */
+  :root {
+    --marca: #E0102A; --marca-2: #ff3b52; --marca-escura: #a80a1e;
+    --fundo: #f3f2f5; --cartao: #ffffff; --cartao-2: #f6f5f8;
+    --tinta: #17151c; --tinta-2: #4a4752; --suave: #757080; --linha: #e5e2ea;
+    --ok: #12895a; --ok-fundo: #dff5ea; --ok-forte: #0b6e47;
+    --aviso: #8f5400; --aviso-fundo: #fff1d6;
+    --erro: #b3122a; --erro-fundo: #fde6ea;
+    --sombra-1: 0 1px 2px rgba(23, 21, 28, .06), 0 2px 8px rgba(23, 21, 28, .05);
+    --sombra-2: 0 10px 30px -10px rgba(23, 21, 28, .25), 0 2px 6px rgba(23, 21, 28, .06);
+    --sombra-marca: 0 14px 30px -12px rgba(224, 16, 42, .65);
+    --raio: 20px; --raio-p: 14px;
+    --fonte: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
+    --fonte-titulo: 'Bahnschrift', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    --mono: 'Cascadia Mono', 'Consolas', ui-monospace, 'SF Mono', 'Roboto Mono', monospace;
+    --barra-baixo: 0px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #0f0e12; --cartao: #1b1920; --cartao-2: #24212a;
+      --tinta: #f4f2f7; --tinta-2: #c9c4d2; --suave: #9790a3; --linha: #2e2b35;
+      --ok: #34d399; --ok-fundo: rgba(52, 211, 153, .14); --ok-forte: #4ade80;
+      --aviso: #fbbf24; --aviso-fundo: rgba(251, 191, 36, .14);
+      --erro: #ff6b81; --erro-fundo: rgba(255, 107, 129, .14);
+      --sombra-1: 0 1px 2px rgba(0, 0, 0, .4); --sombra-2: 0 12px 30px -12px rgba(0, 0, 0, .7);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { background: var(--fundo); -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+  body {
+    font-family: var(--fonte); font-size: 16px; line-height: 1.45; color: var(--tinta);
+    background: var(--fundo); min-height: 100vh; min-height: 100dvh; overflow-x: hidden; position: relative;
+    -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  [hidden] { display: none !important; }
+  button { font: inherit; color: inherit; }
+  svg { display: block; }
+  .tab { font-variant-numeric: tabular-nums; }
+  :focus { outline: none; }
+  :focus-visible { outline: 3px solid var(--marca-2); outline-offset: 3px; border-radius: 12px; }
+  .so-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+  /* --- palco ---------------------------------------------------------------- */
+  .palco { position: relative; z-index: 1; max-width: 520px; margin: 0 auto; min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+  /* O fundo vermelho ocupa a largura toda e a altura vem do conteúdo
+     (`ajustarFaixa`, no script): termina sempre no meio do primeiro cartão,
+     em qualquer tela. Altura fixa cortava o botão no meio quando o título
+     quebrava em mais linhas. */
+  .faixa {
+    position: absolute; left: 0; right: 0; top: 0; height: var(--altura-faixa, 300px); overflow: hidden; z-index: 0;
+    background:
+      radial-gradient(120% 90% at 100% 0%, var(--marca-2) 0%, transparent 55%),
+      linear-gradient(160deg, var(--marca) 0%, var(--marca-escura) 100%);
+    border-radius: 0 0 clamp(26px, 8vw, 44px) clamp(26px, 8vw, 44px); transition: height .35s cubic-bezier(.2, .8, .2, 1);
+  }
+  /* Anéis de vedação ao fundo — o produto da Parts, desenhado em traço.
+     Tamanho fixo, presos no canto: nunca esticam nem distorcem. */
+  .aneis { position: absolute; right: -60px; top: -40px; width: 460px; height: 345px; opacity: .16; }
+  @media (min-width: 700px) { .aneis { right: calc(50% - 400px); } }
+  .aneis circle { fill: none; stroke: #fff; }
+  .aneis .gira { transform-origin: 340px 40px; animation: girar 60s linear infinite; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  .conteudo {
+    position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column;
+    padding: 0 max(16px, env(safe-area-inset-left)) calc(24px + var(--barra-baixo) + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-right));
+  }
+  .topo { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: calc(14px + env(safe-area-inset-top)) 0 0; min-height: 62px; }
+  .selo-marca { background: #fff; border-radius: 14px; padding: 8px 12px; box-shadow: 0 6px 18px -8px rgba(0, 0, 0, .45); display: inline-flex; border: 0; cursor: pointer; }
+  .selo-marca img { height: clamp(24px, 7.5vw, 30px); width: auto; }
+  .selo-marca { flex: none; }
+  .usuario {
+    display: inline-flex; align-items: center; gap: 8px; padding: 5px; border-radius: 999px;
+    background: rgba(255, 255, 255, .16); color: #fff; border: 1px solid rgba(255, 255, 255, .28);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); min-width: 0; max-width: 60%;
+  }
+  .avatar { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--marca); display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
+  .usuario span { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .usuario button { border: 0; background: rgba(0, 0, 0, .22); color: #fff; border-radius: 999px; min-height: 44px; padding: 0 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; flex: none; }
+
+  /* --- entrada das telas ------------------------------------------------------ */
+  .tela { display: flex; flex-direction: column; gap: 14px; }
+  .tela > * { animation: entrar .5s cubic-bezier(.2, .8, .2, 1) both; }
+  @keyframes entrar { from { opacity: 0; transform: translateY(14px); } }
+  .tela > *:nth-child(2) { animation-delay: .05s; } .tela > *:nth-child(3) { animation-delay: .1s; }
+  .tela > *:nth-child(4) { animation-delay: .15s; } .tela > *:nth-child(5) { animation-delay: .2s; }
+  .tela > *:nth-child(n+6) { animation-delay: .25s; }
+
+  /* --- início ----------------------------------------------------------------- */
+  .boas-vindas { color: #fff; padding: clamp(18px, 6vh, 40px) 4px 8px; }
+  .boas-vindas small { display: block; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .88; font-weight: 700; }
+  .boas-vindas h1 { font-family: var(--fonte-titulo); font-size: clamp(26px, 8.4vw, 36px); line-height: 1.08; font-weight: 700; margin-top: 8px; letter-spacing: -.01em; text-wrap: balance; }
+  .escolha {
+    display: flex; align-items: center; gap: 16px; width: 100%; text-align: left; text-decoration: none; color: var(--tinta);
+    background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: 18px; cursor: pointer;
+    box-shadow: var(--sombra-2); transition: transform .15s ease, border-color .15s ease;
+    min-height: 84px;
+  }
+  .escolha:active { transform: scale(.98); }
+  @media (hover: hover) { .escolha:hover { border-color: var(--marca-2); } .escolha.principal:hover { border-color: #fff; } }
+  .escolha .ico { width: clamp(46px, 13vw, 54px); height: clamp(46px, 13vw, 54px); border-radius: 16px; display: grid; place-items: center; flex: none; background: var(--cartao-2); color: var(--marca); }
+  .escolha .ico svg { width: 28px; height: 28px; }
+  .escolha .txt { flex: 1; min-width: 0; }
+  .escolha strong { display: block; font-family: var(--fonte-titulo); font-size: clamp(19px, 5.4vw, 21px); font-weight: 700; }
+  .escolha .txt span { display: block; font-size: 14px; color: var(--suave); margin-top: 2px; }
+  .escolha .seta { width: 22px; height: 22px; color: var(--suave); flex: none; }
+  .escolha.principal {
+    background: linear-gradient(135deg, var(--marca) 0%, var(--marca-escura) 100%); color: #fff;
+    border: 1.5px solid rgba(255, 255, 255, .45); box-shadow: var(--sombra-marca), inset 0 1px 0 rgba(255, 255, 255, .25);
+    position: relative; overflow: hidden;
+  }
+  .escolha.principal .ico { background: rgba(255, 255, 255, .18); color: #fff; }
+  .escolha.principal .txt span, .escolha.principal .seta { color: rgba(255, 255, 255, .88); }
+  .escolha.principal::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .22) 50%, transparent 70%);
+    transform: translateX(-100%); animation: brilho 3.2s ease-in-out 1s infinite;
+  }
+  @keyframes brilho { 0%, 60% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+  .expedir-escolhas { display: flex; flex-direction: column; gap: 14px; }
+  .expedir-escolhas .escolha { padding: 15px 18px; min-height: 72px; }
+  .expedir-escolhas .escolha .ico { width: clamp(40px, 11vw, 46px); height: clamp(40px, 11vw, 46px); }
+  .expedir-escolhas .escolha .ico svg { width: 22px; height: 22px; }
+  .caminhao { animation: rodar 2.4s ease-in-out infinite; }
+  @keyframes rodar { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(3px); } }
+  .nota { display: flex; gap: 12px; align-items: center; padding: 14px 16px; border-radius: var(--raio-p); background: var(--cartao); border: 1px solid var(--linha); color: var(--tinta-2); font-size: 14.5px; box-shadow: var(--sombra-1); }
+  .nota svg { width: 22px; height: 22px; flex: none; color: var(--marca); }
+  /* Opaco de propósito: o aviso fica em cima da borda do fundo vermelho. */
+  .nota.lida { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--cartao)); color: var(--ok-forte); font-weight: 600; }
+  .nota.lida svg { color: var(--ok); }
+
+  /* --- PIN -------------------------------------------------------------------- */
+  .cartao-pin { background: var(--cartao); border-radius: 28px; padding: 26px clamp(14px, 4.5vw, 22px) 12px; box-shadow: var(--sombra-2); border: 1px solid var(--linha); margin-top: clamp(30px, 6vh, 48px); text-align: center; }
+  .cadeado { width: 64px; height: 64px; margin: -58px auto 10px; border-radius: 20px; display: grid; place-items: center; background: linear-gradient(135deg, var(--marca), var(--marca-escura)); color: #fff; box-shadow: var(--sombra-marca); }
+  .cadeado svg { width: 30px; height: 30px; }
+  .cartao-pin h2 { font-family: var(--fonte-titulo); font-size: 24px; }
+  .cartao-pin p { color: var(--suave); font-size: 15px; margin-top: 4px; }
+  .pontos { display: flex; justify-content: center; gap: 14px; margin: clamp(14px, 3vh, 22px) 0 6px; height: 18px; }
+  .pontos i { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--linha); transition: all .18s cubic-bezier(.3, 1.6, .5, 1); }
+  .pontos i.cheio { background: var(--marca); border-color: var(--marca); transform: scale(1.12); }
+  .pontos.tremer { animation: tremer .42s cubic-bezier(.36, .07, .19, .97); }
+  .pontos.tremer i { border-color: var(--erro); }
+  @keyframes tremer { 20%, 60% { transform: translateX(-9px); } 40%, 80% { transform: translateX(9px); } }
+  .msg-pin { min-height: 22px; font-size: 14px; font-weight: 600; color: var(--erro); margin: 8px 0 4px; }
+  .teclado { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px; }
+  .tecla {
+    height: clamp(52px, 8.2vh, 66px); border-radius: 18px; border: 1px solid var(--linha); background: var(--cartao-2); cursor: pointer;
+    font-family: var(--fonte-titulo); font-size: 27px; font-weight: 600; display: grid; place-items: center;
+    transition: transform .08s ease, background .15s ease; touch-action: manipulation; user-select: none; -webkit-user-select: none;
+  }
+  .tecla:active { transform: scale(.94); background: var(--linha); }
+  .tecla.acao { background: transparent; border-color: transparent; color: var(--suave); }
+  .tecla.acao svg { width: 26px; height: 26px; }
+  .tecla.entrar { background: var(--marca); border-color: var(--marca); color: #fff; box-shadow: var(--sombra-marca); }
+  .tecla.entrar:disabled { opacity: .4; box-shadow: none; cursor: default; }
+  .tecla.entrar svg { width: 28px; height: 28px; }
+  .voltar { margin-top: 10px; background: none; border: 0; color: var(--suave); font-weight: 600; padding: 12px; cursor: pointer; }
+  .girando { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .35); border-top-color: #fff; animation: girar .7s linear infinite; }
+
+  /* --- consulta ---------------------------------------------------------------- */
+  .resumo-topo { color: #fff; display: flex; align-items: center; gap: clamp(10px, 4vw, 16px); padding: clamp(14px, 3vh, 22px) 4px 6px; }
+  .resumo-topo .txt { flex: 1; min-width: 0; }
+  .resumo-topo small { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .88; font-weight: 700; }
+  .resumo-topo h1.nome-longo { font-size: clamp(18px, 5.2vw, 22px); }
+  .resumo-topo h1 { font-family: var(--fonte-titulo); font-size: clamp(20px, 6.2vw, 26px); line-height: 1.12; font-weight: 700; margin-top: 4px; overflow-wrap: anywhere; }
+  .resumo-topo .pedido { margin-top: 6px; font-size: 14px; opacity: .95; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .resumo-topo .pedido b { background: rgba(255, 255, 255, .2); border-radius: 8px; padding: 1px 8px; font-weight: 700; }
+  .anel { position: relative; width: clamp(74px, 22vw, 92px); aspect-ratio: 1; flex: none; }
+  .anel svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .anel .fundo-anel { fill: none; stroke: rgba(255, 255, 255, .22); stroke-width: 9; }
+  .anel .valor-anel { fill: none; stroke: #fff; stroke-width: 9; stroke-linecap: round; transition: stroke-dashoffset 1.1s cubic-bezier(.2, .8, .2, 1); }
+  .anel .meio { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; color: #fff; line-height: 1; }
+  .anel .meio b { font-family: var(--fonte-titulo); font-size: clamp(19px, 5.6vw, 24px); }
+  .anel .meio span { font-size: 11px; opacity: .88; margin-top: 3px; font-weight: 600; }
+
+  .cartao { background: var(--cartao); border: 1px solid var(--linha); border-radius: var(--raio); padding: clamp(14px, 4.4vw, 18px); box-shadow: var(--sombra-1); min-width: 0; }
+  .rotulo { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--suave); }
+  .titulo-cartao { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .titulo-cartao svg { width: 18px; height: 18px; color: var(--marca); }
+  .endereco-linha { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+  .endereco-local { color: var(--tinta-2); margin-top: 2px; overflow-wrap: anywhere; }
+  .obs { margin-top: 12px; display: flex; gap: 10px; padding: 12px 14px; border-radius: var(--raio-p); background: var(--aviso-fundo); color: var(--aviso); font-weight: 600; font-size: 14.5px; }
+  .obs svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+  .botoes-endereco { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-top: 14px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 14px;
+    border-radius: var(--raio-p); border: 1px solid var(--linha); background: var(--cartao-2); color: var(--tinta);
+    font-weight: 700; text-decoration: none; cursor: pointer; transition: transform .1s ease; white-space: nowrap; min-width: 0;
+  }
+  .btn:disabled { opacity: .55; cursor: default; }
+  .btn:active { transform: scale(.97); }
+  .btn svg { width: 20px; height: 20px; flex: none; }
+  .btn.forte { background: var(--marca); color: #fff; border-color: var(--marca); box-shadow: var(--sombra-marca); }
+  .btn.waze { background: #33ccff; color: #062a3a; border-color: #33ccff; }
+  .sem-endereco { display: flex; gap: 12px; align-items: center; color: var(--tinta-2); }
+  .sem-endereco svg { width: 26px; height: 26px; color: var(--suave); flex: none; }
+
+  .item { position: relative; overflow: hidden; padding: 0; }
+  .item .faixa-item { height: 5px; background: var(--linha); }
+  .item.saiu .faixa-item { background: linear-gradient(90deg, var(--ok), #4ade80); }
+  .item.destaque .faixa-item { background: linear-gradient(90deg, var(--marca), var(--marca-2)); }
+  .item.destaque { border-color: color-mix(in srgb, var(--marca) 35%, var(--linha)); box-shadow: var(--sombra-2); }
+  .item .corpo-item { padding: clamp(13px, 4vw, 16px) clamp(14px, 4.4vw, 18px) clamp(14px, 4.4vw, 18px); }
+  .item-cabeca { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .item-cabeca > div:first-child { min-width: 0; }
+  .op { font-family: var(--mono); font-size: clamp(21px, 6.6vw, 26px); overflow-wrap: anywhere; font-weight: 700; letter-spacing: -.02em; line-height: 1.1; }
+  .escaneado { display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--marca); margin-bottom: 4px; }
+  .escaneado svg { width: 14px; height: 14px; }
+  .qtd { text-align: right; flex: none; }
+  .qtd b { display: block; font-family: var(--fonte-titulo); font-size: 28px; line-height: 1; }
+  .qtd span { font-size: 12px; color: var(--suave); font-weight: 600; }
+  .descricao { margin-top: 10px; font-size: 15.5px; color: var(--tinta-2); overflow-wrap: anywhere; }
+  .dados { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .dado { background: var(--cartao-2); border-radius: 12px; padding: 10px 12px; min-width: 0; }
+  .dado .valor { font-weight: 700; margin-top: 2px; overflow-wrap: anywhere; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .dado.inteiro { grid-column: 1 / -1; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 800; padding: 2px 8px; border-radius: 999px; letter-spacing: .02em; }
+  .chip.hoje { background: var(--aviso-fundo); color: var(--aviso); }
+  .chip.atrasado { background: var(--erro-fundo); color: var(--erro); }
+  .status { margin-top: 14px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: var(--raio-p); }
+  .status .bolinha { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .status .bolinha svg { width: 20px; height: 20px; }
+  .status b { display: block; font-size: 15.5px; }
+  .status span { font-size: 13.5px; opacity: .92; }
+  .status.ok { background: var(--ok-fundo); color: var(--ok-forte); }
+  .status.ok .bolinha { background: var(--ok); color: #fff; }
+  .status.espera { background: var(--aviso-fundo); color: var(--aviso); }
+  .status.espera .bolinha { background: var(--aviso); color: #fff; }
+  @media (prefers-color-scheme: dark) { .status.ok .bolinha, .status.espera .bolinha { color: #111; } }
+
+  /* Item que já saiu, dentro da lista do pedido: compacto — na conferência o
+     que importa é o que falta. */
+  .item.compacto .corpo-item { padding: 12px 16px; display: flex; align-items: center; gap: 12px; }
+  .item.compacto .op { font-size: 18px; }
+  .item.compacto .descricao { margin-top: 2px; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item.compacto .meio-compacto { flex: 1; min-width: 0; }
+  .item.compacto .quando { font-size: 12.5px; color: var(--ok-forte); font-weight: 700; margin-top: 2px; }
+  .item.compacto .visto { width: 34px; height: 34px; border-radius: 11px; background: var(--ok); color: #fff; display: grid; place-items: center; flex: none; }
+  .item.compacto .visto svg { width: 18px; height: 18px; }
+  @media (prefers-color-scheme: dark) { .item.compacto .visto { color: #111; } }
+
+  .barra-resumo { display: flex; align-items: center; gap: 14px; }
+  .barra-resumo .contas { flex: 1; }
+  .barra-resumo .contas b { font-size: 16px; }
+  .barra-resumo .contas span { display: block; color: var(--suave); font-size: 13.5px; margin-top: 2px; }
+  .trilho { display: flex; gap: 4px; margin-top: 12px; }
+  .trilho i { flex: 1; height: 8px; border-radius: 999px; background: var(--linha); }
+  .trilho i.feito { background: var(--ok); }
+  .trilho i.este { box-shadow: 0 0 0 2px var(--cartao), 0 0 0 4px var(--marca); }
+  .lido-em { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--suave); margin-top: 12px; }
+  .lido-em svg { width: 14px; height: 14px; }
+
+  .secao-titulo { display: flex; align-items: center; justify-content: space-between; padding: 8px 4px 0; }
+  .secao-titulo h3 { font-family: var(--fonte-titulo); font-size: 18px; }
+  .secao-titulo .conta { font-size: 13px; font-weight: 800; padding: 3px 10px; border-radius: 999px; }
+  .secao-titulo .conta.espera { background: var(--aviso-fundo); color: var(--aviso); }
+  .secao-titulo .conta.ok { background: var(--ok-fundo); color: var(--ok-forte); }
+  .sanfona { background: var(--cartao); cursor: pointer; display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 14px 16px; color: var(--tinta); font-weight: 800; font-size: 15px; border-radius: var(--raio-p); border: 1px solid var(--linha); }
+  .sanfona svg { width: 22px; height: 22px; transition: transform .25s ease; color: var(--suave); }
+  .sanfona[aria-expanded='true'] svg { transform: rotate(180deg); }
+  .lista { display: flex; flex-direction: column; gap: 12px; }
+
+  /* --- marcar expedição pelo celular (carrinho) -------------------------------------- */
+  .carrinho-pill {
+    display: inline-flex; align-items: center; gap: 7px; min-height: 54px; padding: 0 16px; border-radius: var(--raio-p);
+    border: 1px solid var(--linha); background: var(--cartao-2); color: var(--tinta); font-weight: 700; flex: 1;
+  }
+  .carrinho-pill b { font-family: var(--fonte-titulo); font-size: 18px; background: var(--marca); color: #fff; border-radius: 999px; min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; }
+
+
+  /* --- barra de baixo (consulta) ---------------------------------------------------- */
+  .barra-baixo {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    background: color-mix(in srgb, var(--fundo) 84%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    border-top: 1px solid var(--linha);
+  }
+  .barra-baixo { padding-left: max(16px, env(safe-area-inset-left)); padding-right: max(16px, env(safe-area-inset-right)); }
+  .barra-baixo .dentro { max-width: 520px; margin: 0 auto; display: flex; gap: 10px; }
+  .barra-baixo .btn { min-height: 54px; flex: 1; }
+  .barra-baixo .btn.forte { flex: 2; font-size: 16.5px; }
+  body.com-barra { --barra-baixo: 80px; }
+
+  /* --- modal genérico (pós-escaneamento, conferência do carrinho, alertas) -------------- */
+  .sobreposicao {
+    position: fixed; inset: 0; z-index: 25; background: rgba(10, 9, 12, .6); display: flex;
+    align-items: flex-end; justify-content: center; padding: 0; backdrop-filter: blur(2px);
+  }
+  @media (min-width: 560px) { .sobreposicao { align-items: center; padding: 20px; } }
+  .modal-cartao {
+    background: var(--cartao); width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto;
+    border-radius: 24px 24px 0 0; padding: 22px max(20px, env(safe-area-inset-left)) calc(20px + env(safe-area-inset-bottom));
+    box-shadow: var(--sombra-2); animation: subirModal .25s cubic-bezier(.2, .8, .2, 1);
+  }
+  @media (min-width: 560px) { .modal-cartao { border-radius: var(--raio); animation: none; } }
+  @keyframes subirModal { from { transform: translateY(24px); opacity: 0; } }
+  .modal-icone { width: 54px; height: 54px; border-radius: 16px; display: grid; place-items: center; margin-bottom: 14px; background: var(--ok-fundo); color: var(--ok-forte); }
+  .modal-icone.aviso { background: var(--aviso-fundo); color: var(--aviso); }
+  .modal-icone svg { width: 28px; height: 28px; }
+  .modal-cartao h2 { font-family: var(--fonte-titulo); font-size: 21px; margin-bottom: 6px; }
+  .modal-cartao p { color: var(--tinta-2); font-size: 15px; line-height: 1.4; }
+  .modal-botoes { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+  .modal-botoes .btn { min-height: 54px; width: 100%; }
+  .sobreposicao.alerta-cliente { align-items: center; padding: 16px; background: rgba(10, 9, 12, .85); }
+  .alerta-cliente .modal-cartao { border-radius: 24px; border: 2px solid var(--aviso); padding: 28px 22px; max-height: 90dvh; }
+  .alerta-cliente .modal-icone { width: 72px; height: 72px; margin-bottom: 20px; }
+  .alerta-cliente .modal-icone svg { width: 40px; height: 40px; }
+  .alerta-cliente h2 { font-size: 28px; line-height: 1.15; margin-bottom: 16px; }
+  .alerta-cliente p { font-size: 17px; line-height: 1.5; }
+  .alerta-cliente .clientes-conferencia { display: grid; gap: 14px; padding: 18px; margin: 20px 0; background: var(--aviso-fundo); border-radius: 16px; }
+  .clientes-conferencia span { display: block; font-size: 14px; color: var(--tinta-2); margin-bottom: 4px; }
+  .clientes-conferencia b { display: block; font-size: 21px; line-height: 1.3; overflow-wrap: anywhere; }
+  .alerta-cliente .btn { min-height: 64px; font-size: 17px; white-space: normal; }
+  .modal-lista-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid var(--linha);
+  }
+  .modal-lista-item:first-of-type { border-top: 0; }
+  .modal-lista-item .op { font-family: var(--mono); font-weight: 700; font-size: 15px; }
+  .modal-lista-item .descricao { font-size: 13px; color: var(--suave); margin-top: 1px; overflow-wrap: anywhere; }
+  .modal-lista-item .remover { flex: none; background: none; border: 0; color: var(--erro); width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; cursor: pointer; }
+  .modal-lista-item .remover svg { width: 18px; height: 18px; }
+  .modal-grupo-titulo { font-weight: 800; font-size: 14px; margin: 16px 0 2px; display: flex; align-items: center; gap: 8px; color: var(--tinta-2); }
+  .modal-grupo-titulo:first-of-type { margin-top: 4px; }
+
+  /* --- leitor de QR ---------------------------------------------------------------------- */
+  .leitor { position: fixed; inset: 0; z-index: 20; background: #000; }
+  .leitor video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+  .leitor .mira {
+    position: absolute; left: 50%; top: 45%; width: min(68vw, 300px); aspect-ratio: 1; transform: translate(-50%, -50%);
+    border-radius: 28px; box-shadow: 0 0 0 100vmax rgba(0, 0, 0, .55); overflow: hidden; transition: box-shadow .2s ease;
+  }
+  .leitor .mira::before {
+    content: ''; position: absolute; inset: 0; border-radius: 28px;
+    background:
+      linear-gradient(#fff, #fff) top left / 46px 5px no-repeat, linear-gradient(#fff, #fff) top left / 5px 46px no-repeat,
+      linear-gradient(#fff, #fff) top right / 46px 5px no-repeat, linear-gradient(#fff, #fff) top right / 5px 46px no-repeat,
+      linear-gradient(#fff, #fff) bottom left / 46px 5px no-repeat, linear-gradient(#fff, #fff) bottom left / 5px 46px no-repeat,
+      linear-gradient(#fff, #fff) bottom right / 46px 5px no-repeat, linear-gradient(#fff, #fff) bottom right / 5px 46px no-repeat;
+  }
+  .leitor .linha-scan { position: absolute; left: 10%; right: 10%; height: 3px; top: 10%; border-radius: 3px; background: var(--marca-2); box-shadow: 0 0 18px 4px rgba(255, 59, 82, .7); animation: varrer 2s ease-in-out infinite alternate; }
+  @keyframes varrer { to { top: 88%; } }
+  .leitor .mira.achou { box-shadow: 0 0 0 100vmax rgba(18, 137, 90, .6); }
+  .leitor .mira.achou .linha-scan { display: none; }
+  .leitor .texto { position: absolute; left: 0; right: 0; top: calc(45% + min(34vw, 150px) + 24px); text-align: center; color: #fff; padding: 0 24px; font-weight: 600; font-size: 17px; text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .leitor .fechar { position: absolute; left: 50%; bottom: calc(28px + env(safe-area-inset-bottom)); transform: translateX(-50%); background: rgba(255, 255, 255, .16); color: #fff; border: 1px solid rgba(255, 255, 255, .35); backdrop-filter: blur(8px); min-width: 160px; }
+
+  /* --- esqueleto e mensagens ---------------------------------------------------------- */
+  .esq { border-radius: var(--raio); background: linear-gradient(90deg, var(--cartao) 0%, var(--cartao-2) 50%, var(--cartao) 100%); background-size: 200% 100%; animation: brilhar 1.3s ease-in-out infinite; border: 1px solid var(--linha); }
+  @keyframes brilhar { from { background-position: 100% 0; } to { background-position: -100% 0; } }
+  .vazio { text-align: center; padding: 30px 20px; }
+  .vazio .icone-grande { width: 76px; height: 76px; margin: 0 auto 14px; border-radius: 24px; display: grid; place-items: center; background: var(--cartao-2); color: var(--marca); }
+  .vazio .icone-grande svg { width: 38px; height: 38px; }
+  .vazio h2 { font-family: var(--fonte-titulo); font-size: 21px; }
+  .vazio p { color: var(--suave); margin-top: 6px; }
+  .vazio .botoes { margin-top: 18px; display: flex; flex-direction: column; gap: 10px; }
+  .vazio.erro .icone-grande { background: var(--erro-fundo); color: var(--erro); }
+
+  .aviso-flutuante {
+    position: fixed; left: 50%; bottom: calc(18px + var(--barra-baixo) + env(safe-area-inset-bottom));
+    transform: translate(-50%, 24px); opacity: 0; visibility: hidden;
+    background: var(--tinta); color: var(--fundo); padding: 12px 18px; border-radius: 14px; font-weight: 600; font-size: 14.5px;
+    box-shadow: var(--sombra-2); z-index: 30; max-width: calc(100% - 32px); text-align: center;
+    transition: transform .35s cubic-bezier(.2, .8, .2, 1), opacity .25s ease, visibility 0s linear .35s;
+  }
+  .aviso-flutuante.ver { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition-delay: 0s; }
+  .offline { display: none; align-items: center; justify-content: center; gap: 8px; background: var(--aviso-fundo); color: var(--aviso); font-weight: 700; font-size: 13.5px; padding: 8px 12px; border-radius: 12px; margin-top: 12px; position: relative; z-index: 1; }
+  body.sem-rede .offline { display: flex; }
+  .offline svg { width: 16px; height: 16px; }
+  .rodape { margin-top: auto; padding-top: 26px; text-align: center; font-size: 12px; color: var(--suave); }
+  .rodape b { color: var(--tinta-2); }
+
+  /* Celular estreito: "Atualizar" vira só o ícone, pra "Escanear próxima"
+     caber inteiro do lado. */
+  @media (max-width: 400px) {
+    .barra-baixo .dentro:has(#btnEscanearProxima:not([hidden])) .btn.so-icone-estreito { flex: 0 0 56px; padding: 0; }
+    .barra-baixo .dentro:has(#btnEscanearProxima:not([hidden])) .btn.so-icone-estreito span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  }
+  /* Celular deitado: o topo vermelho encolhe pra sobrar tela pro conteúdo. */
+  @media (max-height: 500px) and (orientation: landscape) {
+    .boas-vindas { padding-top: 10px; } .boas-vindas h1 { font-size: 24px; }
+    .tecla { height: 46px; } .cartao-pin { margin-top: 30px; }
+  }
+  /* O nome já aparece na saudação: no celular a pílula fica só com as
+     iniciais e o Sair, sem cortar o nome no meio. */
+  @media (max-width: 430px) { .usuario span { display: none; } }
+  @media (max-width: 360px) {
+    .teclado { gap: 8px; }
+    .botoes-endereco { grid-template-columns: 1fr 1fr 50px; gap: 6px; }
+    .botoes-endereco .btn { padding: 0 8px; }
+    .dado { padding: 9px 10px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="faixa" id="faixa">
+  <svg class="aneis" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <g class="gira"><circle cx="340" cy="40" r="120" stroke-width="18"/><circle cx="340" cy="40" r="78" stroke-width="3" stroke-dasharray="4 10"/></g>
+    <circle cx="30" cy="250" r="70" stroke-width="12"/><circle cx="30" cy="250" r="44" stroke-width="2"/>
+    <circle cx="210" cy="300" r="34" stroke-width="7"/>
+  </svg>
+</div>
+<div class="palco">
+
+  <div class="conteudo">
+    <header class="topo">
+      <button class="selo-marca" id="btnLogo" type="button" aria-label="Início"><img src="/expedicao/logo.png" alt="Parts Seals" width="150" height="30"></button>
+      <div class="usuario" id="usuario" hidden>
+        <div class="avatar" id="avatar" aria-hidden="true"></div>
+        <span id="nomeUsuario"></span>
+        <button type="button" id="btnSair">Sair</button>
+      </div>
+    </header>
+    <div class="offline" role="status"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 8.8a15 15 0 0 1 4.2-2.6M10.7 5.1A15 15 0 0 1 22 8.8M5 12.5a10 10 0 0 1 4-2.2M15.5 10.6A10 10 0 0 1 19 12.5M8.5 16a5 5 0 0 1 7 0M12 20h.01M3 3l18 18"/></svg>Sem internet no momento</div>
+
+    <main>
+      <!-- carregando -->
+      <section class="tela" id="telaCarregando" aria-busy="true">
+        <div style="height:110px" data-hero></div>
+        <div class="esq" style="height:92px"></div>
+        <div class="esq" style="height:92px"></div>
+      </section>
+
+      <!-- início -->
+      <section class="tela" id="telaInicio" hidden>
+        <div class="boas-vindas" data-hero>
+          <small id="saudacao">Bem-vindo</small>
+          <h1>Vedações que chegam<br>no lugar certo.</h1>
+        </div>
+        <div class="nota lida" id="notaLida" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg>
+          <span>Etiqueta lida. Toque em <b>Expedir</b> e digite seu PIN pra ver o pedido.</span>
+        </div>
+        <button class="escolha principal" id="btnExpedir" type="button" hidden aria-expanded="false" aria-controls="expedirEscolhas">
+          <span class="ico"><svg class="caminhao" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14v12H1z"/><path d="M15 9h4l3 3.5V16h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="18.5" r="2.2"/></svg></span>
+          <span class="txt"><strong>Expedir</strong><span id="subExpedir">Sou motorista · conferir o que vou levar</span></span>
+          <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <div class="expedir-escolhas" id="expedirEscolhas" hidden>
+          <button class="escolha" id="btnEntrega" type="button">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14v12H1z"/><path d="M15 9h4l3 3.5V16h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="18.5" r="2.2"/></svg></span>
+            <span class="txt"><strong>Entrega</strong><span>Levar o pedido até o cliente</span></span>
+            <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+          <button class="escolha" id="btnColetaBalcao" type="button">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/></svg></span>
+            <span class="txt"><strong>Coleta no balcão</strong><span>Identificar quem retira e conferir as etiquetas</span></span>
+            <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
+        </div>
+        <button class="escolha" id="btnEscanearInicio" type="button" hidden>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></span>
+          <span class="txt"><strong>Escanear etiqueta</strong><span>Ler o QR da caixa por aqui</span></span>
+          <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
+        <a class="escolha" href="https://parts-seals.com.br/" rel="noopener">
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/></svg></span>
+          <span class="txt"><strong>Sou cliente</strong><span>Conheça a Parts Seals</span></span>
+          <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+        <div class="nota" id="notaSemQr" hidden>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+          <span>Pra ver um pedido, escaneie o QR da etiqueta com a câmera do celular.</span>
+        </div>
+      </section>
+
+      <!-- PIN -->
+      <section class="tela" id="telaLogin" hidden>
+        <div class="cartao-pin">
+          <div class="cadeado" data-hero data-hero-sobra="34"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
+          <h2 id="tituloPin">Digite seu PIN</h2>
+          <p>O mesmo PIN do Kuru Nuvem · vale até a meia-noite</p>
+          <div class="pontos" id="pontos" aria-hidden="true"></div>
+          <span class="so-leitor" id="pinLeitor" aria-live="polite"></span>
+          <div class="msg-pin" id="erroLogin" role="alert"></div>
+          <div class="teclado" id="teclado" role="group" aria-labelledby="tituloPin"></div>
+          <button class="voltar" id="btnVoltar" type="button">Voltar</button>
+        </div>
+      </section>
+
+      <section class="tela" id="telaBalcao" hidden>
+        <div class="boas-vindas" data-hero><small>Coleta no balcão · passo 1 de 3</small><h1>Quem está retirando?</h1></div>
+        <form class="cartao formulario" id="formBalcao">
+          <p>Preencha os dois nomes, escaneie as etiquetas e confira antes de finalizar.</p>
+          <label for="nomeRetirante">Nome de quem está retirando <b>*</b></label>
+          <input id="nomeRetirante" name="retirante" required maxlength="160" autocomplete="name" placeholder="Nome completo de quem retira">
+          <label for="clienteBalcao">Nome do cliente <b>*</b></label>
+          <div class="busca-cliente" id="buscaCliente">
+            <input id="clienteBalcao" name="cliente" required maxlength="160" autocomplete="off" autocapitalize="words" spellcheck="false" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="sugestoesClientes" aria-describedby="ajudaCliente" placeholder="Digite o nome do cliente">
+            <div class="sugestoes-clientes" id="sugestoesClientes" role="listbox" aria-label="Clientes encontrados" hidden></div>
+          </div>
+          <p class="ajuda-cliente" id="ajudaCliente" role="status">Digite para buscar e escolha um cliente.</p>
+          <p id="erroBalcao" role="alert"></p>
+          <button class="btn forte" type="submit">Continuar para escanear</button>
+          <button class="btn" type="button" id="btnVoltarBalcao">Voltar ao início</button>
+        </form>
+      </section>
+      <!-- consulta -->
+      <section class="tela" id="telaConsulta" hidden aria-live="polite"></section>
+    </main>
+
+    <footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Expedição Kuru Nuvem</footer>
+  </div>
+</div>
+
+<div class="barra-baixo" id="barraBaixo" hidden>
+  <div class="dentro">
+    <button class="btn forte" type="button" id="btnEscanearProxima" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+      Escanear próxima
+    </button>
+    <button class="btn so-icone-estreito" type="button" id="btnAtualizar" aria-label="Atualizar o pedido">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg>
+      <span id="textoAtualizar">Atualizar</span>
+    </button>
+    <button class="carrinho-pill" type="button" id="btnVerCarrinho" hidden>
+      <b id="carrinhoConta">0</b><span>no carrinho</span>
+    </button>
+    <button class="btn so-icone-estreito" type="button" id="btnEscanearOutro" hidden aria-label="Escanear outra etiqueta">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg>
+    </button>
+    <button class="btn forte" type="button" id="btnMarcarCarrinho" hidden>Marcar Expedição</button>
+  </div>
+</div>
+
+<div class="sobreposicao" id="sobreposicao" hidden role="dialog" aria-modal="true">
+  <div class="modal-cartao" id="modalConteudo"></div>
+</div>
+
+<div class="leitor" id="leitor" hidden role="dialog" aria-modal="true" aria-label="Ler QR da etiqueta">
+  <video id="video" playsinline muted></video>
+  <div class="mira" id="mira"><div class="linha-scan"></div></div>
+  <div class="texto" id="textoLeitor">Aponte pro QR da etiqueta</div>
+  <button class="btn fechar" type="button" id="btnFecharLeitor">Cancelar</button>
+</div>
+
+<div class="aviso-flutuante" id="aviso" role="status"></div>
+
+<style>
+  .formulario label { display:block; font-weight:700; margin:18px 0 8px; }
+  .formulario input, .formulario select { width:100%; box-sizing:border-box; padding:14px; border:1px solid #ccc; border-radius:12px; font:inherit; background:#fff; color:#222; }
+  .formulario .btn { margin-top:14px; width:100%; }
+  .busca-cliente { position:relative; }
+  .sugestoes-clientes { margin-top:6px; border:1px solid var(--linha); border-radius:12px; background:var(--cartao); overflow-y:auto; max-height:264px; }
+  .sugestao-cliente { display:block; width:100%; min-height:48px; padding:12px 14px; border:0; border-bottom:1px solid var(--linha); background:transparent; text-align:left; overflow-wrap:anywhere; }
+  .sugestao-cliente:last-child { border-bottom:0; }
+  .sugestao-cliente:hover, .sugestao-cliente[aria-selected="true"] { background:var(--cartao-2); color:var(--marca-2); }
+  .formulario .ajuda-cliente { margin-top:8px; color:var(--suave); font-size:14px; }
+  .coleta-info { margin:16px 0; padding:16px; background:#fff2f3; border-radius:12px; color:#333; }
+  .coleta-info b { display:block; }
+</style>
+<script src="/expedicao/vendor/jsQR.js"></script>
+<script>
+(() => {
+  'use strict';
+  const CHAVE_SESSAO = 'kuru-expedicao-sessao';
+  const PIN_MAX = 8;
+  const $ = (id) => document.getElementById(id);
+  const telas = ['telaCarregando', 'telaInicio', 'telaLogin', 'telaBalcao', 'telaConsulta'];
+  const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const vibrar = (p) => { try { navigator.vibrate?.(p); } catch { /* sem suporte */ } };
+
+  const ICONES = {
+    pino: '<path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+    mapa: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>',
+    waze: '<path d="M6.5 17.5c-2-1-3.5-3.2-3.5-6C3 7 6.8 3.5 12 3.5S21 7 21 11.5 17.2 19 12 19h-1.5"/><circle cx="8.5" cy="19.5" r="1.6"/><circle cx="15.5" cy="19.5" r="1.6"/><path d="M9 10.5h.01M15 10.5h.01M9.5 14c1.4 1 3.6 1 5 0"/>',
+    copiar: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h8"/>',
+    check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    relogio: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+    alerta: '<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/>',
+    qr: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3M21 14v.01M14 21h7v-4"/>',
+    baixo: '<path d="M6 9l6 6 6-6"/>',
+    atualizar: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/>',
+    apagar: '<path d="M9 5h11v14H9l-6-7 6-7z"/><path d="M13 10l4 4M17 10l-4 4"/>',
+    entrar: '<path d="M5 12h14M13 6l6 6-6 6"/>',
+    caixa: '<path d="M3 7.5 12 3l9 4.5v9L12 21l-9-4.5v-9z"/><path d="M3 7.5 12 12l9-4.5M12 12v9"/>',
+    casa: '<path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/>',
+    caminhao: '<path d="M1 4h14v12H1z"/><path d="M15 9h4l3 3.5V16h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="18.5" r="2.2"/>',
+    carrinho: '<circle cx="9" cy="20" r="1.6"/><circle cx="18" cy="20" r="1.6"/><path d="M2.5 3h2.5l2.8 12.4a2 2 0 0 0 2 1.6h8.4a2 2 0 0 0 2-1.6L22 8H6"/>',
+    remover: '<path d="M18 6 6 18M6 6l12 12"/>',
+  };
+  const ico = (nome, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${ICONES[nome]}</svg>`;
+
+  const tokenDaUrl = (caminho) => (String(caminho).match(/^\/(?:expedicao\/)?e\/([A-Za-z0-9]{6,20})(?:[/?#]|$)/) || [])[1] || '';
+  // Etiquetas antigas continuam válidas ao serem lidas no portal novo.
+  function tokenDaEtiqueta(valor) {
+    const bruto = String(valor || '').trim();
+    if (/^[A-Za-z0-9]{6,20}$/.test(bruto)) return bruto;
+    try {
+      const url = new URL(bruto);
+      const hosts = [location.host, 'parts-seals.com.br', 'www.parts-seals.com.br', 'parts-seals-expedicao.netlify.app'];
+      if (/^https?:$/.test(url.protocol) && hosts.includes(url.host)) return tokenDaUrl(url.pathname);
+    } catch { /* não é um link de etiqueta */ }
+    return '';
+  }
+  let token = tokenDaUrl(location.pathname);
+
+  // --- sessão -------------------------------------------------------------------------
+  let sessaoEmMemoria = null;
+  function lerSessao() {
+    try { const s = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || 'null'); return s && s.expira > Date.now() ? s : null; } catch { return null; }
+  }
+  const sessao = () => (sessaoEmMemoria && sessaoEmMemoria.expira > Date.now() ? sessaoEmMemoria : lerSessao());
+  function gravarSessao(s) { sessaoEmMemoria = s; try { localStorage.setItem(CHAVE_SESSAO, JSON.stringify(s)); } catch { /* aba anônima */ } }
+  function apagarSessao() {
+    sessaoEmMemoria = null;
+    try { localStorage.removeItem(CHAVE_SESSAO); } catch { /* nada */ }
+    // O carrinho é de QUEM está logado (vira `responsavel`/`baixado_por` na
+    // hora de marcar) — sair (ou a sessão expirar) sem esvaziar deixaria o
+    // próximo PIN confirmar uma baixa em nome da pessoa errada. Sempre junto
+    // da sessão, nunca um passo à parte que algum chamador possa esquecer.
+    if (carrinho.length) limparCarrinho();
+    contexto = { modo: 'entrega' }; salvarContexto();
+  }
+
+  // --- carrinho (marcar expedição, v0.2.697) -------------------------------------------
+  // Fica no localStorage pra sobreviver a um reload sem querer no meio de uma
+  // sequência de escaneamentos — cada item carrega tudo que `/api/marcar`
+  // precisa (numeroOp/codItem) e o que a tela precisa pra listar (descrição,
+  // quantidade, pedido, cliente). `ligadoBaixa`/`podeMarcar` decidem se o
+  // carrinho é sequer oferecido; ver `iniciar()`/`entrar()`.
+  const CHAVE_CARRINHO = 'kuru-expedicao-carrinho';
+  const CHAVE_FLUXO = 'kuru-expedicao-fluxo';
+  let contexto = (() => {
+    try { const v = JSON.parse(localStorage.getItem(CHAVE_FLUXO)); return v?.modo === 'balcao' ? v : { modo: 'entrega' }; }
+    catch { return { modo: 'entrega' }; }
+  })();
+  const chaveCliente = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  let clientesCadastro = [], clientesSugeridos = [], clienteEscolhido = '', sugestaoAtiva = -1;
+  // A semelhanca vem do texto digitado; a selecao continua sendo do cadastro.
+  function distanciaCliente(a, b) {
+    const matriz = Array.from({ length:a.length+1 }, () => []);
+    for (let i=0;i<=a.length;i++) matriz[i][0]=i;
+    for (let j=0;j<=b.length;j++) matriz[0][j]=j;
+    for (let i=1;i<=a.length;i++) for (let j=1;j<=b.length;j++) {
+      matriz[i][j]=Math.min(matriz[i-1][j]+1,matriz[i][j-1]+1,matriz[i-1][j-1]+(a[i-1]===b[j-1]?0:1));
+      if (i>1 && j>1 && a[i-1]===b[j-2] && a[i-2]===b[j-1]) matriz[i][j]=Math.min(matriz[i][j],matriz[i-2][j-2]+1);
+    }
+    return matriz[a.length][b.length];
+  }
+  function sugerirClientes(nomes, consulta) {
+    const busca = chaveCliente(consulta);
+    if (!busca) return [];
+    const termos = String(consulta).trim().split(/\s+/).map(chaveCliente).filter(Boolean);
+    const limite = busca.length>=6 ? 2 : 1;
+    return nomes.map(nome => {
+      const chave = chaveCliente(nome);
+      let ordem = chave===busca ? 0 : chave.startsWith(busca) ? 1 : chave.includes(busca) ? 2 : termos.every(t=>chave.includes(t)) ? 3 : Infinity;
+      if (!Number.isFinite(ordem) && busca.length>=3) {
+        const palavras = String(nome).split(/[\s.\-]+/).map(chaveCliente).filter(Boolean);
+        const distancias = [chave,...palavras].filter(t=>Math.abs(t.length-busca.length)<=limite).map(t=>distanciaCliente(busca,t));
+        const distancia = Math.min(...distancias);
+        if (distancia<=limite) ordem=4+distancia;
+      }
+      return {nome,ordem};
+    }).filter(n=>Number.isFinite(n.ordem)).sort((a,b)=>a.ordem-b.ordem || a.nome.localeCompare(b.nome,'pt-BR')).slice(0,8).map(n=>n.nome);
+  }
+  function fecharSugestoesClientes() {
+    $('sugestoesClientes').hidden=true;
+    $('clienteBalcao').setAttribute('aria-expanded','false');
+    $('clienteBalcao').removeAttribute('aria-activedescendant');
+    sugestaoAtiva=-1;
+  }
+  function escolherCliente(nome) {
+    clienteEscolhido=nome; $('clienteBalcao').value=nome;
+    $('ajudaCliente').textContent='Cliente selecionado: '+nome;
+    $('erroBalcao').textContent=''; fecharSugestoesClientes();
+  }
+  function mostrarSugestoesClientes() {
+    clientesSugeridos=sugerirClientes(clientesCadastro,$('clienteBalcao').value);
+    sugestaoAtiva=-1;
+    $('sugestoesClientes').innerHTML=clientesSugeridos.map((nome,i)=>`<button class="sugestao-cliente" type="button" role="option" id="sugestaoCliente${i}" data-cliente-indice="${i}" aria-selected="false">${esc(nome)}</button>`).join('');
+    $('sugestoesClientes').hidden=!clientesSugeridos.length;
+    $('clienteBalcao').setAttribute('aria-expanded',String(Boolean(clientesSugeridos.length)));
+    $('clienteBalcao').removeAttribute('aria-activedescendant');
+    $('ajudaCliente').textContent=!chaveCliente($('clienteBalcao').value) ? 'Digite para buscar e escolha um cliente.' : clientesSugeridos.length ? 'Toque no cliente desejado.' : 'Nenhum cliente parecido encontrado. Tente outro nome.';
+  }
+  function salvarContexto() { try { localStorage.setItem(CHAVE_FLUXO, JSON.stringify(contexto)); } catch {} }
+  function coletaValida() { return contexto.modo !== 'balcao' || (String(contexto.retirante || '').trim() && String(contexto.cliente || '').trim()); }
+  async function abrirBalcao({ historico = true } = {}) {
+    if (!ligadoBaixa || !sessao()?.podeMarcar) { aviso('A coleta exige permissão e a baixa pelo celular ligada no Kuru.'); mostrarInicio({ historico: false }); return; }
+    $('nomeRetirante').value = contexto.retirante || '';
+    clientesCadastro=[]; clienteEscolhido=''; $('clienteBalcao').value=''; fecharSugestoesClientes();
+    $('erroBalcao').textContent = '';
+    mostrar('telaBalcao', { historico });
+    $('clienteBalcao').disabled = true;
+    $('clienteBalcao').placeholder='Carregando clientes…';
+    const r = await api('clientes').catch(semRede);
+    $('clienteBalcao').disabled = false;
+    if (!r.ok) {
+      if (r.sessaoExpirada) { apagarSessao(); abrirLogin({ historico: false }); return; }
+      $('clienteBalcao').placeholder='Cadastro indisponível';
+      $('erroBalcao').textContent = r.erro || 'Não foi possível carregar os clientes. Volte e tente novamente.'; return;
+    }
+    clientesCadastro=r.clientes;
+    $('clienteBalcao').placeholder='Digite o nome do cliente';
+    const anterior=clientesCadastro.find(n=>chaveCliente(n)===chaveCliente(contexto.cliente));
+    if (anterior) escolherCliente(anterior);
+    else $('ajudaCliente').textContent='Digite para buscar e escolha um cliente.';
+  }
+  async function escolherModo(modo) {
+    if (marcando) { aviso('Aguarde a conclusão da expedição.'); return; }
+    if (modo !== contexto.modo && carrinho.length) {
+      if (!(await confirmarEstilizado({ titulo: 'Iniciar outro método?', texto: 'Os itens ainda não finalizados serão removidos do carrinho.', textoConfirmar: 'Trocar método' }))) return;
+      limparCarrinho();
+    }
+    contexto = modo === contexto.modo ? contexto : { modo };
+    salvarContexto();
+    tokenJaAutoAdicionado = null;
+    if (!sessao()) { abrirLogin(); return; }
+    if (modo === 'balcao') abrirBalcao(); else abrirConsulta();
+  }
+  let ligadoBaixa = false;
+  function carregarCarrinho() {
+    try { const v = JSON.parse(localStorage.getItem(CHAVE_CARRINHO) || '[]'); return Array.isArray(v) ? v : []; }
+    catch { return []; }
+  }
+  let carrinho = carregarCarrinho();
+  if (!sessao()) {
+    carrinho = []; contexto = { modo: 'entrega' }; salvarCarrinho(); salvarContexto();
+  }
+  function salvarCarrinho() {
+    try { localStorage.setItem(CHAVE_CARRINHO, JSON.stringify(carrinho)); } catch { /* aba anônima */ }
+  }
+  const chaveCarrinho = (i) => `${i.numeroOp}||${i.codItem}`;
+  const noCarrinho = (numeroOp, codItem) => carrinho.some((i) => i.numeroOp === numeroOp && i.codItem === codItem);
+  const clienteDoCarrinho = () => carrinho[0]?.cliente || '';
+  function removerDoCarrinho(numeroOp, codItem) {
+    carrinho = carrinho.filter((i) => !(i.numeroOp === numeroOp && i.codItem === codItem));
+    salvarCarrinho();
+  }
+  function limparCarrinho() { carrinho = []; salvarCarrinho(); }
+
+  // --- sobreposição genérica (pós-escaneamento, revisão do carrinho, alertas) ----------
+  // Uma única sobreposição, reaproveitada pra tudo — nunca duas abertas ao
+  // mesmo tempo. `aoFecharSobreposicao` é o que roda quando ELA FECHA, por
+  // QUALQUER caminho (botão voltar do Android, tocar fora, ou um botão que
+  // chama `history.back()` de propósito): é assim que uma tela encadeia na
+  // próxima (pós-escaneamento → revisão → "marcando..." → resultado) sem
+  // nunca abrir uma sobreposição nova enquanto um `history.back()` da
+  // anterior ainda está "no ar" — `history.back()` só tem efeito no próximo
+  // ciclo do navegador, então abrir algo logo depois dele (em vez de dentro
+  // do callback do `popstate`) corre o risco do handler fechar o que acabou
+  // de abrir.
+  let aoFecharSobreposicao = null;
+  let exigeCienciaCliente = false;
+  let fundoBloqueado = [];
+  let overflowAntesAlerta = null;
+  function fecharSobreposicao() {
+    const eraAlerta = $('sobreposicao').classList.contains('alerta-cliente');
+    $('sobreposicao').hidden = true; $('modalConteudo').innerHTML = '';
+    $('sobreposicao').classList.remove('alerta-cliente');
+    $('sobreposicao').setAttribute('role', 'dialog');
+    $('sobreposicao').removeAttribute('aria-labelledby');
+    $('sobreposicao').removeAttribute('aria-describedby');
+    exigeCienciaCliente = false;
+    for (const el of fundoBloqueado) el.inert = false;
+    fundoBloqueado = [];
+    if (overflowAntesAlerta !== null) document.body.style.overflow = overflowAntesAlerta;
+    overflowAntesAlerta = null;
+    if (eraAlerta) $('btnEscanearProxima').focus();
+  }
+  function abrirSobreposicao(html, { aoFechar = null } = {}) {
+    aoFecharSobreposicao = aoFechar;
+    $('modalConteudo').innerHTML = html;
+    $('sobreposicao').hidden = false;
+    history.pushState({ modal: true }, '');
+  }
+  $('sobreposicao').addEventListener('click', (ev) => { if (ev.target === $('sobreposicao') && !exigeCienciaCliente) history.back(); });
+  document.addEventListener('keydown', (ev) => {
+    if (!exigeCienciaCliente) return;
+    if (ev.key === 'Escape' || ev.key === 'Tab') {
+      ev.preventDefault(); $('clienteErradoEntendi').focus();
+    }
+  });
+
+  function alertarClienteErrado(clienteEtiqueta) {
+    abrirSobreposicao(`
+      <div class="modal-icone aviso">${ico('alerta', 'stroke-width="2.4"')}</div>
+      <h2 id="tituloClienteErrado">Etiqueta de outro cliente!</h2>
+      <div id="descricaoClienteErrado">
+        <p>Confira os nomes antes de continuar:</p>
+        <div class="clientes-conferencia">
+          <div><span>Cliente desta coleta</span><b>${esc(contexto.cliente)}</b></div>
+          <div><span>Cliente da etiqueta escaneada</span><b>${esc(clienteEtiqueta || 'Não identificado')}</b></div>
+        </div>
+        <p><b>Esta etiqueta foi bloqueada.</b> Nenhum item dela foi adicionado à coleta. Separe-a e escaneie uma etiqueta do cliente correto.</p>
+      </div>
+      <div class="modal-botoes">
+        <button class="btn forte" type="button" id="clienteErradoEntendi">Entendi, vou conferir a etiqueta</button>
+      </div>`);
+    exigeCienciaCliente = true;
+    $('sobreposicao').classList.add('alerta-cliente');
+    $('sobreposicao').setAttribute('role', 'alertdialog');
+    $('sobreposicao').setAttribute('aria-labelledby', 'tituloClienteErrado');
+    $('sobreposicao').setAttribute('aria-describedby', 'descricaoClienteErrado');
+    // Bloqueia também teclado e leitores de tela no conteúdo atrás do alerta.
+    fundoBloqueado = [...document.body.children].filter(el => el !== $('sobreposicao') && !el.inert && !['SCRIPT', 'STYLE'].includes(el.tagName));
+    for (const el of fundoBloqueado) el.inert = true;
+    overflowAntesAlerta = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    $('clienteErradoEntendi').focus();
+    vibrar([100, 60, 100]);
+    $('clienteErradoEntendi').addEventListener('click', (ev) => {
+      ev.currentTarget.disabled = true;
+      exigeCienciaCliente = false;
+      history.back();
+    });
+  }
+
+  /** Modal de confirmação estilizado (substitui o `confirm()` nativo, sem
+   *  destaque nenhum) — usado pro alerta "item de outro cliente". Devolve
+   *  uma Promise<boolean>; fechar sem escolher (voltar, tocar fora) conta
+   *  como cancelar, nunca deixa a Promise pendurada pra sempre. */
+  function confirmarEstilizado({ titulo, texto, textoConfirmar = 'Confirmar', textoCancelar = 'Cancelar', perigo = false }) {
+    return new Promise((resolve) => {
+      abrirSobreposicao(`
+        <div class="modal-icone ${perigo ? 'aviso' : ''}">${ico(perigo ? 'alerta' : 'check', 'stroke-width="2.4"')}</div>
+        <h2>${esc(titulo)}</h2>
+        <p>${esc(texto)}</p>
+        <div class="modal-botoes">
+          <button class="btn forte" type="button" id="modalBtnConfirmar">${esc(textoConfirmar)}</button>
+          <button class="btn" type="button" id="modalBtnCancelar">${esc(textoCancelar)}</button>
+        </div>`, { aoFechar: () => resolve(false) });
+      $('modalBtnConfirmar').addEventListener('click', () => { aoFecharSobreposicao = () => resolve(true); history.back(); });
+      $('modalBtnCancelar').addEventListener('click', () => history.back());
+    });
+  }
+
+  async function api(caminho, opcoes = {}) {
+    const s = sessao();
+    const controle = new AbortController();
+    const prazo = setTimeout(() => controle.abort(), 20000);
+    try {
+      const r = await fetch(`/expedicao/api/${caminho}`, {
+        ...opcoes, signal: controle.signal, cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', ...(s ? { Authorization: `Bearer ${s.sessao}` } : {}) },
+      });
+      let corpo = {};
+      try { corpo = await r.json(); } catch { /* vazio */ }
+      return { status: r.status, ...corpo };
+    } finally { clearTimeout(prazo); }
+  }
+  const semRede = () => ({ ok: false, semRede: true, erro: navigator.onLine ? 'O servidor demorou pra responder. Tente de novo.' : 'Sem internet no momento. Confira o sinal e tente de novo.' });
+
+  // --- rede ---------------------------------------------------------------------------------
+  const marcarRede = () => document.body.classList.toggle('sem-rede', !navigator.onLine);
+  window.addEventListener('online', () => { marcarRede(); if (!$('telaConsulta').hidden && token) abrirConsulta({ silencioso: Boolean(ultimaConsulta), historico: false }); });
+  window.addEventListener('offline', marcarRede);
+  marcarRede();
+
+  // --- interface geral ------------------------------------------------------------------
+  let telaAtual = '';
+  function mostrar(id, { historico = true } = {}) {
+    telas.forEach((t) => { $(t).hidden = t !== id; });
+    const s = sessao();
+    $('usuario').hidden = !s || id === 'telaCarregando';
+    if (s) {
+      const partes = s.nome.split(/\s+/).filter(Boolean);
+      $('nomeUsuario').textContent = partes[0] || s.nome;
+      $('avatar').textContent = partes.slice(0, 2).map((p) => p[0]).join('').toUpperCase();
+    }
+    // O carrinho mantém a barra viva mesmo de volta no início — é de lá que
+    // se continua escaneando ou se toca em "Marcar Expedição" depois de
+    // voltar sem querer.
+    const comBarra = id === 'telaConsulta' || (id === 'telaInicio' && carrinho.length > 0);
+    if (comBarra) atualizarBarraBaixo();
+    $('barraBaixo').hidden = !comBarra;
+    document.body.classList.toggle('com-barra', comBarra);
+    // Botão voltar do Android: cada tela além do início vira um passo no
+    // histórico, e voltar leva ao início em vez de sair do site.
+    if (historico && id !== telaAtual && (id === 'telaLogin' || id === 'telaConsulta' || id === 'telaBalcao')) {
+      history.pushState({ tela: id }, '');
+    }
+    telaAtual = id;
+    if (comBarra) atualizarBarraBaixo();
+    window.scrollTo({ top: 0 });
+    ajustarFaixa();
+  }
+
+  /** Decide quais botões aparecem na barra fixa de baixo: os de sempre
+   *  (Escanear próxima / Atualizar, em telaConsulta) OU os do carrinho,
+   *  assim que ele tiver pelo menos um item — nunca os dois juntos, pra não
+   *  lotar uma barra de celular com 4 botões. */
+  function atualizarBarraBaixo() {
+    const temCarrinho = carrinho.length > 0;
+    const emConsulta = telaAtual === 'telaConsulta';
+    $('btnEscanearProxima').hidden = !(emConsulta && !temCarrinho);
+    $('btnAtualizar').hidden = !(emConsulta && token && !temCarrinho);
+    $('btnVerCarrinho').hidden = !temCarrinho;
+    $('btnEscanearOutro').hidden = !temCarrinho;
+    $('btnMarcarCarrinho').hidden = !temCarrinho;
+    $('carrinhoConta').textContent = String(carrinho.length);
+    $('btnMarcarCarrinho').textContent = contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Marcar Expedição';
+  }
+
+  /** Onde o fundo vermelho termina: no fim do bloco marcado com `data-hero`
+   *  da tela visível, mais a sobra que faz o primeiro cartão ficar metade
+   *  sobre o vermelho. Medido por offsetTop (ignora a animação de entrada,
+   *  que desloca os blocos alguns pixels). */
+  function ajustarFaixa() {
+    const tela = telas.map($).find((t) => !t.hidden);
+    const ancora = tela && tela.querySelector('[data-hero]');
+    if (!ancora) return;
+    let topo = 0;
+    for (let el = ancora; el; el = el.offsetParent) topo += el.offsetTop;
+    const sobra = Number(ancora.dataset.heroSobra || 46);
+    document.body.style.setProperty('--altura-faixa', `${Math.round(topo + ancora.offsetHeight + sobra)}px`);
+  }
+  window.addEventListener('resize', () => requestAnimationFrame(ajustarFaixa));
+  if (document.fonts?.ready) document.fonts.ready.then(ajustarFaixa);
+  window.addEventListener('popstate', () => {
+    if (!$('leitor').hidden) { fecharLeitor(); const callback = aoFecharLeitor; aoFecharLeitor = null; callback?.(); return; }
+    if (!$('sobreposicao').hidden) {
+      if (exigeCienciaCliente) {
+        // Voltar do Android não dispensa a confirmação de leitura do alerta.
+        history.pushState({ modal: true }, '');
+        $('clienteErradoEntendi').focus();
+        return;
+      }
+      fecharSobreposicao();
+      const callback = aoFecharSobreposicao;
+      aoFecharSobreposicao = null;
+      callback?.();
+      return;
+    }
+    if (telaAtual === 'telaLogin' || telaAtual === 'telaConsulta' || telaAtual === 'telaBalcao') mostrarInicio({ historico: false });
+  });
+
+  let tempoAviso;
+  function aviso(texto) {
+    const el = $('aviso');
+    el.textContent = texto;
+    el.classList.add('ver');
+    clearTimeout(tempoAviso);
+    tempoAviso = setTimeout(() => el.classList.remove('ver'), 2600);
+  }
+
+  // --- datas e números -------------------------------------------------------------------------
+  const p2 = (n) => String(n).padStart(2, '0');
+  const hojeIso = () => { const d = new Date(); return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`; };
+  const dataBr = (iso) => { const [a, m, d] = String(iso || '').slice(0, 10).split('-'); return d ? `${d}/${m}/${a}` : '—'; };
+  function diasAte(iso) {
+    if (!iso) return null;
+    const [a, m, d] = iso.split('-').map(Number);
+    const [ha, hm, hd] = hojeIso().split('-').map(Number);
+    return Math.round((Date.UTC(a, m - 1, d) - Date.UTC(ha, hm - 1, hd)) / 86400000);
+  }
+  function quandoDespachou(iso) {
+    if (!iso) return 'data não registrada';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return 'data não registrada';
+    const temHora = d.getHours() || d.getMinutes();
+    const dias = diasAte(`${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`);
+    const dia = dias === 0 ? 'hoje' : dias === -1 ? 'ontem' : `em ${p2(d.getDate())}/${p2(d.getMonth() + 1)}/${d.getFullYear()}`;
+    return temHora ? `${dia} às ${p2(d.getHours())}:${p2(d.getMinutes())}` : dia;
+  }
+  /** Complemento da frase de um item já despachado — "via Transportadora,
+   *  coletado por João, hoje às 21:00" (despachado/coletado), "por Maria,
+   *  ontem às 14:00" (entregue/retirado) ou só a data, quando falta algum
+   *  dos dois. O rótulo em si ("Despachado"/"Entregue"...) já é o `<b>` da
+   *  frase; isto é só o que vem depois. */
+  function detalheEntrega(item) {
+    const quando = quandoDespachou(item.despachoEm);
+    if (item.tipo === 'despachado' || item.tipo === 'coletado') {
+      const via = item.grupoEntrega ? `via ${item.grupoEntrega}` : '';
+      const coletor = item.responsavel ? `coletado por ${item.responsavel}` : '';
+      return [via, coletor, quando].filter(Boolean).join(', ');
+    }
+    if (item.tipo === 'entregue' || item.tipo === 'retirado') {
+      return item.responsavel ? `por ${item.responsavel}, ${quando}` : quando;
+    }
+    return quando;
+  }
+  /** A quantidade vem do Excel ("4,0", "1.500,00"): sem casa decimal inútil. */
+  function quantidade(v) {
+    const t = String(v ?? '').trim();
+    if (!t) return '—';
+    const normal = t.includes(',') ? t.replace(/\./g, '').replace(',', '.') : t;
+    const n = Number(normal);
+    return Number.isFinite(n) ? n.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : t;
+  }
+  const plural = (n, um, varios) => `${n} ${n === 1 ? um : varios}`;
+
+  // --- início ---------------------------------------------------------------------------------
+  let ligado = false;
+  const saudacao = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
+
+  function mostrarInicio({ historico = true } = {}) {
+    const s = sessao();
+    $('btnExpedir').hidden = !ligado;
+    $('subExpedir').textContent = s && token ? 'Abrir o pedido desta etiqueta' : 'Sou motorista · conferir o que vou levar';
+    $('btnEscanearInicio').hidden = !(ligado && s);
+    $('notaLida').hidden = !(ligado && token && !s);
+    $('notaSemQr').hidden = !(ligado && !token && !(s && podeLerQr));
+    $('saudacao').textContent = s ? `${saudacao()}, ${s.nome.split(/\s+/)[0]}` : saudacao();
+    // Nunca volta pro início já com as escolhas de "Expedir" abertas.
+    $('expedirEscolhas').hidden = true;
+    $('btnExpedir').setAttribute('aria-expanded', 'false');
+    mostrar('telaInicio', { historico });
+  }
+
+  async function iniciar({ primeiraVez = false } = {}) {
+    mostrar('telaCarregando');
+    const r = await api('estado').catch(semRede);
+    ligado = Boolean(r.ligado);
+    ligadoBaixa = Boolean(r.ligadoBaixa);
+    // Motorista que já entrou hoje e escaneou outra caixa vai direto pro pedido.
+    if (primeiraVez && ligado && token && sessao()) { telaAtual = 'telaInicio'; abrirConsulta(); return; }
+    mostrarInicio({ historico: false });
+    if (r.semRede) aviso(r.erro);
+  }
+
+  // --- PIN -------------------------------------------------------------------------------------
+  // Teclado só da página: nenhum campo de texto recebe foco, então o teclado
+  // do celular nunca abre por cima. Teclado físico (computador) também vale.
+  let pin = '';
+  let enviando = false;
+  function montarTeclado() {
+    const teclas = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'apagar', '0', 'entrar'];
+    $('teclado').innerHTML = teclas.map((t) => {
+      if (t === 'apagar') return `<button type="button" class="tecla acao" data-t="apagar" aria-label="Apagar último dígito">${ico('apagar')}</button>`;
+      if (t === 'entrar') return `<button type="button" class="tecla entrar" data-t="entrar" aria-label="Entrar" disabled>${ico('entrar')}</button>`;
+      return `<button type="button" class="tecla" data-t="${t}">${t}</button>`;
+    }).join('');
+  }
+  function desenharPontos() {
+    const total = Math.max(4, pin.length);
+    $('pontos').innerHTML = Array.from({ length: total }, (_, i) => `<i class="${i < pin.length ? 'cheio' : ''}"></i>`).join('');
+    $('pinLeitor').textContent = pin.length ? plural(pin.length, 'dígito', 'dígitos') : '';
+    const entrar = $('teclado').querySelector('[data-t="entrar"]');
+    if (entrar && !enviando) entrar.disabled = pin.length < 3;
+  }
+  function digitar(t) {
+    if (enviando) return;
+    $('erroLogin').textContent = '';
+    if (t === 'apagar') { pin = pin.slice(0, -1); vibrar(6); }
+    else if (t === 'entrar') { entrar(); return; }
+    else if (pin.length < PIN_MAX) { pin += t; vibrar(8); }
+    desenharPontos();
+  }
+  function abrirLogin({ historico = true } = {}) {
+    pin = '';
+    $('erroLogin').textContent = '';
+    desenharPontos();
+    mostrar('telaLogin', { historico });
+  }
+  async function entrar() {
+    if (pin.length < 3 || enviando) return;
+    enviando = true;
+    const botao = $('teclado').querySelector('[data-t="entrar"]');
+    botao.disabled = true;
+    botao.innerHTML = '<span class="girando"></span>';
+    const r = await api('login', { method: 'POST', body: JSON.stringify({ pin }) }).catch(semRede);
+    enviando = false;
+    botao.innerHTML = ico('entrar');
+    if (!r.ok) {
+      if (r.desligado) { iniciar(); return; }
+      pin = '';
+      desenharPontos();
+      $('pontos').classList.remove('tremer'); void $('pontos').offsetWidth; $('pontos').classList.add('tremer');
+      $('erroLogin').textContent = r.erro || 'Não foi possível entrar.';
+      vibrar([60, 40, 60]);
+      return;
+    }
+    vibrar(20);
+    gravarSessao({ sessao: r.sessao, nome: r.nome, expira: r.expira, podeMarcar: Boolean(r.podeMarcar) });
+    // O PIN ocupa o lugar dele no histórico: voltar do pedido leva ao início.
+    if (contexto.modo === 'balcao') abrirBalcao({ historico: false });
+    else abrirConsulta({ historico: false });
+  }
+  $('teclado').addEventListener('click', (ev) => { const b = ev.target.closest('[data-t]'); if (b && !b.disabled) digitar(b.dataset.t); });
+  document.addEventListener('keydown', (ev) => {
+    if ($('telaLogin').hidden || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (/^\d$/.test(ev.key)) { ev.preventDefault(); digitar(ev.key); }
+    else if (ev.key === 'Backspace') { ev.preventDefault(); digitar('apagar'); }
+    else if (ev.key === 'Enter' && !document.activeElement?.matches('button:not(.tecla)')) { ev.preventDefault(); digitar('entrar'); }
+  });
+
+  // --- leitor de QR na própria página ------------------------------------------------------------
+  // Chrome do Android tem BarcodeDetector; o Safari do iPhone não — lá o
+  // botão nem aparece e a câmera do próprio iPhone abre o link.
+  let podeLerQr = Boolean(navigator.mediaDevices?.getUserMedia && window.jsQR);
+  let detector = null;
+  let fluxo = null;
+  let lendo = false;
+  let aoFecharLeitor = null;
+  (async () => {
+    try {
+      if ('BarcodeDetector' in window && navigator.mediaDevices?.getUserMedia) {
+        const formatos = await window.BarcodeDetector.getSupportedFormats();
+        if (formatos.includes('qr_code')) { detector = new window.BarcodeDetector({ formats: ['qr_code'] }); podeLerQr = true; }
+      }
+    } catch { /* jsQR mantém a leitura disponível sem suporte nativo. */ }
+    atualizarBarraBaixo();
+    if (telaAtual === 'telaInicio') mostrarInicio({ historico: false });
+  })();
+
+  async function abrirLeitor() {
+    if (!coletaValida()) { abrirBalcao(); return; }
+    if (!podeLerQr) { abrirCodigo(); return; }
+    $('textoLeitor').textContent = 'Aponte pro QR da etiqueta';
+    $('mira').classList.remove('achou');
+    $('leitor').hidden = false;
+    history.pushState({ leitor: true }, '');
+    try {
+      fluxo = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+      if ($('leitor').hidden) { pararCamera(); return; }
+      const video = $('video');
+      video.srcObject = fluxo;
+      await video.play();
+      lendo = true;
+      ler();
+    } catch {
+      $('textoLeitor').textContent = 'Não deu pra abrir a câmera. Libere a câmera pra este site nas configurações do navegador, ou use a câmera do celular.';
+      pararCamera();
+      const b = document.createElement('button'); b.className = 'btn'; b.id = 'codigoSemCamera'; b.textContent = 'Digitar ou colar código';
+      b.addEventListener('click', () => { aoFecharLeitor = abrirCodigo; history.back(); });
+      $('leitor').append(b);
+    }
+  }
+  async function ler() {
+    if (!lendo) return;
+    try {
+      let achados = [];
+      if (detector) achados = await detector.detect($('video'));
+      else {
+        const video = $('video');
+        if (video.readyState >= 2 && video.videoWidth) {
+          const canvas = document.createElement('canvas');
+          const escala = Math.min(1, 720 / video.videoWidth);
+          canvas.width = Math.round(video.videoWidth * escala); canvas.height = Math.round(video.videoHeight * escala);
+          const ctx = canvas.getContext('2d', { willReadFrequently: true }); ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          const quadro = ctx.getImageData(0, 0, canvas.width, canvas.height);
+          const qr = window.jsQR(quadro.data, quadro.width, quadro.height, { inversionAttempts: 'dontInvert' });
+          if (qr) achados = [{ rawValue: qr.data }];
+        }
+      }
+      for (const a of achados) {
+        const valor = String(a.rawValue || '');
+        const novo = tokenDaEtiqueta(valor);
+        if (novo) {
+          lendo = false; vibrar(40);
+          $('mira').classList.add('achou');
+          $('textoLeitor').textContent = 'Etiqueta lida!';
+          setTimeout(() => abrirToken(novo), 300);
+          return;
+        }
+        if (valor) $('textoLeitor').textContent = 'Esse QR não é de uma etiqueta da Parts Seals.';
+      }
+    } catch { /* quadro ruim — tenta o próximo */ }
+    setTimeout(() => requestAnimationFrame(ler), 180);
+  }
+  function pararCamera() {
+    lendo = false;
+    if (fluxo) fluxo.getTracks().forEach((t) => t.stop());
+    fluxo = null;
+    $('video').srcObject = null;
+    $('codigoSemCamera')?.remove();
+  }
+  function fecharLeitor() { pararCamera(); $('leitor').hidden = true; }
+  function abrirToken(novo) {
+    tokenJaAutoAdicionado = null;
+    pararCamera();
+    $('leitor').hidden = true;
+    token = novo;
+    // Troca o passo do leitor no histórico pelo pedido lido; a barra de
+    // endereço acompanha a etiqueta (dá pra reabrir e compartilhar).
+    history.replaceState({ tela: 'telaConsulta' }, '', `/expedicao/e/${novo}`);
+    telaAtual = 'telaConsulta';
+    abrirConsulta({ historico: false });
+  }
+  function abrirCodigo() {
+    if (!coletaValida()) { abrirBalcao(); return; }
+    abrirSobreposicao(`<h2>Ler etiqueta pelo código</h2><form id="formCodigo" class="formulario">
+      <label for="codigoEtiqueta">Código ou link do QR da etiqueta</label>
+      <input id="codigoEtiqueta" required autocomplete="off" placeholder="Cole o link ou use o leitor">
+      <p id="erroCodigo" role="alert"></p><button class="btn forte" type="submit">Ler etiqueta</button></form>`);
+    $('formCodigo').addEventListener('submit', ev => {
+      ev.preventDefault(); const bruto = $('codigoEtiqueta').value.trim();
+      const novo = tokenDaEtiqueta(bruto);
+      if (!novo) { $('erroCodigo').textContent = 'Use o código ou o link de uma etiqueta da Parts Seals.'; return; }
+      aoFecharSobreposicao = () => abrirToken(novo); history.back();
+    });
+    $('codigoEtiqueta').focus();
+  }
+  $('btnFecharLeitor').addEventListener('click', () => history.back());
+  $('btnEscanearInicio').addEventListener('click', abrirLeitor);
+  $('btnEscanearProxima').addEventListener('click', abrirLeitor);
+
+  // --- consulta ---------------------------------------------------------------------------------
+  function esqueletoConsulta() {
+    requestAnimationFrame(ajustarFaixa);
+    $('telaConsulta').innerHTML = `
+      <div style="height:120px" data-hero></div>
+      <div class="esq" style="height:170px"></div>
+      <div class="esq" style="height:310px"></div>`;
+  }
+
+  function telaVazia({ icone, titulo, texto, erro = false, tentar = false }) {
+    requestAnimationFrame(ajustarFaixa);
+    $('telaConsulta').innerHTML = `
+      <div style="height:30px" data-hero></div>
+      <div class="cartao vazio ${erro ? 'erro' : ''}">
+        <div class="icone-grande">${ico(icone)}</div>
+        <h2>${esc(titulo)}</h2>
+        <p>${esc(texto)}</p>
+        <div class="botoes">
+          ${tentar ? `<button class="btn forte" data-acao="atualizar" type="button">${ico('atualizar')} Tentar de novo</button>` : ''}
+          <button class="btn" data-acao="inicio" type="button">${ico('casa')} Voltar ao início</button>
+        </div>
+      </div>`;
+  }
+
+  function htmlEndereco(e, cliente) {
+    if (!e) {
+      return `<div class="cartao"><div class="sem-endereco">${ico('pino')}<div><b>Endereço ainda não cadastrado</b><div class="endereco-local">O setor de logística ainda não cadastrou o endereço de entrega de ${esc(cliente || 'cliente')} no Kuru. Assim que cadastrarem, ele aparece aqui.</div></div></div></div>`;
+    }
+    const local = [e.bairro, [e.cidade, e.uf].filter(Boolean).join(' - '), e.cep].filter(Boolean).join(' · ');
+    const completo = [e.endereco, e.bairro, e.cidade, e.uf, e.cep].filter(Boolean).join(', ');
+    const q = encodeURIComponent(completo);
+    return `
+      <div class="cartao">
+        <div class="titulo-cartao">${ico('pino')}<span class="rotulo">Entregar em</span></div>
+        <div class="endereco-linha">${esc(e.endereco)}</div>
+        ${local ? `<div class="endereco-local">${esc(local)}</div>` : ''}
+        ${e.observacao ? `<div class="obs">${ico('alerta')}<span>${esc(e.observacao)}</span></div>` : ''}
+        <div class="botoes-endereco">
+          <a class="btn forte" href="https://www.google.com/maps/search/?api=1&query=${q}" target="_blank" rel="noopener">${ico('mapa')} Maps</a>
+          <a class="btn waze" href="https://waze.com/ul?q=${q}&navigate=yes" target="_blank" rel="noopener">${ico('waze')} Waze</a>
+          <button class="btn so-icone" type="button" data-acao="copiar" data-texto="${esc(completo)}" aria-label="Copiar endereço">${ico('copiar')}</button>
+        </div>
+      </div>`;
+  }
+
+  function chipPrevisao(item) {
+    if (item.despachado || !item.previsao) return '';
+    const d = diasAte(item.previsao);
+    if (d === null) return '';
+    if (d < 0) return `<span class="chip atrasado">${-d === 1 ? '1 dia atrasado' : `${-d} dias atrasado`}</span>`;
+    if (d === 0) return '<span class="chip hoje">hoje</span>';
+    if (d === 1) return '<span class="chip hoje">amanhã</span>';
+    return '';
+  }
+
+  function htmlItem(item, destaque) {
+    const classes = ['cartao', 'item', destaque ? 'destaque' : '', item.despachado ? 'saiu' : ''].join(' ');
+    const status = item.despachado
+      ? `<div class="status ok"><span class="bolinha">${ico('check', 'stroke-width="3"')}</span><div><b>${esc(item.situacao)}</b><span>${esc(detalheEntrega(item))}</span></div></div>`
+      : `<div class="status espera"><span class="bolinha">${ico('relogio', 'stroke-width="2.4"')}</span><div><b>Ainda não despachado</b><span>Aguardando expedição</span></div></div>`;
+    return `
+      <article class="${classes}">
+        <div class="faixa-item"></div>
+        <div class="corpo-item">
+          <div class="item-cabeca">
+            <div>
+              ${destaque ? `<div class="escaneado">${ico('qr')} Item escaneado</div>` : '<div class="rotulo">OP</div>'}
+              <div class="op tab">${esc(item.numeroOp)}</div>
+            </div>
+            <div class="qtd"><b class="tab">${esc(quantidade(item.quantidade))}</b><span>peças</span></div>
+          </div>
+          <div class="descricao">${esc(item.descricao || 'Sem descrição')}</div>
+          <div class="dados">
+            <div class="dado"><div class="rotulo">Previsão</div><div class="valor tab">${esc(dataBr(item.previsao))} ${chipPrevisao(item)}</div></div>
+            <div class="dado"><div class="rotulo">Pedido</div><div class="valor tab">${esc(item.pedido || '—')}</div></div>
+            <div class="dado inteiro"><div class="rotulo">Método de entrega</div><div class="valor">${esc(item.metodoEntrega || 'Não definido')}</div></div>
+          </div>
+          ${status}
+        </div>
+      </article>`;
+  }
+
+  /** Item que já saiu, dentro da lista do pedido: uma linha só. */
+  function htmlItemCompacto(item) {
+    return `
+      <article class="cartao item saiu compacto">
+        <div class="corpo-item">
+          <span class="visto">${ico('check', 'stroke-width="3"')}</span>
+          <div class="meio-compacto">
+            <div class="op tab">${esc(item.numeroOp)} <span class="rotulo">· ${esc(quantidade(item.quantidade))} pç</span></div>
+            <div class="descricao">${esc(item.descricao || 'Sem descrição')}</div>
+            <div class="quando">${esc(item.situacao)} ${esc(detalheEntrega(item))}</div>
+          </div>
+        </div>
+      </article>`;
+  }
+
+  // --- carrinho: adicionar, revisar, marcar (v0.2.697) ---------------------------------
+
+  /** Escaneou um pedido/OP com `podeMarcar` ligado: joga os itens ainda
+   *  pendentes (e ainda não adicionados) no carrinho, de uma vez só — "QR de
+   *  pedido = todos os itens pendentes dele", decisão do usuário. Se o
+   *  carrinho já tem item de OUTRO cliente, avisa antes de misturar (o
+   *  alerta nunca bloqueia — é o caminhão real que carrega mais de um
+   *  cliente na mesma viagem). */
+  async function processarAdicaoAoCarrinho(d) {
+    if (contexto.modo === 'balcao' && chaveCliente(d.cliente) !== chaveCliente(contexto.cliente)) {
+      alertarClienteErrado(d.cliente); return;
+    }
+    const pendentes = d.itens.filter((i) => !i.despachado && !noCarrinho(i.numeroOp, i.codItem)
+      && (contexto.modo !== 'balcao' || !d.destaque || i.numeroOp === d.destaque));
+    if (!pendentes.length) return;
+    const clienteAtual = clienteDoCarrinho();
+    if (clienteAtual && d.cliente && clienteAtual !== d.cliente) {
+      const ok = await confirmarEstilizado({
+        titulo: `Esse item não é da ${clienteAtual}!`,
+        texto: `O carrinho já tem itens de ${clienteAtual}, e este pedido é de ${d.cliente}. Favor conferir se está correto.`,
+        textoConfirmar: 'Adicionar mesmo assim', textoCancelar: 'Cancelar', perigo: true,
+      });
+      if (!ok) return;
+    }
+    for (const i of pendentes) {
+      carrinho.push({
+        numeroOp: i.numeroOp, codItem: i.codItem, descricao: i.descricao, quantidade: i.quantidade,
+        pedido: i.pedido, cliente: d.cliente,
+      });
+    }
+    salvarCarrinho();
+    vibrar(20);
+    atualizarBarraBaixo();
+    mostrarPosScan(pendentes.length, d.cliente);
+  }
+
+  function mostrarPosScan(n, cliente) {
+    abrirSobreposicao(`
+      <div class="modal-icone">${ico('check', 'stroke-width="2.4"')}</div>
+      <h2>${plural(n, 'item adicionado', 'itens adicionados')}</h2>
+      <p>${esc(cliente)} · ${plural(carrinho.length, 'item no carrinho', 'itens no carrinho')} ao todo.</p>
+      <div class="modal-botoes">
+        <button class="btn forte" type="button" id="posScanMarcar">${contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Marcar Expedição'}</button>
+        <button class="btn" type="button" id="posScanEscanear">Adicionar outro QR code</button>
+      </div>`);
+    $('posScanMarcar').addEventListener('click', () => { aoFecharSobreposicao = abrirRevisaoCarrinho; history.back(); });
+    $('posScanEscanear').addEventListener('click', () => { aoFecharSobreposicao = abrirLeitor; history.back(); });
+  }
+
+  function agruparPorCliente(lista) {
+    const porCliente = new Map();
+    for (const i of lista) {
+      if (!porCliente.has(i.cliente)) porCliente.set(i.cliente, []);
+      porCliente.get(i.cliente).push(i);
+    }
+    return [...porCliente.entries()];
+  }
+  function htmlItemRevisao(i) {
+    return `
+      <div class="modal-lista-item">
+        <div style="flex:1;min-width:0">
+          <div class="op tab">${esc(i.numeroOp)}</div>
+          <div class="descricao">${esc(i.descricao || 'Sem descrição')} · ${esc(quantidade(i.quantidade))} pç</div>
+        </div>
+        <button class="remover" type="button" data-remover="${esc(i.numeroOp)}||${esc(i.codItem)}" aria-label="Remover item do carrinho">${ico('remover')}</button>
+      </div>`;
+  }
+  function textoResumoRevisao() {
+    const grupos = agruparPorCliente(carrinho);
+    return `${plural(carrinho.length, 'item', 'itens')} no carrinho${grupos.length > 1 ? `, de ${grupos.length} clientes` : ''}.`;
+  }
+
+  /** Lista o carrinho inteiro, agrupado por cliente, antes de gravar —
+   *  "mostra pra conferir antes" foi a escolha do usuário sobre gravar
+   *  direto. Remover um item aqui tira ele do carrinho na hora, sem fechar
+   *  a tela (só fecha sozinha se esvaziar tudo). */
+  function abrirRevisaoCarrinho() {
+    if (!carrinho.length) { aviso('O carrinho está vazio'); return; }
+    if (!coletaValida()) { abrirBalcao(); return; }
+    const grupos = agruparPorCliente(carrinho);
+    const corpo = grupos.map(([cliente, itens]) => `
+      <div class="modal-grupo-titulo">${ico('caixa', 'style="width:16px;height:16px"')}<span>${esc(cliente)} · ${plural(itens.length, 'item', 'itens')}</span></div>
+      ${itens.map(htmlItemRevisao).join('')}`).join('');
+    abrirSobreposicao(`
+      <h2>${contexto.modo === 'balcao' ? 'Conferir a coleta · passo 3 de 3' : 'Conferir antes de marcar'}</h2>
+      ${contexto.modo === 'balcao' ? `<div class="coleta-info">Cliente: <b>${esc(contexto.cliente)}</b>Quem retira: <b>${esc(contexto.retirante)}</b></div>` : ''}
+      <p id="revisaoResumo">${textoResumoRevisao()}</p>
+      <div id="revisaoLista">${corpo}</div>
+      <div class="modal-botoes">
+        <button class="btn forte" type="button" id="revisaoConfirmar">${contexto.modo === 'balcao' ? 'Confirmar e finalizar coleta' : 'Confirmar e marcar'}</button>
+        <button class="btn" type="button" id="revisaoCancelar">Voltar</button>
+      </div>`);
+    $('revisaoLista').addEventListener('click', (ev) => {
+      const botao = ev.target.closest('[data-remover]');
+      if (!botao) return;
+      const [numeroOp, codItem] = botao.dataset.remover.split('||');
+      removerDoCarrinho(numeroOp, codItem);
+      atualizarBarraBaixo();
+      if (!carrinho.length) { history.back(); return; }
+      botao.closest('.modal-lista-item').remove();
+      $('revisaoResumo').textContent = textoResumoRevisao();
+    });
+    $('revisaoConfirmar').addEventListener('click', () => { aoFecharSobreposicao = confirmarMarcacao; history.back(); });
+    $('revisaoCancelar').addEventListener('click', () => history.back());
+  }
+
+  let marcando = false;
+  /** Envia o carrinho pra `/api/marcar`. O servidor relê tudo fresco do
+   *  Banco de Ordens e confere de novo quem já está despachado — o que foi
+   *  gravado é o que importa, nunca o que a tela achava que ia acontecer. */
+  async function confirmarMarcacao() {
+    if (!carrinho.length || marcando) return;
+    if (!coletaValida()) { abrirBalcao(); return; }
+    marcando = true;
+    const itens = carrinho.map((i) => ({ numeroOp: i.numeroOp, codItem: i.codItem }));
+    abrirSobreposicao(`
+      <div class="modal-icone">${ico('relogio', 'stroke-width="2.4"')}</div>
+      <h2>Marcando expedição…</h2>
+      <p>Aguarde, não feche o celular.</p>`);
+    const r = await api('marcar', { method: 'POST', body: JSON.stringify({ itens, ...contexto }) }).catch(semRede);
+    marcando = false;
+    if ($('sobreposicao').hidden) {
+      // O usuário já fechou a tela de "marcando..." na mão (voltar) antes da
+      // resposta chegar — o que foi gravado no servidor já está gravado;
+      // só avisa, sem navegar sozinho por cima de onde a pessoa já está.
+      if (r.ok && r.gravados) { limparCarrinho(); atualizarBarraBaixo(); }
+      aviso(r.ok ? (r.gravados ? 'Expedição marcada' : 'Nada novo pra marcar') : (r.erro || 'Não foi possível marcar'));
+      return;
+    }
+    aoFecharSobreposicao = () => mostrarResultadoMarcacao(r);
+    history.back();
+  }
+
+  function mostrarResultadoMarcacao(r) {
+    if (!r.ok) { aviso(r.erro || 'Não foi possível marcar. Tente de novo.'); return; }
+    limparCarrinho();
+    tokenJaAutoAdicionado = null;
+    atualizarBarraBaixo();
+    vibrar([20, 40, 20]);
+    const partes = [];
+    if (r.gravados) partes.push(plural(r.gravados, 'item marcado', 'itens marcados'));
+    if (r.jaDespachados?.length) partes.push(`${plural(r.jaDespachados.length, 'já tinha', 'já tinham')} sido marcado${r.jaDespachados.length === 1 ? '' : 's'} antes`);
+    if (r.naoEncontrados?.length) partes.push(`${plural(r.naoEncontrados.length, 'não encontrado', 'não encontrados')} no Banco de Ordens`);
+    abrirSobreposicao(`
+      <div class="modal-icone">${ico('check', 'stroke-width="2.4"')}</div>
+      <h2>${r.gravados ? (r.modo === 'balcao' ? 'COLETADO' : 'Expedição marcada!') : 'Nada novo pra marcar'}</h2>
+      ${r.gravados && r.modo === 'balcao' ? `<p>Por <b>${esc(r.responsavel)}</b><br>${esc(new Date(r.eventoEm).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }))}</p>` : ''}
+      <p>${esc(partes.join(' · ') || 'Tudo certo.')}</p>
+      <div class="modal-botoes">
+        <button class="btn forte" type="button" id="resultadoOk">OK</button>
+      </div>`);
+    $('resultadoOk').addEventListener('click', () => {
+      if (r.modo === 'balcao') {
+        contexto = { modo: 'balcao' }; salvarContexto();
+        aoFecharSobreposicao = abrirBalcao;
+      } else aoFecharSobreposicao = () => abrirConsulta({ historico: false });
+      history.back();
+    });
+  }
+
+  function desenharConsulta(d) {
+    const { total, despachados } = d.resumo;
+    const fracao = total ? despachados / total : 0;
+    const circ = 2 * Math.PI * 38;
+    const destaque = d.destaque ? d.itens.find((i) => i.numeroOp === d.destaque) : null;
+    const outros = d.itens.filter((i) => i !== destaque);
+    const faltam = outros.filter((i) => !i.despachado);
+    const sairam = outros.filter((i) => i.despachado);
+    const pendentes = total - despachados;
+    const fraseResumo = pendentes === 0
+      ? 'Pedido finalizado — tudo já saiu.'
+      : `${plural(pendentes, 'item aguardando', 'itens aguardando')} expedição`;
+    const agora = new Date();
+
+    // No QR de um item, os outros ficam guardados numa sanfona; no QR do
+    // pedido, o que falta vem primeiro e aberto, o que já saiu vem compacto.
+    const blocoOutros = !outros.length ? '' : destaque
+      ? `
+        <button class="sanfona" type="button" aria-expanded="false" aria-controls="outros" data-acao="sanfona"><span>Ver os outros ${plural(outros.length, 'item', 'itens')} do pedido</span>${ico('baixo')}</button>
+        <div class="lista" id="outros" hidden>
+          ${faltam.map((i) => htmlItem(i, false)).join('')}
+          ${sairam.map(htmlItemCompacto).join('')}
+        </div>`
+      : `
+        ${faltam.length ? `<div class="secao-titulo"><h3>Falta sair</h3><span class="conta espera">${faltam.length}</span></div>
+        <div class="lista">${faltam.map((i) => htmlItem(i, false)).join('')}</div>` : ''}
+        ${sairam.length ? `<div class="secao-titulo"><h3>Já saíram</h3><span class="conta ok">${sairam.length}</span></div>
+        <div class="lista">${sairam.map(htmlItemCompacto).join('')}</div>` : ''}`;
+
+    $('telaConsulta').innerHTML = `
+      <div class="resumo-topo" data-hero>
+        <div class="txt">
+          <small>${d.tipo === 'pedido' ? 'Pedido fechado' : 'Cliente'}</small>
+          <h1 class="${String(d.cliente || '').length > 28 ? 'nome-longo' : ''}">${esc(d.cliente || '—')}</h1>
+          <div class="pedido">
+            <span>PEDIDO <b class="tab">${esc(d.pedido || '—')}</b></span>
+            ${d.requisicao ? `<span>· REQ. <b class="tab">${esc(d.requisicao)}</b></span>` : ''}
+            ${d.nf ? `<span>· NF <b class="tab">${esc(d.nf)}</b></span>` : ''}
+          </div>
+          ${d.rastreio ? `<div class="pedido">${ico('caminhao', 'style="width:15px;height:15px;flex:none"')}<span>Rastreio <b class="tab">${esc(d.rastreio)}</b></span></div>` : ''}
+        </div>
+        <div class="anel" role="img" aria-label="${despachados} de ${total} itens já saíram">
+          <svg viewBox="0 0 92 92" aria-hidden="true"><circle class="fundo-anel" cx="46" cy="46" r="38"/><circle class="valor-anel" id="valorAnel" cx="46" cy="46" r="38" stroke-dasharray="${circ}" stroke-dashoffset="${circ}"/></svg>
+          <div class="meio" aria-hidden="true"><b class="tab">${despachados}/${total}</b><span>${pendentes === 0 ? 'finalizado' : 'saíram'}</span></div>
+        </div>
+      </div>
+      ${htmlEndereco(d.endereco, d.cliente)}
+      ${destaque ? htmlItem(destaque, true) : ''}
+      <div class="cartao">
+        <div class="barra-resumo">${ico('caixa', 'style="width:26px;height:26px;color:var(--marca);flex:none"')}<div class="contas"><b>${esc(fraseResumo)}</b><span>${plural(total, 'item', 'itens')} neste pedido · ${plural(despachados, 'despachado', 'despachados')}</span></div></div>
+        <div class="trilho" aria-hidden="true">${d.itens.map((i) => `<i class="${i.despachado ? 'feito' : ''} ${i === destaque ? 'este' : ''}"></i>`).join('')}</div>
+        <div class="lido-em">${ico('relogio')} Atualizado às ${p2(agora.getHours())}:${p2(agora.getMinutes())}</div>
+      </div>
+      ${blocoOutros}`;
+    ajustarFaixa();
+    // O anel enche depois de aparecer — dá pra ver o "quanto já saiu" de relance.
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const anel = $('valorAnel');
+      if (anel) anel.style.strokeDashoffset = String(circ * (1 - fracao));
+    }));
+  }
+
+  let ultimaConsulta = null;
+  let consultando = false;
+  // Qual token já foi jogado sozinho no carrinho — sem isso, cada "Atualizar"
+  // (ou a releitura automática ao voltar pra aba) tentaria adicionar de novo
+  // a cada poucos segundos. Muda só quando um QR NOVO é lido de verdade.
+  let tokenJaAutoAdicionado = null;
+  async function abrirConsulta({ historico = true, silencioso = false } = {}) {
+    if (!coletaValida()) { abrirBalcao({ historico }); return; }
+    if (!silencioso) mostrar('telaConsulta', { historico });
+    if (!token) {
+      telaVazia({ icone: 'qr', titulo: 'Escaneie uma etiqueta', texto: 'Toque em Escanear etiqueta para abrir a câmera, ou use um leitor e digite ou cole o código.' });
+      $('telaConsulta').querySelector('.botoes').insertAdjacentHTML('afterbegin', `<button class="btn forte" data-acao="escanear" type="button">${ico('qr')} Escanear etiqueta</button><button class="btn" data-acao="codigo" type="button">Digitar ou colar código</button>`);
+      if (contexto.modo === 'balcao') $('telaConsulta').querySelector('.vazio').insertAdjacentHTML('afterbegin', `<div class="coleta-info">Passo 2 de 3 · Cliente: <b>${esc(contexto.cliente)}</b>Quem retira: <b>${esc(contexto.retirante)}</b><button class="btn" data-acao="editar-coleta" type="button">Editar nomes</button></div>`);
+      return;
+    }
+    if (consultando) return;
+    consultando = true;
+    if (!silencioso) { ultimaConsulta = null; esqueletoConsulta(); }
+    $('textoAtualizar').textContent = 'Lendo…';
+    $('btnAtualizar').disabled = true;
+    const r = await api(`consulta?t=${encodeURIComponent(token)}`).catch(semRede);
+    consultando = false;
+    $('textoAtualizar').textContent = 'Atualizar';
+    $('btnAtualizar').disabled = false;
+    if (r.sessaoExpirada) { apagarSessao(); abrirLogin({ historico: false }); return; }
+    if (r.desligado) { iniciar(); return; }
+    if (!r.ok) {
+      // Sem rede com o pedido já na tela: mantém o que estava e só avisa.
+      if (silencioso && ultimaConsulta) { aviso(r.erro || 'Não deu pra atualizar agora.'); return; }
+      telaVazia({
+        icone: r.status === 404 ? 'qr' : 'alerta',
+        titulo: r.status === 404 ? 'Etiqueta não encontrada' : 'Não deu pra abrir o pedido',
+        texto: r.erro || 'Tente de novo em instantes.', erro: r.status !== 404, tentar: Boolean(r.semRede) || r.status >= 500,
+      });
+      return;
+    }
+    const mudou = ultimaConsulta && ultimaConsulta.resumo.despachados !== r.resumo.despachados;
+    ultimaConsulta = r;
+    desenharConsulta(r);
+    if (silencioso) aviso(mudou ? 'Tem novidade no pedido' : 'Pedido atualizado');
+
+    // Escaneou, já entra no carrinho sozinho — sem precisar confirmar nada
+    // (pedido do usuário, v0.2.699: "não quero que eu tenha que confirmar
+    // que adicione o item, escaneou, já entra sozinho"). O alerta de
+    // cliente diferente continua existindo dentro de
+    // `processarAdicaoAoCarrinho` — aquilo é segurança, não confirmação de
+    // "quero adicionar".
+    if (ligadoBaixa && sessao()?.podeMarcar && token !== tokenJaAutoAdicionado) {
+      tokenJaAutoAdicionado = token;
+      processarAdicaoAoCarrinho(r);
+    }
+  }
+
+  $('telaConsulta').addEventListener('click', async (ev) => {
+    const alvo = ev.target.closest('[data-acao]');
+    if (!alvo) return;
+    const acao = alvo.dataset.acao;
+    if (acao === 'escanear') { abrirLeitor(); return; }
+    if (acao === 'codigo') { abrirCodigo(); return; }
+    if (acao === 'editar-coleta') { abrirBalcao(); return; }
+    if (acao === 'atualizar') { abrirConsulta({ historico: false }); return; }
+    if (acao === 'inicio') { mostrarInicio({ historico: false }); return; }
+    if (acao === 'sanfona') {
+      const aberto = alvo.getAttribute('aria-expanded') === 'true';
+      alvo.setAttribute('aria-expanded', String(!aberto));
+      $('outros').hidden = aberto;
+      return;
+    }
+    if (acao === 'copiar') {
+      try { await navigator.clipboard.writeText(alvo.dataset.texto); aviso('Endereço copiado'); vibrar(15); }
+      catch { aviso('Não foi possível copiar'); }
+    }
+  });
+
+  $('btnAtualizar').addEventListener('click', () => abrirConsulta({ silencioso: Boolean(ultimaConsulta), historico: false }));
+  // O modo e os nomes acompanham o carrinho, inclusive após recarregar a página.
+  $('btnExpedir').addEventListener('click', () => {
+    const abrindo = $('expedirEscolhas').hidden;
+    $('expedirEscolhas').hidden = !abrindo;
+    $('btnExpedir').setAttribute('aria-expanded', String(abrindo));
+  });
+  $('btnEntrega').addEventListener('click', () => {
+    $('expedirEscolhas').hidden = true;
+    $('btnExpedir').setAttribute('aria-expanded', 'false');
+    escolherModo('entrega');
+  });
+  $('btnColetaBalcao').addEventListener('click', () => {
+    escolherModo('balcao');
+  });
+  $('formBalcao').addEventListener('submit', ev => {
+    ev.preventDefault();
+    if ($('clienteBalcao').disabled) { $('erroBalcao').textContent = 'Aguarde o cadastro de clientes carregar.'; return; }
+    const retirante = $('nomeRetirante').value.trim(), cliente = $('clienteBalcao').value.trim();
+    if (!retirante || !cliente) { $('erroBalcao').textContent = 'Preencha o nome de quem retira e o nome do cliente.'; return; }
+    const escolhido = clientesCadastro.find(n=>n===clienteEscolhido && n===cliente) || clientesCadastro.find(n=>chaveCliente(n)===chaveCliente(cliente));
+    if (!escolhido) { $('erroBalcao').textContent='Escolha um cliente nas sugestões para continuar.'; mostrarSugestoesClientes(); $('clienteBalcao').focus(); return; }
+    if (carrinho.some(i => chaveCliente(i.cliente) !== chaveCliente(escolhido))) { $('erroBalcao').textContent = 'O carrinho tem etiquetas de outro cliente. Remova-as ou mantenha o cliente desta coleta.'; return; }
+    contexto = { modo: 'balcao', retirante, cliente:escolhido }; salvarContexto();
+    token = ''; ultimaConsulta = null; tokenJaAutoAdicionado = null;
+    history.replaceState({ tela: 'telaBalcao' }, '', '/expedicao/'); abrirConsulta();
+  });
+  $('formBalcao').addEventListener('input', () => { $('erroBalcao').textContent = ''; });
+  $('clienteBalcao').addEventListener('input', () => { clienteEscolhido=''; mostrarSugestoesClientes(); });
+  $('clienteBalcao').addEventListener('focus', () => { if (!$('clienteBalcao').disabled) mostrarSugestoesClientes(); });
+  $('clienteBalcao').addEventListener('keydown', ev => {
+    if (ev.key==='Escape') { fecharSugestoesClientes(); return; }
+    if (ev.key==='Enter' && sugestaoAtiva>=0 && !$('sugestoesClientes').hidden) { ev.preventDefault(); escolherCliente(clientesSugeridos[sugestaoAtiva]); return; }
+    if (!['ArrowDown','ArrowUp'].includes(ev.key)) return;
+    if ($('sugestoesClientes').hidden) mostrarSugestoesClientes();
+    if (!clientesSugeridos.length) return;
+    ev.preventDefault();
+    sugestaoAtiva=sugestaoAtiva<0 ? (ev.key==='ArrowDown'?0:clientesSugeridos.length-1) : (sugestaoAtiva+(ev.key==='ArrowDown'?1:-1)+clientesSugeridos.length)%clientesSugeridos.length;
+    $('sugestoesClientes').querySelectorAll('[role="option"]').forEach((op,i)=>op.setAttribute('aria-selected',String(i===sugestaoAtiva)));
+    const ativa=$('sugestaoCliente'+sugestaoAtiva);
+    $('clienteBalcao').setAttribute('aria-activedescendant',ativa.id); ativa.scrollIntoView({block:'nearest'});
+  });
+  $('sugestoesClientes').addEventListener('mousedown', ev => ev.preventDefault());
+  $('sugestoesClientes').addEventListener('click', ev => {
+    const opcao=ev.target.closest('[data-cliente-indice]');
+    if (opcao) escolherCliente(clientesSugeridos[Number(opcao.dataset.clienteIndice)]);
+  });
+  $('buscaCliente').addEventListener('focusout', () => { setTimeout(()=>{if (!$('buscaCliente').contains(document.activeElement)) fecharSugestoesClientes();},0); });
+  document.addEventListener('click', ev => { if (!$('buscaCliente').contains(ev.target)) fecharSugestoesClientes(); });
+  $('btnVoltarBalcao').addEventListener('click', () => mostrarInicio({ historico: false }));
+  $('btnVoltar').addEventListener('click', () => history.back());
+  $('btnLogo').addEventListener('click', () => { if (telaAtual !== 'telaInicio' && telaAtual !== 'telaCarregando') mostrarInicio({ historico: false }); });
+  $('btnSair').addEventListener('click', () => {
+    apagarSessao();
+    ultimaConsulta = null;
+    atualizarBarraBaixo();
+    aviso('Você saiu');
+    mostrarInicio({ historico: false });
+  });
+  $('btnVerCarrinho').addEventListener('click', () => abrirRevisaoCarrinho());
+  $('btnMarcarCarrinho').addEventListener('click', () => abrirRevisaoCarrinho());
+  $('btnEscanearOutro').addEventListener('click', abrirLeitor);
+
+  // Voltar pra aba depois de um tempo (ex.: dirigindo) relê o pedido aberto;
+  // sair da aba com a câmera aberta desliga a câmera.
+  let escondidoEm = 0;
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { escondidoEm = Date.now(); if (!$('leitor').hidden) history.back(); return; }
+    if (!$('telaConsulta').hidden && token && ultimaConsulta && Date.now() - escondidoEm > 60000) abrirConsulta({ silencioso: true, historico: false });
+  });
+
+  montarTeclado();
+  desenharPontos();
+  iniciar({ primeiraVez: true });
+})();
+</script>
+</body>
+</html>

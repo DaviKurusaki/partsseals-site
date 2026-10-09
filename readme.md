@@ -1,6 +1,11 @@
 # Parts Seals Vedações Industriais
 
-Landing page institucional estática para a Parts Seals, feita com HTML5, CSS3 e JavaScript puro. O projeto roda no Live Server e pode ser publicado no Netlify sem build.
+Landing page institucional estática para a Parts Seals, feita com HTML5, CSS3 e JavaScript puro. O projeto roda no Live Server; na Netlify, uma etapa de preparação reúne os arquivos públicos para publicação.
+
+O portal de expedição também faz parte deste projeto, em `/expedicao`. A Netlify
+usa `node tools/build_site.cjs` para montar `dist/` com os arquivos públicos e
+empacota a API separadamente. Consulte [a configuração e a migração da expedição](docs/expedicao-migracao.md)
+antes de publicar pela primeira vez com o portal integrado.
 
 ## Como rodar no Live Server
 

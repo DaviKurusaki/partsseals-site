@@ -1,0 +1,8 @@
+/index.html           /                               301!
+/expedicao/api/*      /.netlify/functions/expedicao-api/:splat  200!
+/expedicao            /expedicao/index.html           200!
+/expedicao/           /expedicao/index.html           200!
+/expedicao/index.html /expedicao                      301!
+/expedicao/e/*        /expedicao/index.html           200!
+# Compatibilidade com links de etiquetas no domínio principal.
+/e/*                  /expedicao/e/:splat             301!
