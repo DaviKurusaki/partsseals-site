@@ -13,9 +13,9 @@
  *   TABELA_ORDENS          opcional, padrão banco_ordens_itens
  *
  * Decisões que não são óbvias:
- *  - **A expedição é lida pela MESMA regra do Kuru** (`src/shared/
- *    expedicao-consulta.cjs`), que recebe o cliente do banco daqui. O
- *    esbuild da Netlify embute o arquivo no pacote da função.
+ *  - **A expedição é lida pela MESMA regra do Kuru**, com a cópia
+ *    autossuficiente em `expedicao-consulta.cjs` neste diretório. O esbuild
+ *    da Netlify embute o arquivo no pacote da função.
  *  - **A sessão não fica em banco nenhum**: é um texto assinado (HMAC) com
  *    id, nome e validade. Sem o segredo, ninguém fabrica uma. Ela vale até a
  *    meia-noite de Brasília; permissão tirada no meio do dia só vale no dia
@@ -69,6 +69,7 @@
 
 const crypto = require('node:crypto');
 const { criarExpedicao } = require('./expedicao-consulta.cjs');
+const { anexarAviso, criarFilaExpedicaoCelular } = require('./expedicao-aviso.cjs');
 
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
@@ -140,6 +141,11 @@ const db = {
     const resultado = await chamarBanco(encodeURIComponent(tabela), { metodo: 'POST', corpo: registro, prefer: 'return=representation' });
     return Array.isArray(resultado) ? resultado : (resultado ? [resultado] : []);
   },
+  async atualizar(tabela, chave, alteracoes) {
+    const filtros = Object.entries(chave).map(([coluna, valor]) => OPERADORES.igual(coluna, valor)).join('&');
+    if (!filtros) throw new Error('Atualização sem chave.');
+    return chamarBanco(`${encodeURIComponent(tabela)}?${filtros}`, { metodo: 'PATCH', corpo: alteracoes, prefer: 'return=representation' });
+  },
   async excluir(tabela, coluna, valor) {
     return chamarBanco(`${encodeURIComponent(tabela)}?${OPERADORES.igual(coluna, valor)}`, { metodo: 'DELETE' });
   },
@@ -149,6 +155,7 @@ const db = {
 };
 
 const expedicao = criarExpedicao(db);
+const filaExpedicaoCelular = criarFilaExpedicaoCelular(db);
 
 // --- utilidades ----------------------------------------------------------------
 
@@ -401,6 +408,58 @@ async function metodosDeEntrega(linhas) {
   return new Map(ajustes.map((a) => [a.chave, valorDoAjuste(a.valor)]));
 }
 
+async function prepararAvisosWhatsapp(grupos, pendentes) {
+  const { linhas: ajustes } = await db.selecionar('pcp_ajustes', {
+    colunas: ['valor'], filtros: [
+      { coluna: 'tipo', operador: 'igual', valor: 'sistema' },
+      { coluna: 'chave', operador: 'igual', valor: 'avisos_whatsapp' },
+    ], limite: 1,
+  });
+  if (!ajustes[0]?.valor?.ligado) return false;
+
+  const chaveItem = l => `${texto(l.numero_op)}||${texto(l.cod_item)}`;
+  const selecionados = new Set(pendentes.map(chaveItem));
+  const porChave = new Map(pendentes.map(l => [chaveItem(l), l]));
+  const pedidos = new Map();
+  for (const grupo of grupos) {
+    const chave = `${chaveCliente(grupo.cliente)}||${grupo.pedido}||${grupo.requisicao}`;
+    if (!pedidos.has(chave)) {
+      const todas = new Map();
+      for (let offset = 0; ; offset += 1000) {
+        const { linhas } = await db.selecionar(TABELA_ORDENS, {
+          colunas: ['numero_op', 'cod_item', 'descricao', 'qntd', 'pedido', 'cliente'],
+          filtros: [{ coluna: 'numero_op', operador: 'comeca', valor: grupo.requisicao + '/' }],
+          ordem: [{ coluna: 'numero_op' }, { coluna: 'cod_item' }], limite: 1000, offset,
+        });
+        for (const l of linhas) {
+          if (chaveCliente(l.cliente) === chaveCliente(grupo.cliente) && texto(l.pedido) === grupo.pedido) todas.set(chaveItem(l), l);
+        }
+        if (linhas.length < 1000) break;
+      }
+      // Inclui as linhas já relidas para a baixa, mesmo em uma OP sem barra.
+      for (const l of pendentes) {
+        if (chaveCliente(l.cliente) === chaveCliente(grupo.cliente) && texto(l.pedido) === grupo.pedido && baseDaOp(l.numero_op) === grupo.requisicao) todas.set(chaveItem(l), l);
+      }
+      const linhas = [...todas.values()];
+      const estado = await expedicao.consultar({ numeroOp: linhas[0]?.numero_op, pedido: grupo.pedido,
+        itens: linhas.map(l => ({ numeroOp: l.numero_op, pedido: l.pedido, codigoItem: l.cod_item, descricao: l.descricao })),
+      });
+      const entregues = linhas.filter((l, i) => selecionados.has(chaveItem(l)) || estado.porItem?.[i]?.concluida).length;
+      pedidos.set(chave, { total: linhas.length, entregues, badge: entregues === linhas.length ? 'Finalizado' : 'Parcial' });
+    }
+    anexarAviso(grupo, {
+      pedido: grupo.pedido, requisicao: grupo.requisicao, acao: grupo.acao,
+      responsavel: grupo.responsavel, evento_em: grupo.evento_em, realizado_por: grupo.baixado_por,
+      ...pedidos.get(chave),
+      itens: grupo.itens.map(item => {
+        const linha = porChave.get(chaveItem(item));
+        return { numero_op: item.numero_op, cod_item: item.cod_item, quantidade: linha?.qntd ?? '', descricao: texto(linha?.descricao) };
+      }),
+    });
+  }
+  return true;
+}
+
 async function rotaConsulta(evento) {
   const sessao = lerSessao(evento);
   if (!sessao) return erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true });
@@ -580,7 +639,13 @@ async function rotaMarcar(evento) {
 
   const grupos = montarGruposDeBaixa(pendentes, modo === 'balcao' ? retirante : sessao.nome,
     { modo, baixadoPor: sessao.nome });
+  const avisosLigados = await prepararAvisosWhatsapp(grupos, pendentes);
   const criadas = await db.inserir('expedicao_baixas', grupos);
+  let avisosEnfileirados = 0;
+  for (const baixa of criadas) {
+    try { if (await filaExpedicaoCelular.enfileirar(baixa)) avisosEnfileirados++; }
+    catch (err) { console.warn('[expedicao-whatsapp] aviso salvo com a baixa; o Kuru retomará:', err.codigo || 'rede'); }
+  }
 
   // Auditoria best-effort — a baixa já está gravada; uma falha aqui nunca a
   // desfaz, só deixa de registrar quem fez (RLS já libera INSERT pra anon
@@ -595,6 +660,7 @@ async function rotaMarcar(evento) {
   return responder(200, {
     ok: true, gravados: pendentes.length, grupos: criadas.length, jaDespachados, naoEncontrados,
     modo, responsavel: grupos[0]?.responsavel, eventoEm: grupos[0]?.evento_em,
+    whatsapp: { habilitado: avisosLigados, enfileirados: avisosEnfileirados },
   });
 }
 
@@ -635,8 +701,9 @@ exports.handler = async (evento) => {
   }
 };
 
-// Exposto só pros testes (scripts/test-expedicao-celular.cjs).
+// Exposto só pros testes (tests/expedicao-api.cjs).
 exports._testes = {
   dataIso, chaveCliente, chavesDeEntrega, valorDoAjuste, criarSessao, lerSessao, proximaMeiaNoiteMs,
   grupoEntrega, acaoDoGrupo, montarGruposDeBaixa,
+  recuperarAvisosWhatsapp: filaExpedicaoCelular.recuperar,
 };

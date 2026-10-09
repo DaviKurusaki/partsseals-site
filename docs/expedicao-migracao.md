@@ -91,3 +91,28 @@ node tests/expedicao-api.cjs
 
 A suíte de API usa dados simulados e confere autenticação, permissões, bloqueio
 de PIN, consulta, entrega, coleta parcial, cliente incorreto e auditoria.
+
+## Avisos de WhatsApp e endereços do ARGUS
+
+Ao confirmar uma entrega ou coleta, a função prepara um aviso `expedicao`
+na fila existente `pcp_avisos_whatsapp`. O Kuru do remetente configurado
+produz a mesma imagem e legenda da Expedição do Acabamento e envia ao mesmo
+grupo. Continua dependente do interruptor de avisos e do Kuru conectado ao
+WhatsApp; não há sessão de WhatsApp na Netlify.
+
+O snapshot do aviso fica no primeiro item de `expedicao_baixas`, junto com a
+baixa. A função tenta enfileirar imediatamente; o Kuru 0.2.704 ou superior
+retoma avisos pendentes em caso de falha. O ID da fila é o negativo do ID da
+baixa. A chave primária impede duplicações; nunca fazer upsert ou mesclar
+outros eventos nesses registros. `expedicao-aviso.cjs` é autossuficiente aqui
+e sua cópia em `src/shared/` do Kuru deve permanecer idêntica.
+
+O status Parcial/Finalizado considera todas as OPs do pedido, inclusive
+itens futuros e saídas anteriores. O aviso lista apenas os itens desta
+baixa, com dados relidos pelo servidor e nome do retirante na coleta.
+
+Os endereços continuam sendo lidos de `clientes_enderecos`. No Kuru,
+Tabula > Etiquetas > Expedição oferece Importar do ARGUS. A conexão com o
+Firebird permanece cifrada no computador, fora deste site. A importação
+preserva endereços manuais, não altera o ARGUS e ignora correspondências
+ambíguas. Não exige nova migração SQL; usa as tabelas existentes.

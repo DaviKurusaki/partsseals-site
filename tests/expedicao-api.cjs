@@ -20,6 +20,8 @@ async function teste(nome, fn) {
 // --- banco simulado ---------------------------------------------------------------
 
 const banco = {};
+let falharFila = false;
+let falharConfirmacaoFila = false;
 function zerarBanco() {
   for (const k of Object.keys(banco)) delete banco[k];
   Object.assign(banco, {
@@ -49,6 +51,7 @@ function zerarBanco() {
     fiscal_notas: [],
     expedicao_celular_tentativas: [],
     audit_log: [],
+    pcp_avisos_whatsapp: [],
   });
 }
 
@@ -64,7 +67,9 @@ function filtrar(linhas, params) {
   return linhas.filter((l) => {
     for (const [col, expr] of params) {
       if (['select', 'limit', 'order', 'offset'].includes(col)) continue;
-      const v = l[col] == null ? '' : String(l[col]);
+      const caminho = col.replace(/->>/g, '->').split('->');
+      const campo = caminho.reduce((obj, key) => obj?.[key], l);
+      const v = campo == null ? '' : String(campo);
       if (expr.startsWith('eq.')) { if (v !== decodeURIComponent(expr.slice(3))) return false; }
       else if (expr.startsWith('in.(')) {
         const lista = decodeURIComponent(expr).slice(4, -1).match(/"(?:[^"\\]|\\.)*"|[^,]+/g).map(desaspar);
@@ -100,6 +105,10 @@ global.fetch = async (url, opcoes = {}) => {
     const prefer = String(opcoes.headers?.Prefer || '');
     const corpo = JSON.parse(opcoes.body);
     const lista = Array.isArray(corpo) ? corpo : [corpo];
+    if (caminho === 'pcp_avisos_whatsapp') {
+      if (falharFila) return resposta(503, { message: 'Fila indisponível no teste', code: 'REDE' });
+      if (lista.some(reg => tabela.some(l => String(l.id) === String(reg.id)))) return resposta(409, {message:'Chave duplicada',code:'23505'});
+    }
     if (prefer.includes('merge-duplicates')) {
       // upsert por `chave` (pcp_ajustes, expedicao_celular_tentativas) — o
       // único uso de `db.upsert()` neste arquivo.
@@ -112,8 +121,15 @@ global.fetch = async (url, opcoes = {}) => {
     // `db.inserir()` — sempre linha nova, com `id` autoincrementado, mesmo
     // contrato de uma tabela `identity` de verdade.
     let proximoId = tabela.reduce((m, l) => Math.max(m, Number(l.id) || 0), 0);
-    const criadas = lista.map((reg) => { const linha = { id: ++proximoId, ...reg }; tabela.push(linha); return linha; });
+    const criadas = lista.map((reg) => { const linha = { id: ++proximoId, ...(caminho === 'pcp_avisos_whatsapp' ? {status:'pendente'} : {}), ...reg }; tabela.push(linha); return linha; });
     return resposta(201, prefer.includes('return=representation') ? criadas : undefined);
+  }
+  if (metodo === 'PATCH') {
+    if (falharConfirmacaoFila && caminho === 'expedicao_baixas') return resposta(503, {message:'Confirmação indisponível',code:'REDE'});
+    const corpo = JSON.parse(opcoes.body);
+    const atualizadas = filtrar(tabela, params);
+    for (const linha of atualizadas) Object.assign(linha, corpo);
+    return resposta(200, atualizadas);
   }
   if (metodo === 'DELETE') {
     const fora = new Set(filtrar(tabela, params));
@@ -460,6 +476,89 @@ async function principal() {
     assert.equal(consulta.porItem[0].responsavel, 'MARIA CLIENTE');
     assert.equal(consulta.porItem[1].concluida, false, 'mesmo código em outra OP continua pendente');
     assert.equal((await balcao({})).gravados, 0, 'repetir a coleta não duplica');
+  });
+
+  function prepararWhatsapp() {
+    zerarBanco();
+    falharFila = false;
+    falharConfirmacaoFila = false;
+    banco.pcp_ajustes.push(
+      {tipo:'sistema',chave:'expedicao_celular_baixa',valor:{ligado:true}},
+      {tipo:'sistema',chave:'avisos_whatsapp',valor:{ligado:true}},
+    );
+  }
+  const marcar = corpo => chamar('marcar', {sessao:sessaoMarca,metodo:'POST',corpo});
+  const restante = {itens:[{numeroOp:'29800/2',codItem:'45122'}]};
+  await teste('WhatsApp: mesmo tipo de aviso, dados do banco e total incluindo itens que já saíram', async()=>{
+    prepararWhatsapp();
+    const r=await marcar(restante);
+    assert.equal(r.status,200,r.erro);
+    assert.equal(r.whatsapp.enfileirados,1);
+    const fila=banco.pcp_avisos_whatsapp[0];
+    const baixa=banco.expedicao_baixas.at(-1);
+    assert.equal(fila.tipo,'expedicao');assert.equal(fila.cliente,'JSL S.B.O.');
+    assert.equal(fila.id,'-'+baixa.id);
+    const bloco=fila.itens[0];
+    assert.equal(bloco.badge,'Finalizado');assert.equal(bloco.entregues,2);assert.equal(bloco.total,2);
+    assert.equal(bloco.responsavel,'MOTORISTA QUE MARCA');assert.equal(bloco.acao,'COLETA');
+    assert.equal(bloco.itens.length,1);assert.equal(bloco.itens[0].quantidade,'4,0');
+    assert.equal(bloco.itens[0].descricao,'GAXETA TEFLON');
+    assert.equal(baixa.itens[0].aviso_whatsapp.pendente,false);
+    assert.equal((await marcar(restante)).gravados,0);assert.equal(banco.pcp_avisos_whatsapp.length,1);
+  });
+  await teste('WhatsApp: coleta parcial conta outra OP do mesmo código e pedido futuro', async()=>{
+    prepararWhatsapp();
+    banco.banco_ordens_itens.push(
+      {numero_op:'70000/1',cod_item:'A',descricao:'ANEL',qntd:'8',pedido:'P',cliente:'JSL S.B.O.'},
+      {numero_op:'70000/2',cod_item:'A',descricao:'ANEL',qntd:'9',pedido:'P',cliente:'JSL S.B.O.',data_entrega:'2099-01-01'},
+    );
+    const r=await marcar({modo:'balcao',retirante:'CLIENTE RETIRA',cliente:'JSL SBO',itens:[{numeroOp:'70000/1',codItem:'A',descricao:'falsa',qntd:'999'}]});
+    assert.equal(r.status,200,r.erro);
+    const bloco=banco.pcp_avisos_whatsapp[0].itens[0];
+    assert.equal(bloco.badge,'Parcial');assert.equal(bloco.entregues,1);assert.equal(bloco.total,2);
+    assert.equal(bloco.acao,'COLETA');assert.equal(bloco.responsavel,'CLIENTE RETIRA');
+    assert.equal(bloco.realizado_por,'MOTORISTA QUE MARCA');assert.equal(bloco.itens[0].quantidade,'8');
+    assert.equal(bloco.itens[0].descricao,'ANEL');
+  });
+  await teste('WhatsApp: entrega própria usa ENTREGA e não mistura avisos de clientes diferentes', async()=>{
+    prepararWhatsapp();
+    banco.expedicao_baixas=[];
+    banco.pcp_ajustes.push({tipo:'entrega',chave:'padrao||OUTRO',valor:'Entregamos'});
+    const r=await marcar({itens:[{numeroOp:'29800/1',codItem:'44360'},{numeroOp:'29801/1',codItem:'99999'}]});
+    assert.equal(r.status,200,r.erro);assert.equal(r.whatsapp.enfileirados,2);
+    const outra=banco.pcp_avisos_whatsapp.find(a=>a.cliente==='OUTRO');
+    assert.equal(outra.itens[0].acao,'ENTREGA');assert.equal(outra.itens[0].badge,'Finalizado');
+    assert.equal(banco.pcp_avisos_whatsapp.find(a=>a.cliente!=='OUTRO').itens[0].badge,'Parcial');
+  });
+  await teste('WhatsApp: falha da fila conserva baixa e aviso para recuperação automática', async()=>{
+    prepararWhatsapp();falharFila=true;
+    const r=await marcar(restante);
+    assert.equal(r.status,200,r.erro);assert.equal(r.gravados,1);assert.equal(r.whatsapp.enfileirados,0);
+    const baixa=banco.expedicao_baixas.at(-1);
+    assert.equal(baixa.itens[0].aviso_whatsapp.pendente,true);
+    const totalBaixas=banco.expedicao_baixas.length;
+    falharFila=false;
+    assert.equal(await api._testes.recuperarAvisosWhatsapp(),1);
+    assert.equal(baixa.itens[0].aviso_whatsapp.pendente,false);
+    assert.equal(await api._testes.recuperarAvisosWhatsapp(),0);
+    assert.equal(banco.pcp_avisos_whatsapp.length,1);assert.equal(banco.expedicao_baixas.length,totalBaixas);
+  });
+  await teste('WhatsApp: confirmação perdida ou dois PCs não reenfileiram aviso já enviado', async()=>{
+    prepararWhatsapp();falharConfirmacaoFila=true;
+    assert.equal((await marcar(restante)).status,200);
+    const fila=banco.pcp_avisos_whatsapp[0];fila.status='enviado';fila.enviado_em='2026-10-09T19:00:00Z';
+    falharConfirmacaoFila=false;
+    await Promise.all([api._testes.recuperarAvisosWhatsapp(),api._testes.recuperarAvisosWhatsapp()]);
+    assert.equal(banco.pcp_avisos_whatsapp.length,1);assert.equal(fila.status,'enviado');
+    assert.equal(fila.enviado_em,'2026-10-09T19:00:00Z');
+    assert.equal(banco.expedicao_baixas.at(-1).itens[0].aviso_whatsapp.pendente,false);
+  });
+  await teste('WhatsApp: interruptor desligado mantém a baixa sem criar avisos', async()=>{
+    prepararWhatsapp();banco.pcp_ajustes.find(a=>a.chave==='avisos_whatsapp').valor.ligado=false;
+    const r=await marcar(restante);
+    assert.equal(r.status,200);assert.equal(r.gravados,1);assert.equal(r.whatsapp.habilitado,false);
+    assert.equal(banco.pcp_avisos_whatsapp.length,0);
+    assert.equal(banco.expedicao_baixas.at(-1).itens[0].aviso_whatsapp,undefined);
   });
 
   console.log(`\n${ok} ok, ${falhas.length} falha(s)`);
