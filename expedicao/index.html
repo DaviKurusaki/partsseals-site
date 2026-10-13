@@ -211,6 +211,7 @@
     display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 50px; padding: 0 14px;
     border-radius: var(--raio-p); border: 1px solid var(--linha); background: var(--cartao-2); color: var(--tinta);
     font-weight: 700; text-decoration: none; cursor: pointer; transition: transform .1s ease; white-space: nowrap; min-width: 0;
+    overflow: hidden; text-overflow: ellipsis;
   }
   .btn:disabled { opacity: .55; cursor: default; }
   .btn:active { transform: scale(.97); }
@@ -303,6 +304,11 @@
   .barra-baixo .dentro { max-width: 520px; margin: 0 auto; display: flex; gap: 10px; }
   .barra-baixo .btn { min-height: 54px; flex: 1; }
   .barra-baixo .btn.forte { flex: 2; font-size: 16.5px; }
+  /* Um botão só de ícone (ou ícone + "Atualizar") não precisa do mesmo
+   * `flex: 1` dos outros — crescendo igual, ele roubava espaço que o botão
+   * de texto longo ("Finalizar saída e montar rota") precisava de verdade,
+   * e o texto chegava a vazar pra fora do botão num celular estreito. */
+  .barra-baixo .btn.so-icone-estreito { flex: 0 1 auto; padding: 0 12px; }
   body.com-barra { --barra-baixo: 80px; }
 
   /* --- modal genérico (pós-escaneamento, conferência do carrinho, alertas) -------------- */

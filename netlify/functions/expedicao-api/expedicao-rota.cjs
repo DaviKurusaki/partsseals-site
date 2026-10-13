@@ -118,7 +118,21 @@ async function matrizTempos(pontos, chave = process.env.OPENROUTESERVICE_API_KEY
     body: JSON.stringify({ locations: pontos.map(p => [p.longitude, p.latitude]), metrics: ['duration'] }),
     signal: AbortSignal.timeout(15000),
   });
-  if (!resposta.ok) throw new Error('Não foi possível calcular a rota gratuita. Confira a chave e a cota do openrouteservice e tente novamente.');
+  if (!resposta.ok) {
+    // O motivo exato (chave ausente/errada, cota esgotada, plano sem acesso
+    // à API de matriz...) nunca aparecia — só um "confira a chave", que não
+    // diz qual das causas é. O corpo da resposta do openrouteservice/HeiGit
+    // já vem com `{ "error": "..." }` ou `{ "error": { "message": "..." } }`;
+    // mostrar esse texto (e o status HTTP) é o que permite saber de cara se
+    // é 401 (sem chave), 403 (chave sem acesso a este plano/API) ou 429
+    // (cota do dia esgotada), sem precisar adivinhar de novo.
+    let motivo = '';
+    try {
+      const corpo = await resposta.json();
+      motivo = typeof corpo?.error === 'string' ? corpo.error : corpo?.error?.message || corpo?.message || '';
+    } catch { /* corpo não era JSON — segue só com o status */ }
+    throw new Error(`Não foi possível calcular a rota gratuita (HTTP ${resposta.status}${motivo ? `: ${motivo}` : ''}). Confira a chave e a cota do openrouteservice.`);
+  }
   const dados = await resposta.json();
   otimizarCircuito(dados.durations || []); // valida trechos inacessíveis/null
   if (dados.durations?.length !== pontos.length) throw new Error('O serviço de rotas retornou uma matriz incompleta.');
