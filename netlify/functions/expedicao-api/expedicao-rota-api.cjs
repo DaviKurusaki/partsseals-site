@@ -104,7 +104,7 @@ function criarRotasApi(c) {
           const end = enderecos.find(x => x.cliente_chave === destino);
           if (!end || !geo.enderecoCompleto(end)) throw new Error(`Cadastre o endereço de ${[...porCliente.values()].find(p => p.destino_chave === destino).cliente}${destino === 'JSLSBO' ? ' (destino físico: JSL S.B.O)' : ''} antes de sair.`);
           if (!Number.isFinite(end.latitude) || !Number.isFinite(end.longitude)) {
-            const ponto = await geo.geocodificar(geo.enderecoCompleto(end));
+            const ponto = await geo.geocodificarEndereco(end);
             if (!ponto) throw new Error(`Não foi possível localizar ${end.cliente}. Confira o endereço e suas coordenadas no cadastro.`);
             Object.assign(end, ponto);
             await db.atualizar('clientes_enderecos', { id: end.id }, { ...ponto, geocodificado_ok: true, geocodificado_em: new Date().toISOString() });

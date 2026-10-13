@@ -40,6 +40,14 @@ function enderecoCompleto({ endereco, bairro, cidade, uf, cep } = {}) {
   return partes.join(', ');
 }
 
+/** Mesma montagem, sem o bairro — usada só como segunda tentativa de
+ *  geocodificação (ver `geocodificarEndereco`), nunca pra exibir. */
+function enderecoSemBairro({ endereco, cidade, uf, cep } = {}) {
+  const partes = [texto(endereco), [texto(cidade), texto(uf)].filter(Boolean).join(' - '), texto(cep)]
+    .filter(Boolean);
+  return partes.join(', ');
+}
+
 /**
  * Converte um endereço em `{latitude, longitude}` via Nominatim, ou `null`
  * se não achar/der erro de rede. Nunca lança — geocodificação é sempre
@@ -127,4 +135,21 @@ function ordenarPorProximidade(origem, paradas) {
   return [...ordenadas, ...semCoordenada];
 }
 
-module.exports = { distanciaMetros, enderecoCompleto, geocodificar, ordenarPorProximidade };
+/**
+ * Geocodifica um registro de `clientes_enderecos`, com fallback — o bairro
+ * digitado no cadastro às vezes não bate com o nome que o OpenStreetMap
+ * indexa (apelido local, grafia antiga, bairro oficial diferente do de uso
+ * comum), e nesse caso a consulta com TODOS os campos não acha NADA, mesmo
+ * a rua existindo certinho no mapa. Achado num caso real (RPSEALS,
+ * Piracicaba): "..., VERDE, ..." não achava nada; a mesma rua sem o bairro
+ * achou de primeira, exatamente no endereço certo. Tenta completo primeiro
+ * (mais preciso quando bate); sem resultado, tenta de novo só sem o bairro.
+ */
+async function geocodificarEndereco(end) {
+  const completo = await geocodificar(enderecoCompleto(end));
+  if (completo) return completo;
+  if (!texto(end?.bairro)) return null; // nada a tirar — já foi a única tentativa
+  return geocodificar(enderecoSemBairro(end));
+}
+
+module.exports = { distanciaMetros, enderecoCompleto, enderecoSemBairro, geocodificar, geocodificarEndereco, ordenarPorProximidade };
