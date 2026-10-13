@@ -60,10 +60,13 @@ function acompanharCerca(parada, dentro, agora) {
 }
 function textoEntrega(p) {
   const cliente = String(p.cliente || '').trim();
+  // "Recebido por" só existe na confirmação MANUAL (v0.2.724) — a entrega
+  // automática da cerca nunca pergunta nada, ninguém tocou em nada.
+  const recebedor = p.recebido_por ? `\nRecebido por: ${p.recebido_por}` : '';
   if (p.entrega_automatica && !p.checklist_marcado) return `${cliente} ENTREGUE PORÉM SEM CHECKLIST MARCADO\nSaída da cerca de ${p.destino_cliente || cliente} após pelo menos 2 minutos.`;
-  if (p.divergencia) return `⚠️ ${cliente} MARCADO COMO ENTREGUE NA CERCA DE ${p.divergencia}\nPossível entrega das sacolas no cliente errado. Confira.\nJustificativa: ${p.justificativa}`;
-  if (p.confirmado_por_localizacao) return `${cliente} ENTREGUE NA CERCA DE ${p.destino_cliente || cliente}`;
-  return `${cliente} ENTREGUE — LOCALIZAÇÃO NÃO CONFIRMADA\nJustificativa: ${p.justificativa}`;
+  if (p.divergencia) return `⚠️ ${cliente} MARCADO COMO ENTREGUE NA CERCA DE ${p.divergencia}\nPossível entrega das sacolas no cliente errado. Confira.\nJustificativa: ${p.justificativa}${recebedor}`;
+  if (p.confirmado_por_localizacao) return `${cliente} ENTREGUE NA CERCA DE ${p.destino_cliente || cliente}${recebedor}`;
+  return `${cliente} ENTREGUE — LOCALIZAÇÃO NÃO CONFIRMADA\nJustificativa: ${p.justificativa}${recebedor}`;
 }
 
 // Circuito dirigido: inclui a volta à empresa. Exato até 12 destinos;

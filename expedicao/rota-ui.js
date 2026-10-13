@@ -50,7 +50,8 @@ window.criarTelaEntrega = function(c) {
         ${g.paradas.map(p => `<div class="entrega-cliente"><b>${esc(p.cliente)}</b><p>${p.itens.map(i => `${esc(i.numeroOp)} · ${esc(i.descricao || '')}`).join('<br>')}</p>
           <button class="btn ${p.checklistMarcado ? 'check-marcado' : 'forte'}" type="button" role="checkbox" aria-checked="${Boolean(p.checklistMarcado)}" data-entregar="${p.id}" ${p.checklistMarcado ? 'disabled' : ''}>${ico('check')}${p.checklistMarcado ? 'Checklist marcado' : 'Conferi e entreguei'}</button>
           ${p.status === 'entregue' ? `<p class="${p.entregaAutomatica || p.divergencia ? 'entrega-aviso' : ''}">${p.entregaAutomatica ? 'Entregue automaticamente, sem checklist' : p.divergencia ? `Confirmado na cerca de ${esc(p.divergencia)} — confira as sacolas` : p.confirmadoPorLocalizacao ? `Entregue na cerca de ${esc(p.destinoCliente)}` : 'Entregue — localização não confirmada'}</p><button class="btn" type="button" data-corrigir="${p.id}">Corrigir entrega</button>` : ''}
-          ${p.justificativa ? `<p>Justificativa: ${esc(p.justificativa)}</p>` : ''}</div>`).join('')}
+          ${p.justificativa ? `<p>Justificativa: ${esc(p.justificativa)}</p>` : ''}
+          ${p.recebidoPor ? `<p>Recebido por: ${esc(p.recebidoPor)}</p>` : ''}</div>`).join('')}
         <a class="btn" href="${esc(linkMaps(g.paradas[0]))}" target="_blank" rel="noopener">${ico('mapa')}Abrir destino no Google Maps</a></article>`).join('')}</div>
       <div class="cartao parada-rota"><h2>Retorno à empresa</h2><p>${esc(rota.empresaEndereco)}</p><a class="btn" href="${esc(linkMaps({ latitude: rota.empresaLat, longitude: rota.empresaLng, empresaEndereco: rota.empresaEndereco }))}" target="_blank" rel="noopener">${ico('mapa')}Voltar pelo Google Maps</a></div>
       <p class="ajuda-rota">Tempos estimados por openrouteservice · © colaboradores do OpenStreetMap.</p>
@@ -134,7 +135,14 @@ window.criarTelaEntrega = function(c) {
     if (ocupada || dialogAtivo || alertando) return;
     ocupada = true;
     try {
-      let detalhes = { cercaChave: cercaEscolhida };
+      // Nome de quem recebeu — sempre pedido na confirmação manual (v0.2.724),
+      // antes mesmo de saber se vai ter problema de cerca/localização: é uma
+      // pergunta sobre a entrega em si, não sobre o GPS.
+      const quemRecebeu = await formulario({ titulo: 'Confirmar entrega', texto: 'Quem recebeu a entrega?',
+        conteudo: '<label for="entregaRecebidoPor">Nome de quem recebeu</label><input type="text" id="entregaRecebidoPor" name="recebidoPor" required minlength="2" maxlength="120" autocomplete="off" placeholder="Nome de quem recebeu">',
+        confirmar: 'Confirmar entrega' });
+      if (!quemRecebeu) return;
+      let detalhes = { cercaChave: cercaEscolhida, recebidoPor: quemRecebeu.recebidoPor };
       for (let tentativa = 0; tentativa < 5; tentativa++) {
         const pos = await obterPosicao();
         const r = await api('rotas/entregar', { method: 'POST', body: JSON.stringify({ rotaId: rota.id, paradaId, ...(pos || {}), ...detalhes }) }).catch(() => null);

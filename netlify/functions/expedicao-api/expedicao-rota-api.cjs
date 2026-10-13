@@ -29,7 +29,7 @@ function criarRotasApi(c) {
       paradas: paradas.map(p => ({ id: p.id, ordem: p.ordem, cliente: p.cliente, clienteChave: p.cliente_chave, destinoChave: p.destino_chave || regras.destinoChave(p.cliente), destinoCliente: p.destino_cliente || p.cliente,
         itens: p.itens || [], enderecoTexto: p.endereco_texto || '', latitude: p.latitude, longitude: p.longitude, status: p.status, chegouEm: p.chegou_em,
         entregueEm: p.entregue_em, divergencia: p.divergencia, checklistMarcado: p.checklist_marcado, entregaAutomatica: p.entrega_automatica,
-        justificativa: p.justificativa, confirmadoPorLocalizacao: p.confirmado_por_localizacao })),
+        justificativa: p.justificativa, confirmadoPorLocalizacao: p.confirmado_por_localizacao, recebidoPor: p.recebido_por })),
       eventos: eventos.map(e => ({ id: e.id, tipo: e.tipo, mensagem: e.mensagem, criadoEm: e.criado_em, vistoEm: e.visto_em, whatsappEnviadoEm: e.whatsapp_enviado_em })) };
   }
   async function origemEmpresa() {
@@ -157,7 +157,7 @@ function criarRotasApi(c) {
       const leitura = corpo.reiniciarCerca === true ? { ...p, cerca_dentro: false, cerca_posicao_em: null, cerca_entrou_em: null, cerca_permanencia_ok: false } : p;
       const passo = regras.acompanharCerca(leitura, Boolean(dentro), agora);
       if (ponto && !ambigua && passo.autoEntregar) {
-        const entregue = { ...p, status: 'entregue', entregue_em: new Date(agora).toISOString(), entrega_automatica: true, checklist_marcado: false, confirmado_por_localizacao: true, divergencia: null, justificativa: null };
+        const entregue = { ...p, status: 'entregue', entregue_em: new Date(agora).toISOString(), entrega_automatica: true, checklist_marcado: false, confirmado_por_localizacao: true, divergencia: null, justificativa: null, recebido_por: null };
         await transicao(auth.s, r, p, entregue, 'sem_checklist', regras.textoEntrega(entregue));
       } else {
         await db.atualizar('expedicao_rotas_paradas', { id: p.id, revisao: p.revisao || 0 }, { ...passo.alteracoes, ...(dentro && p.status === 'pendente' ? { status: 'chegou', chegou_em: new Date(agora).toISOString() } : {}) });
@@ -173,6 +173,14 @@ function criarRotasApi(c) {
     const paradas = await paradasDe(r.id), p = paradas.find(p => p.id === Number(corpo.paradaId));
     if (!p) return erro(404, 'Parada não encontrada.');
     if (p.checklist_marcado) return responder(200, { ok: true, jaConfirmado: true, rota: await respostaRota(r) });
+    // Quem recebeu é sempre pedido na confirmação MANUAL (v0.2.724) — nunca
+    // na entrega automática da cerca (`posicao()`, acima: ninguém tocou em
+    // nada naquele instante pra perguntar). O site já pede isso ANTES de
+    // chamar esta rota; a validação aqui é só a rede de segurança de sempre.
+    const recebidoPor = texto(corpo.recebidoPor);
+    if (recebidoPor.length < 2 || recebidoPor.length > 120) {
+      return erro(409, 'Informe o nome de quem recebeu a entrega.', { requerRecebidoPor: true });
+    }
     const avaliacao = regras.avaliarEntrega(p, paradas, regras.posicao(corpo), corpo.cercaChave);
     if (avaliacao.precisaEscolherCerca) return erro(409, 'Escolha em qual endereço você está.', avaliacao);
     const justificativa = texto(corpo.justificativa);
@@ -180,7 +188,8 @@ function criarRotasApi(c) {
       return erro(409, avaliacao.divergencia ? `Você está na cerca de ${avaliacao.divergencia}, mas marcou ${p.cliente}. Confira as sacolas antes de confirmar.` : 'Localização não confirmada. Informe uma justificativa para marcar a entrega.', avaliacao);
     }
     const entregue = { ...p, status: 'entregue', entregue_em: new Date().toISOString(), checklist_marcado: true, entrega_automatica: false,
-      confirmado_por_localizacao: avaliacao.confirmadoPorLocalizacao, divergencia: avaliacao.divergencia, justificativa: avaliacao.requerJustificativa ? justificativa : null };
+      confirmado_por_localizacao: avaliacao.confirmadoPorLocalizacao, divergencia: avaliacao.divergencia, justificativa: avaliacao.requerJustificativa ? justificativa : null,
+      recebido_por: recebidoPor };
     const resultado = await transicao(auth.s, r, p, entregue, avaliacao.divergencia ? 'divergencia' : 'entrega', regras.textoEntrega(entregue));
     if (!resultado.alterada) return erro(409, 'Esta entrega foi alterada durante a confirmação. Confira o estado atualizado e tente novamente.', { requerAtualizacao: true, rota: await respostaRota(await rotaDoUsuario(r.id, auth.s.id)) });
     return responder(200, { ok: true, rota: await respostaRota(await rotaDoUsuario(r.id, auth.s.id)) });

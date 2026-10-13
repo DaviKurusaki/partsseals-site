@@ -810,7 +810,7 @@
     delete contexto.operacaoId; salvarContexto();
     salvarCarrinho();
   }
-  function limparCarrinho() { carrinho = []; delete contexto.clienteAtual; delete contexto.operacaoId; salvarCarrinho(); salvarContexto(); }
+  function limparCarrinho() { carrinho = []; delete contexto.clienteAtual; delete contexto.operacaoId; delete contexto.clientesAnteriores; salvarCarrinho(); salvarContexto(); }
 
   // --- sobreposição genérica (pós-escaneamento, revisão do carrinho, alertas) ----------
   // Uma única sobreposição, reaproveitada pra tudo — nunca duas abertas ao
@@ -827,6 +827,10 @@
   let exigeCienciaCliente = false;
   let fundoBloqueado = [];
   let overflowAntesAlerta = null;
+  // Quais botões o alerta GRANDE atual tem — Tab circula só entre eles
+  // (nunca escapa pro fundo inert). Com 1 botão só (os alertas de bloqueio
+  // de etiqueta), ciclar sempre volta pro mesmo — mesmo efeito de sempre.
+  let focoAlertaBotoes = [];
   function fecharSobreposicao() {
     const eraAlerta = $('sobreposicao').classList.contains('alerta-cliente');
     $('sobreposicao').hidden = true; $('modalConteudo').innerHTML = '';
@@ -835,6 +839,7 @@
     $('sobreposicao').removeAttribute('aria-labelledby');
     $('sobreposicao').removeAttribute('aria-describedby');
     exigeCienciaCliente = false;
+    focoAlertaBotoes = [];
     for (const el of fundoBloqueado) el.inert = false;
     fundoBloqueado = [];
     if (overflowAntesAlerta !== null) document.body.style.overflow = overflowAntesAlerta;
@@ -850,10 +855,35 @@
   $('sobreposicao').addEventListener('click', (ev) => { if (ev.target === $('sobreposicao') && !exigeCienciaCliente) history.back(); });
   document.addEventListener('keydown', (ev) => {
     if (!exigeCienciaCliente) return;
-    if (ev.key === 'Escape' || ev.key === 'Tab') {
-      ev.preventDefault(); $('clienteErradoEntendi').focus();
+    if (ev.key === 'Escape') { ev.preventDefault(); return; }
+    if (ev.key === 'Tab') {
+      ev.preventDefault();
+      if (!focoAlertaBotoes.length) return;
+      const atual = focoAlertaBotoes.indexOf(document.activeElement);
+      const prox = ev.shiftKey ? (atual <= 0 ? focoAlertaBotoes.length - 1 : atual - 1) : (atual + 1) % focoAlertaBotoes.length;
+      focoAlertaBotoes[prox]?.focus();
     }
   });
+
+  /** Ativa o tratamento de alerta GRANDE bloqueante (alertdialog): fundo
+   *  inert, rolagem travada, foco preso circulando só entre `botoesIds`,
+   *  sem fechar por fora/Voltar/Escape — só pelos próprios botões. Chamar
+   *  DEPOIS de `abrirSobreposicao()` (os botões já têm que existir no DOM). */
+  function ativarAlertaGrande(tituloId, descricaoId, botoesIds) {
+    exigeCienciaCliente = true;
+    $('sobreposicao').classList.add('alerta-cliente');
+    $('sobreposicao').setAttribute('role', 'alertdialog');
+    $('sobreposicao').setAttribute('aria-labelledby', tituloId);
+    $('sobreposicao').setAttribute('aria-describedby', descricaoId);
+    // Bloqueia também teclado e leitores de tela no conteúdo atrás do alerta.
+    fundoBloqueado = [...document.body.children].filter(el => el !== $('sobreposicao') && !el.inert && !['SCRIPT', 'STYLE'].includes(el.tagName));
+    for (const el of fundoBloqueado) el.inert = true;
+    overflowAntesAlerta = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    focoAlertaBotoes = botoesIds.map((id) => $(id));
+    focoAlertaBotoes[0]?.focus();
+    vibrar([100, 60, 100]);
+  }
 
   function alertarClienteErrado(clienteEtiqueta) {
     abrirSobreposicao(`
@@ -870,22 +900,66 @@
       <div class="modal-botoes">
         <button class="btn forte" type="button" id="clienteErradoEntendi">Entendi, vou conferir a etiqueta</button>
       </div>`);
-    exigeCienciaCliente = true;
-    $('sobreposicao').classList.add('alerta-cliente');
-    $('sobreposicao').setAttribute('role', 'alertdialog');
-    $('sobreposicao').setAttribute('aria-labelledby', 'tituloClienteErrado');
-    $('sobreposicao').setAttribute('aria-describedby', 'descricaoClienteErrado');
-    // Bloqueia também teclado e leitores de tela no conteúdo atrás do alerta.
-    fundoBloqueado = [...document.body.children].filter(el => el !== $('sobreposicao') && !el.inert && !['SCRIPT', 'STYLE'].includes(el.tagName));
-    for (const el of fundoBloqueado) el.inert = true;
-    overflowAntesAlerta = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    $('clienteErradoEntendi').focus();
-    vibrar([100, 60, 100]);
+    ativarAlertaGrande('tituloClienteErrado', 'descricaoClienteErrado', ['clienteErradoEntendi']);
     $('clienteErradoEntendi').addEventListener('click', (ev) => {
       ev.currentTarget.disabled = true;
       exigeCienciaCliente = false;
       history.back();
+    });
+  }
+
+  /** Cliente que já ficou pra trás nesta mesma saída de Entrega (v0.2.724):
+   *  depois de confirmar a troca pra outro cliente (`confirmarTrocaClienteGrande`),
+   *  os anteriores ficam bloqueados — não dá pra misturar de novo etiquetas
+   *  de quem já foi "deixado pra trás" na sequência da rota — até finalizar
+   *  ou cancelar a viagem inteira (`limparCarrinho()` é quem destrava).
+   *  Mesmo tratamento bloqueante de `alertarClienteErrado`. */
+  function alertarClienteBloqueado(clienteBloqueado, clienteAtual) {
+    abrirSobreposicao(`
+      <div class="modal-icone aviso">${ico('alerta', 'stroke-width="2.4"')}</div>
+      <h2 id="tituloClienteBloqueado">Cliente bloqueado nesta viagem!</h2>
+      <div id="descricaoClienteBloqueado">
+        <p>Você já trocou para <b>${esc(clienteAtual || 'outro cliente')}</b> nesta mesma saída. Etiquetas de <b>${esc(clienteBloqueado)}</b> não podem ser adicionadas de novo até você finalizar ou cancelar esta viagem.</p>
+        <p><b>Esta etiqueta foi bloqueada.</b> Nenhum item dela foi adicionado ao carrinho.</p>
+      </div>
+      <div class="modal-botoes">
+        <button class="btn forte" type="button" id="clienteBloqueadoEntendi">Entendi</button>
+      </div>`);
+    ativarAlertaGrande('tituloClienteBloqueado', 'descricaoClienteBloqueado', ['clienteBloqueadoEntendi']);
+    $('clienteBloqueadoEntendi').addEventListener('click', (ev) => {
+      ev.currentTarget.disabled = true;
+      exigeCienciaCliente = false;
+      history.back();
+    });
+  }
+
+  /** Confirmação GRANDE e bloqueante (mesmo tratamento de `alertarClienteErrado`,
+   *  com dois botões) pra trocar de cliente dentro da mesma saída de Entrega
+   *  — v0.2.724: o aviso pequeno de antes (`confirmarEstilizado`) passava
+   *  despercebido fácil demais. Confirmando, quem chamou marca o cliente
+   *  atual como bloqueado (`alertarClienteBloqueado` cuida do resto);
+   *  cancelando, a etiqueta não entra no carrinho. Devolve Promise<boolean>. */
+  function confirmarTrocaClienteGrande(clienteAtual, clienteNovo) {
+    return new Promise((resolve) => {
+      abrirSobreposicao(`
+        <div class="modal-icone aviso">${ico('alerta', 'stroke-width="2.4"')}</div>
+        <h2 id="tituloTrocaCliente">Trocar de cliente nesta viagem?</h2>
+        <div id="descricaoTrocaCliente">
+          <p>Você estava escaneando para <b>${esc(clienteAtual)}</b>. Esta etiqueta é de <b>${esc(clienteNovo)}</b>.</p>
+          <p>Confirmando, <b>${esc(clienteAtual)}</b> fica bloqueado nesta viagem — não vai dar pra escanear mais etiquetas dele até você finalizar ou cancelar esta saída.</p>
+        </div>
+        <div class="modal-botoes">
+          <button class="btn forte" type="button" id="trocaClienteConfirmar">Confirmar a troca</button>
+          <button class="btn" type="button" id="trocaClienteCancelar">Cancelar</button>
+        </div>`, { aoFechar: () => resolve(false) });
+      ativarAlertaGrande('tituloTrocaCliente', 'descricaoTrocaCliente', ['trocaClienteConfirmar', 'trocaClienteCancelar']);
+      $('trocaClienteConfirmar').addEventListener('click', (ev) => {
+        ev.currentTarget.disabled = true;
+        exigeCienciaCliente = false;
+        aoFecharSobreposicao = () => resolve(true);
+        history.back();
+      });
+      $('trocaClienteCancelar').addEventListener('click', () => { exigeCienciaCliente = false; history.back(); });
     });
   }
 
@@ -1390,16 +1464,20 @@
     if (contexto.modo === 'balcao' && chaveCliente(d.cliente) !== chaveCliente(contexto.cliente)) {
       alertarClienteErrado(d.cliente); return;
     }
+    const clienteAtual = clienteDoCarrinho();
+    // Cliente já deixado pra trás nesta viagem (confirmado numa troca
+    // anterior) — bloqueado de vez, sem opção de forçar (v0.2.724).
+    if (contexto.modo !== 'balcao' && d.cliente && (contexto.clientesAnteriores || []).includes(chaveCliente(d.cliente))) {
+      alertarClienteBloqueado(d.cliente, clienteAtual); return;
+    }
     const pendentes = d.itens.filter((i) => !i.despachado && !noCarrinho(i.numeroOp, i.codItem)
       && (!d.destaque || i.numeroOp === d.destaque));
-    const clienteAtual = clienteDoCarrinho();
     if (clienteAtual && d.cliente && chaveCliente(clienteAtual) !== chaveCliente(d.cliente)) {
-      const ok = await confirmarEstilizado({
-        titulo: `Esse item não é da ${clienteAtual}!`,
-        texto: `Você estava conferindo ${clienteAtual}. Esta etiqueta é de ${d.cliente}. Confirma que quer adicionar este cliente à mesma saída?`,
-        textoConfirmar: 'Adicionar mesmo assim', textoCancelar: 'Cancelar', perigo: true,
-      });
+      const ok = await confirmarTrocaClienteGrande(clienteAtual, d.cliente);
       if (!ok) return;
+      // Confirmado: o cliente que estava sendo escaneado agora fica
+      // bloqueado até o fim da viagem (`limparCarrinho()` é quem destrava).
+      contexto.clientesAnteriores = [...(contexto.clientesAnteriores || []), chaveCliente(clienteAtual)];
     }
     contexto.clienteAtual = d.cliente; salvarContexto();
     if (!pendentes.length) { aviso('Esta etiqueta já está no carrinho ou não tem itens pendentes.'); return; }
