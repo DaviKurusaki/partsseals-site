@@ -76,9 +76,17 @@ function criarRotasApi(c) {
     encontradas.forEach((l, i) => { if (estado.porItem?.[i]?.concluida) jaDespachados.push(l.numero_op); else pendentes.push({ ...l, metodo_entrega: metodoDe(l) }); });
     if (!pendentes.length) return responder(200, { ok: true, gravados: 0, jaDespachados, naoEncontrados, rota: null });
     const grupos = c.montarGruposDeBaixa(pendentes, s.nome, { baixadoPor: s.nome });
+    // Todo item escaneado aqui vira parada da rota, qualquer que seja o
+    // método de entrega cadastrado no PCP (Correio/Azul Cargo/Cliente
+    // Retira/Transportadora/Entregamos) — v0.2.721, corrigido depois de um
+    // caso real do usuário: um cliente marcado "Cliente Retira" tinha sido
+    // escaneado pra ENTREGA de verdade (o motorista levou na mão), e a
+    // versão anterior (só "Entregamos" virava parada) deixava a entrega de
+    // fora da rota sem avisar nada. O cadastro é só o PADRÃO; quem decide o
+    // que aconteceu HOJE com ESTE pedido é a pessoa escaneando pra "Entrega"
+    // — nunca mais uma leitura do método pra decidir se vira parada.
     const porCliente = new Map();
     for (const l of pendentes) {
-      if (c.grupoEntrega(l.metodo_entrega) !== 'Entregamos') continue;
       const chave = chaveCliente(l.cliente);
       if (!porCliente.has(chave)) porCliente.set(chave, { cliente: texto(l.cliente), cliente_chave: chave, destino_chave: regras.destinoChave(l.cliente), itens: [] });
       porCliente.get(chave).itens.push({ numeroOp: l.numero_op, codItem: l.cod_item, descricao: l.descricao, pedido: l.pedido, quantidade: l.qntd });

@@ -40,7 +40,11 @@ function zerarBanco() {
       { numero_op: '29801/1', cod_item: '99999', descricao: 'OUTRO PEDIDO', qntd: '1', pedido: '700', cliente: 'OUTRO', data_entrega: '10/10/2026' },
     ],
     clientes_enderecos: [
-      { cliente: 'JSL S.B.O.', cliente_chave: 'JSLSBO', endereco: 'Rua A, 100', bairro: 'Centro', cidade: 'Campinas', uf: 'SP', cep: '13000-000', observacao: 'Portaria 2' },
+      // Já com lat/long — a partir da v0.2.721, "Marcar Expedição" (modo
+      // "entrega") sempre tenta montar a rota, qualquer que seja o método
+      // cadastrado; sem coordenada, cairia na geocodificação, que este
+      // arquivo não simula (nominatim.openstreetmap.org não é mockado aqui).
+      { id: 1, cliente: 'JSL S.B.O.', cliente_chave: 'JSLSBO', endereco: 'Rua A, 100', bairro: 'Centro', cidade: 'Campinas', uf: 'SP', cep: '13000-000', observacao: 'Portaria 2', latitude: -22.9, longitude: -47.06 },
     ],
     posvenda_contatos: [],
     expedicao_baixas: [
@@ -89,7 +93,10 @@ function filtrar(linhas, params) {
 
 global.fetch = async (url, opcoes = {}) => {
   const u = new URL(url);
-  if (u.hostname === 'api.heigit.org') return { ok: true, json: async () => ({ durations: [[0,100],[100,0]] }) };
+  if (u.hostname === 'api.heigit.org') {
+    const n = JSON.parse(opcoes.body).locations.length;
+    return { ok: true, json: async () => ({ durations: Array.from({ length: n }, (_, i) => Array.from({ length: n }, (_, j) => Math.abs(i - j) * 100)) }) };
+  }
   const caminho = decodeURIComponent(u.pathname.replace('/rest/v1/', ''));
   const metodo = opcoes.method || 'GET';
   const resposta = (status, corpo) => ({ ok: status < 300, status, text: async () => (corpo === undefined ? '' : JSON.stringify(corpo)) });
@@ -154,6 +161,9 @@ global.fetch = async (url, opcoes = {}) => {
 process.env.SUPABASE_URL = 'https://simulado.supabase.co';
 process.env.SUPABASE_ANON_KEY = 'anon';
 process.env.KURU_SEGREDO_SESSAO = 'segredo-de-teste';
+// "Marcar Expedição" (modo "entrega") sempre tenta montar a viagem agora —
+// precisa da chave, mesmo nos testes que não são sobre rota nenhuma.
+process.env.OPENROUTESERVICE_API_KEY = 'chave-simulada-testes';
 const api = require(path.join(__dirname, '..', 'netlify', 'functions', 'expedicao-api', 'index.js'));
 
 const chamar = (rota, { metodo = 'GET', corpo, sessao, query, ip = '10.0.0.1' } = {}) => api.handler({
@@ -275,9 +285,14 @@ async function principal() {
   });
 
   await teste('cliente sem endereço volta null', async () => {
+    // Isolado: guarda e devolve o fixture — sem isso, zerar o array aqui
+    // vazava pro resto do arquivo, e JSL S.B.O. ficava sem endereço nenhum
+    // pros testes de "Marcar Expedição"/WhatsApp logo abaixo.
+    const original = banco.clientes_enderecos;
     banco.clientes_enderecos = [];
     const r = await chamar('consulta', { sessao, query: { t: 'PEDIDO2345' } });
     assert.equal(r.endereco, null);
+    banco.clientes_enderecos = original;
   });
 
   await teste('código desconhecido avisa', async () => {
@@ -309,37 +324,37 @@ async function principal() {
   // --- "Marcar Expedição" (v0.2.697) --------------------------------------------------
   console.log('Marcar Expedição (POST /api/marcar)');
 
-  await teste('acaoDoGrupo: só "Entregamos" vira ENTREGA, todo o resto é COLETA', () => {
-    const { acaoDoGrupo } = api._testes;
-    assert.equal(acaoDoGrupo('Entregamos'), 'ENTREGA');
-    for (const g of ['Transportadora', 'Correio', 'Azul Cargo', 'Cliente Retira', 'Demais', '']) {
-      assert.equal(acaoDoGrupo(g), 'COLETA', g);
-    }
-  });
-
-  await teste('montarGruposDeBaixa: uma linha por (cliente, pedido, ação) — nunca por item', () => {
+  await teste('montarGruposDeBaixa: acao vem só do modo (v0.2.721) — nunca mais do método cadastrado', () => {
+    // Antes da v0.2.721, um método diferente dentro do MESMO pedido abria um
+    // segundo grupo (um "Coletado" e um "Entregue" pro mesmo cliente/pedido)
+    // — era exatamente o bug que o usuário reportou: um cliente marcado
+    // "Correio"/"Cliente Retira" no cadastro, mas escaneado de verdade pra
+    // Entrega, virava COLETA mesmo assim. Agora `acao` é um valor só por
+    // chamada (o modo que o motorista escolheu), então métodos diferentes no
+    // mesmo pedido não abrem mais grupo nenhum — só (cliente, pedido, OP) importa.
     const { montarGruposDeBaixa } = api._testes;
     const linhas = [
       { numero_op: '100/1', cod_item: 'A', pedido: '1', cliente: 'X', metodo_entrega: 'Correio' },
-      { numero_op: '100/2', cod_item: 'B', pedido: '1', cliente: 'X', metodo_entrega: 'Transportadora' }, // mesma (X,1,COLETA) do de cima
-      { numero_op: '100/3', cod_item: 'C', pedido: '1', cliente: 'X', metodo_entrega: 'Entregamos' }, // mesmo pedido, ação DIFERENTE
+      { numero_op: '100/2', cod_item: 'B', pedido: '1', cliente: 'X', metodo_entrega: 'Cliente Retira' },
       { numero_op: '200/1', cod_item: 'D', pedido: '2', cliente: 'Y', metodo_entrega: 'Correio' }, // cliente diferente
     ];
     const grupos = montarGruposDeBaixa(linhas, 'FULANO');
-    assert.equal(grupos.length, 3, 'X/pedido1/COLETA, X/pedido1/ENTREGA e Y/pedido2/COLETA');
-    const coleta1 = grupos.find((g) => g.cliente === 'X' && g.acao === 'COLETA');
-    assert.equal(coleta1.itens.length, 2, 'A e B, mesmo vindo de métodos diferentes, ambos viram COLETA');
-    assert.deepEqual(coleta1.itens, [{ numero_op: '100/1', cod_item: 'A' }, { numero_op: '100/2', cod_item: 'B' }]);
-    const entrega1 = grupos.find((g) => g.cliente === 'X' && g.acao === 'ENTREGA');
-    assert.equal(entrega1.itens.length, 1);
-    assert.equal(entrega1.itens[0].cod_item, 'C');
-    assert.equal(entrega1.requisicao, '100', 'requisição é a base da OP do primeiro item do grupo');
+    assert.equal(grupos.length, 2, 'X/pedido1 (um grupo só, apesar dos dois métodos) e Y/pedido2');
+    const doX = grupos.find((g) => g.cliente === 'X');
+    assert.equal(doX.acao, 'ENTREGA', 'modo padrão é "entrega" — nunca mais COLETA por causa do método');
+    assert.equal(doX.itens.length, 2, 'A e B, métodos diferentes, mesmo grupo');
+    assert.deepEqual(doX.itens, [{ numero_op: '100/1', cod_item: 'A' }, { numero_op: '100/2', cod_item: 'B' }]);
+    assert.equal(doX.requisicao, '100', 'requisição é a base da OP do primeiro item do grupo');
+    const doY = grupos.find((g) => g.cliente === 'Y');
+    assert.equal(doY.acao, 'ENTREGA');
     for (const g of grupos) {
       assert.equal(g.responsavel, 'FULANO');
       assert.equal(g.baixado_por, 'FULANO');
       assert.equal(g.origem, 'app');
       assert.ok(g.evento_em, 'evento_em sempre preenchido');
     }
+    const balcao = montarGruposDeBaixa(linhas, 'MARIA', { modo: 'balcao' });
+    assert(balcao.every((g) => g.acao === 'COLETA'), 'modo "balcao" continua sempre COLETA');
   });
 
   // OPs NOVAS, nunca tocadas pelos testes anteriores — reusar 29800/1 ou
@@ -400,12 +415,20 @@ async function principal() {
     assert.equal(banco.expedicao_baixas.length, antes + 1, 'uma linha nova só, não duas');
     const nova = banco.expedicao_baixas.at(-1);
     assert.equal(nova.cliente, 'JSL S.B.O.');
-    assert.equal(nova.acao, 'COLETA', 'sem ajuste de entrega cadastrado pra este item, grupoEntrega() devolve vazio — e só "Entregamos" vira ENTREGA');
+    assert.equal(nova.acao, 'ENTREGA', 'modo "entrega" (o padrão) sempre grava ENTREGA, qualquer que seja o método cadastrado — v0.2.721');
     assert.equal(nova.responsavel, 'MOTORISTA QUE MARCA');
     assert.equal(nova.baixado_por, 'MOTORISTA QUE MARCA');
     assert.equal(nova.origem, 'app');
     assert.deepEqual(nova.itens, [{ numero_op: '50100/2', cod_item: '77002' }]);
     assert.ok(nova.id, 'id devolvido pelo insert');
+    // Prova direta do bug relatado pelo usuário: JSL S.B.O. está cadastrado
+    // como "Correio" (fixture do topo do arquivo, padrao||JSL S.B.O.), e
+    // mesmo assim vira PARADA da rota — antes da v0.2.721, só clientes
+    // "Entregamos" entravam na rota, e este item ficaria de fora em
+    // silêncio (sem avisar nada, sem aparecer na tela de "Reorganizar
+    // paradas").
+    assert.ok(r.rota, 'escaneado pra Entrega monta a rota, mesmo o cliente sendo "Correio" no cadastro');
+    assert.deepEqual(r.rota.paradas.map((p) => p.cliente), ['JSL S.B.O.']);
   });
 
   await teste('/api/marcar audita a baixa em audit_log, best-effort', async () => {
@@ -517,7 +540,11 @@ async function principal() {
     assert.equal(fila.id,'-'+baixa.id);
     const bloco=fila.itens[0];
     assert.equal(bloco.badge,'Finalizado');assert.equal(bloco.entregues,2);assert.equal(bloco.total,2);
-    assert.equal(bloco.responsavel,'MOTORISTA QUE MARCA');assert.equal(bloco.acao,'COLETA');
+    assert.equal(bloco.responsavel,'MOTORISTA QUE MARCA');
+    // v0.2.721 — modo "entrega" sempre grava ENTREGA, mesmo JSL S.B.O. sendo
+    // "Correio" no cadastro (ver pcp_ajustes em zerarBanco()); só "balcão"
+    // continua COLETA (teste "coleta parcial", mais abaixo).
+    assert.equal(bloco.acao,'ENTREGA');
     assert.equal(bloco.itens.length,1);assert.equal(bloco.itens[0].quantidade,'4,0');
     assert.equal(bloco.itens[0].descricao,'GAXETA TEFLON');
     assert.equal(baixa.itens[0].aviso_whatsapp.pendente,false);
@@ -549,7 +576,7 @@ async function principal() {
     const outra=banco.pcp_avisos_whatsapp.find(a=>a.cliente==='OUTRO');
     assert.equal(outra.itens[0].acao,'ENTREGA');assert.equal(outra.itens[0].badge,'Finalizado');
     assert.equal(banco.pcp_avisos_whatsapp.find(a=>a.cliente!=='OUTRO').itens[0].badge,'Parcial');
-    assert.equal(r.rota.paradas.length,1,'entrega própria também cria a rota');
+    assert.equal(r.rota.paradas.length,2,'v0.2.721 — ambos os clientes viram parada, mesmo JSL S.B.O. sendo "Correio" no cadastro');
   });
   await teste('WhatsApp: falha da fila conserva baixa e aviso para recuperação automática', async()=>{
     prepararWhatsapp();falharFila=true;

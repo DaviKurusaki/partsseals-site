@@ -40,10 +40,12 @@
  *    Acabamento > Expedição > Dar baixa já faz (mesmas colunas, mesmo
  *    `origem: 'app'`) — só que direto via REST, sem passar pelo processo
  *    principal do Electron. Decisões tiradas com o usuário (6 perguntas):
- *    - **Ação (ENTREGA/COLETA) é sempre automática**, pelo `grupoEntrega`
- *      já cadastrado no Kuru (`acaoDoGrupo`) — nunca escolhida na hora.
- *      "Retirado" vs "Coletado" continua decidido na LEITURA, como sempre
- *      (`eventosDeExpedicao`, `expedicao-consulta.cjs`).
+ *    - **Ação (ENTREGA/COLETA) era automática pelo `grupoEntrega` já
+ *      cadastrado no Kuru** — revertido na v0.2.721 (ver `montarGruposDeBaixa`
+ *      mais abaixo): o cadastro é só o padrão do cliente, não necessariamente
+ *      o que aconteceu com ESTE pedido; agora é o `modo` escolhido ao abrir
+ *      "Expedir" que decide. "Retirado" vs "Coletado" continua decidido na
+ *      LEITURA, como sempre (`eventosDeExpedicao`, `expedicao-consulta.cjs`).
  *    - **`responsavel`/`baixado_por` são sempre o nome de quem está
  *      logado** (`sessao.nome`) — rápido, sem campo pra digitar.
  *    - **Interruptor PRÓPRIO** (`pcp_ajustes`, `sistema`/
@@ -352,33 +354,31 @@ function grupoEntrega(metodo) {
   return (GRUPOS_ENTREGA.find((g) => !g.combina || g.combina.test(m)) || {}).rotulo || '';
 }
 
-/** Ação é sempre decidida pelo grupo de entrega já cadastrado no Kuru,
- *  nunca escolhida na hora pelo motorista (confirmado com o usuário: menos
- *  toque, confia no cadastro do PCP). "Entregamos" é a única entrega
- *  NOSSA (motoboy/veículo próprio) — vira 'ENTREGA'; todo o resto
- *  (Transportadora/Correio/Azul Cargo/Cliente Retira/Demais) é uma
- *  retirada feita por alguém de fora, vira 'COLETA'. A distinção
- *  "Retirado" vs "Coletado" continua sendo decidida depois, NA LEITURA,
- *  pelo texto do método de entrega (`eventosDeExpedicao`,
- *  `expedicao-consulta.cjs`) — gravar 'COLETA' aqui pros dois casos é
- *  exatamente o que aquela função já espera. */
-function acaoDoGrupo(grupo) {
-  return grupo === 'Entregamos' ? 'ENTREGA' : 'COLETA';
-}
-
 /** Agrupa itens já resolvidos (precisam de `numero_op`/`cod_item`/`pedido`/
- *  `cliente`/`metodo_entrega`) em linhas prontas pra INSERT em
- *  `expedicao_baixas` — uma linha por (cliente, pedido, ação), nunca uma
- *  por item: é o mesmo grão que Acabamento > Expedição > Dar baixa já usa
- *  (`montarBlocosPorPedido`, `acabamento-expedicao.js`). Um pedido com um
- *  item saindo de Transportadora e outro saindo com entrega própria vira
- *  DUAS linhas, porque `acao` é uma coluna por LINHA, não por item. */
+ *  `cliente`) em linhas prontas pra INSERT em `expedicao_baixas` — uma
+ *  linha por (cliente, pedido), nunca uma por item: é o mesmo grão que
+ *  Acabamento > Expedição > Dar baixa já usa (`montarBlocosPorPedido`,
+ *  `acabamento-expedicao.js`).
+ *
+ *  **`acao` NÃO vem mais do método de entrega cadastrado no PCP**
+ *  (v0.2.721, corrigindo a decisão original de v0.2.697 — "nunca escolhida
+ *  na hora pelo motorista" — depois de um caso real do usuário: "tem caso
+ *  de cliente retira, correio, ou até mesmo azul cargo que nós
+ *  entregamos"). O cadastro é só o PADRÃO do cliente, não o que aconteceu
+ *  HOJE com ESTE pedido — confiar nele gravava "Coletado" numa entrega
+ *  física de verdade. Quem decide agora é só o `modo` que o motorista
+ *  escolheu ao abrir "Expedir": **"Coleta no balcão" é sempre COLETA,
+ *  qualquer outro modo (a opção "Entrega") é sempre ENTREGA** — um único
+ *  valor pra toda a chamada, nunca por item. A distinção "Retirado" vs
+ *  "Coletado" continua decidida depois, NA LEITURA, pelo texto do método
+ *  de entrega (`eventosDeExpedicao`, `expedicao-consulta.cjs`), que já
+ *  esperava 'COLETA' pros dois casos. */
 function montarGruposDeBaixa(linhas, responsavel, { modo = 'entrega', baixadoPor = responsavel } = {}) {
   const grupos = new Map();
   const agora = new Date().toISOString();
+  const acao = modo === 'balcao' ? 'COLETA' : 'ENTREGA';
   for (const l of linhas) {
-    const acao = modo === 'balcao' ? 'COLETA' : acaoDoGrupo(grupoEntrega(l.metodo_entrega));
-    const chave = `${l.cliente}||${l.pedido}||${acao}||${baseDaOp(l.numero_op)}`;
+    const chave = `${l.cliente}||${l.pedido}||${baseDaOp(l.numero_op)}`;
     if (!grupos.has(chave)) {
       grupos.set(chave, {
         requisicao: baseDaOp(l.numero_op) || texto(l.pedido),
@@ -719,7 +719,7 @@ exports.handler = async (evento) => {
 // Exposto só pros testes (tests/expedicao-api.cjs).
 exports._testes = {
   dataIso, chaveCliente, chavesDeEntrega, valorDoAjuste, criarSessao, lerSessao, proximaMeiaNoiteMs,
-  grupoEntrega, acaoDoGrupo, montarGruposDeBaixa,
+  grupoEntrega, montarGruposDeBaixa,
   RAIO_CERCA_M: 100, MINUTOS_ATRASO: 10,
   recuperarAvisosWhatsapp: filaExpedicaoCelular.recuperar,
 };
