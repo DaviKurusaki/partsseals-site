@@ -83,6 +83,13 @@ melhoria de posição nas buscas; o conteúdo público é o que pode ser indexad
 
 ## Testes locais, sem banco real
 
+A leitura das etiquetas na entrega foi corrigida em 13 de outubro de 2026:
+etiqueta de OP consulta e adiciona apenas o item lido; etiqueta de Pedido
+Fechado consulta toda a requisição e adiciona os itens ainda pendentes.
+A interface aplica o escopo da etiqueta tanto na entrega quanto no balcão,
+sem duplicar itens já adicionados e preservando o bloqueio de outro cliente
+na coleta. Uma OP que não existe retorna 404, sem trazer o restante do pedido.
+
 ```text
 node tools/build_site.cjs
 node tests/site-build.cjs

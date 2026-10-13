@@ -1313,9 +1313,8 @@
 
   // --- carrinho: adicionar, revisar, marcar (v0.2.697) ---------------------------------
 
-  /** Escaneou um pedido/OP com `podeMarcar` ligado: joga os itens ainda
-   *  pendentes (e ainda não adicionados) no carrinho, de uma vez só — "QR de
-   *  pedido = todos os itens pendentes dele", decisão do usuário. Se o
+  /** QR de OP adiciona apenas o item escaneado; QR de pedido adiciona todos
+   *  os itens pendentes dele, em qualquer modo de expedição. Se o
    *  carrinho já tem item de OUTRO cliente, avisa antes de misturar (o
    *  alerta nunca bloqueia — é o caminhão real que carrega mais de um
    *  cliente na mesma viagem). */
@@ -1324,7 +1323,7 @@
       alertarClienteErrado(d.cliente); return;
     }
     const pendentes = d.itens.filter((i) => !i.despachado && !noCarrinho(i.numeroOp, i.codItem)
-      && (contexto.modo !== 'balcao' || !d.destaque || i.numeroOp === d.destaque));
+      && (!d.destaque || i.numeroOp === d.destaque));
     if (!pendentes.length) return;
     const clienteAtual = clienteDoCarrinho();
     if (clienteAtual && d.cliente && clienteAtual !== d.cliente) {

@@ -476,14 +476,15 @@ async function rotaConsulta(evento) {
   const requisicao = alvo.tipo === 'op' ? baseDaOp(alvo.chave) : texto(alvo.chave);
   const colunas = ['numero_op', 'cod_item', 'descricao', 'qntd', 'pedido', 'cliente', 'data_entrega'];
   const consultas = [];
-  if (requisicao) {
-    consultas.push(db.selecionar(TABELA_ORDENS, {
-      colunas, filtros: [{ coluna: 'numero_op', operador: 'comeca', valor: `${requisicao}/` }], limite: LIMITE_OPS,
-    }));
-  }
   if (alvo.tipo === 'op') {
+    // Etiqueta de item consulta somente a OP exata, inclusive na entrega.
     consultas.push(db.selecionar(TABELA_ORDENS, {
       colunas, filtros: [{ coluna: 'numero_op', operador: 'igual', valor: alvo.chave }], limite: 20,
+    }));
+  } else if (requisicao) {
+    // Somente a etiqueta de Pedido Fechado consulta toda a requisição.
+    consultas.push(db.selecionar(TABELA_ORDENS, {
+      colunas, filtros: [{ coluna: 'numero_op', operador: 'comeca', valor: `${requisicao}/` }], limite: LIMITE_OPS,
     }));
   }
   const vistos = new Set();

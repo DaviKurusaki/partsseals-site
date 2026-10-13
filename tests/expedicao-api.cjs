@@ -207,24 +207,27 @@ async function principal() {
     assert.equal(r.status, 401);
   });
 
-  await teste('QR de OP: item em destaque + o pedido inteiro', async () => {
+  await teste('QR de OP: somente o item escaneado, sem outras OPs do pedido', async () => {
     const r = await chamar('consulta', { sessao, query: { t: 'abcdefgh23' } });
     assert.equal(r.status, 200, r.erro);
     assert.equal(r.tipo, 'op');
     assert.equal(r.destaque, '29800/1');
-    assert.deepEqual(r.itens.map((i) => i.numeroOp), ['29800/1', '29800/2']);
-    assert.equal(r.resumo.total, 2);
+    assert.deepEqual(r.itens.map((i) => i.numeroOp), ['29800/1']);
+    assert.equal(r.resumo.total, 1);
     assert.equal(r.resumo.despachados, 1);
     assert.equal(r.endereco.cidade, 'Campinas');
-    const [primeiro, segundo] = r.itens;
+    const [primeiro] = r.itens;
     assert.equal(primeiro.despachado, true);
     assert.equal(primeiro.situacao, 'Coletado');
     assert.equal(primeiro.despachoEm, '2026-10-08T14:00:00Z');
     assert.equal(primeiro.previsao, '2026-10-09');
     assert.equal(primeiro.metodoEntrega, 'Correio', 'padrão do cliente');
-    assert.equal(segundo.despachado, false);
-    assert.equal(segundo.metodoEntrega, 'Transportadora', 'exceção do item vence o padrão');
-    assert.equal(segundo.descricao, '45122 - GAXETA TEFLON');
+  });
+
+  await teste('QR de OP inexistente não retorna as outras OPs da requisição', async () => {
+    banco.expedicao_qr_tokens.push({ token: 'AUSENTE123', tipo: 'op', chave: '29800/9', cliente: 'JSL S.B.O.', pedido: '617/26' });
+    const r = await chamar('consulta', { sessao, query: { t: 'AUSENTE123' } });
+    assert.equal(r.status, 404);
   });
 
   await teste('item despachado via Fiscal expõe tipo/responsável/grupo de entrega, e NF/rastreio são do pedido inteiro', async () => {
@@ -242,7 +245,8 @@ async function principal() {
     assert.equal(primeiro.tipo, 'coletado');
     assert.equal(primeiro.responsavel, 'JOAO');
     assert.equal(primeiro.grupoEntrega, 'Correio', 'método "Correio" vira o rótulo padronizado');
-    const segundo = r.itens.find((i) => i.numeroOp === '29800/2');
+    const pedido = await chamar('consulta', { sessao, query: { t: 'PEDIDO2345' } });
+    const segundo = pedido.itens.find((i) => i.numeroOp === '29800/2');
     assert.equal(segundo.despachado, true);
     assert.equal(segundo.tipo, 'despachado');
     assert.equal(segundo.responsavel, 'CARLOS');
@@ -253,7 +257,8 @@ async function principal() {
     const r = await chamar('consulta', { sessao, query: { t: 'PEDIDO2345' } });
     assert.equal(r.status, 200, r.erro);
     assert.equal(r.destaque, null);
-    assert.equal(r.itens.length, 2);
+    assert.deepEqual(r.itens.map((i) => i.numeroOp), ['29800/1', '29800/2']);
+    assert.equal(r.resumo.total, 2);
     assert.ok(!r.itens.some((i) => i.numeroOp === '29801/1'));
   });
 
