@@ -416,6 +416,27 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation: none !important; transition: none !important; }
   }
+
+  .entrega-dialogo { width:calc(100% - 32px); max-width:480px; max-height:90vh; overflow:auto; margin:auto; border:1px solid var(--linha); border-radius:20px; padding:24px; background:var(--cartao); color:var(--tinta); }
+  .entrega-dialogo .btn { white-space:normal; line-height:1.4; }
+  .entrega-dialogo::backdrop { background:rgba(0,0,0,.65); }
+  .entrega-dialogo h2 { margin:0 0 12px; font-size:24px; }
+  .entrega-dialogo p { white-space:pre-line; overflow-wrap:anywhere; margin-bottom:16px; }
+  .entrega-dialogo textarea { width:100%; box-sizing:border-box; border-radius:10px; padding:12px; font:inherit; margin-top:8px; color:var(--tinta); background:var(--cartao-2); border:1px solid var(--linha); }
+  .opcao-cerca { display:block; padding:14px 0; }
+  .entrega-cliente { margin:16px 0; padding:16px 0; border-top:1px solid var(--linha); }
+  .entrega-cliente p, .parada-rota p { overflow-wrap:anywhere; line-height:1.5; margin:8px 0 12px; }
+  .entrega-cliente .btn, .parada-rota > .btn { width:100%; box-sizing:border-box; margin:6px 0; }
+  .check-marcado { background:var(--ok-fundo); color:var(--ok-forte); opacity:1 !important; }
+  .entrega-aviso { color:var(--aviso); font-weight:700; }
+  .ajuda-rota { font-size:13px; line-height:1.5; margin:12px 0; }
+  .historico-entrega { margin:20px 0; padding:16px; border-radius:12px; background:var(--cartao); }
+  .historico-entrega > div { padding:12px 0; border-bottom:1px solid var(--linha); overflow-wrap:anywhere; }
+  .historico-entrega time, .historico-entrega small { font-size:12px; color:var(--secundaria); }
+  #telaRota > .btn { width:100%; margin:8px 0; }
+  .ordem-linha { display:flex; gap:8px; align-items:center; margin:10px 0; }
+  .ordem-linha span { flex:1; overflow-wrap:anywhere; }
+  .ordem-linha .btn { padding:10px; min-width:44px; }
 </style>
 </head>
 <body>
@@ -457,6 +478,11 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/></svg>
           <span>Etiqueta lida. Toque em <b>Expedir</b> e digite seu PIN pra ver o pedido.</span>
         </div>
+        <button class="escolha principal" id="btnContinuarRota" type="button" hidden>
+          <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/></svg></span>
+          <span class="txt"><strong>Continuar rota</strong><span id="subContinuarRota">Você tem uma rota em andamento</span></span>
+          <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
+        </button>
         <button class="escolha principal" id="btnExpedir" type="button" hidden aria-expanded="false" aria-controls="expedirEscolhas">
           <span class="ico"><svg class="caminhao" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14v12H1z"/><path d="M15 9h4l3 3.5V16h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="18.5" r="2.2"/></svg></span>
           <span class="txt"><strong>Expedir</strong><span id="subExpedir">Sou motorista · conferir o que vou levar</span></span>
@@ -465,7 +491,7 @@
         <div class="expedir-escolhas" id="expedirEscolhas" hidden>
           <button class="escolha" id="btnEntrega" type="button">
             <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 4h14v12H1z"/><path d="M15 9h4l3 3.5V16h-7z"/><circle cx="5.5" cy="18.5" r="2.2"/><circle cx="17.5" cy="18.5" r="2.2"/></svg></span>
-            <span class="txt"><strong>Entrega</strong><span>Levar o pedido até o cliente</span></span>
+            <span class="txt"><strong>Expedir para entrega</strong><span>Conferir a saída e seguir a rota de clientes</span></span>
             <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
           </button>
           <button class="escolha" id="btnColetaBalcao" type="button">
@@ -474,6 +500,7 @@
             <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
           </button>
         </div>
+        <button class="btn" id="btnRetomarEntrega" type="button">Ver minha rota de entrega</button>
         <button class="escolha" id="btnEscanearInicio" type="button" hidden>
           <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></span>
           <span class="txt"><strong>Escanear etiqueta</strong><span>Ler o QR da caixa por aqui</span></span>
@@ -523,6 +550,8 @@
       </section>
       <!-- consulta -->
       <section class="tela" id="telaConsulta" hidden aria-live="polite"></section>
+      <!-- rota de entregas em lote -->
+      <section class="tela" id="telaRota" hidden aria-live="polite"></section>
     </main>
 
     <footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Expedição Kuru Nuvem</footer>
@@ -574,15 +603,29 @@
   .formulario .ajuda-cliente { margin-top:8px; color:var(--suave); font-size:14px; }
   .coleta-info { margin:16px 0; padding:16px; background:#fff2f3; border-radius:12px; color:#333; }
   .coleta-info b { display:block; }
+
+  /* --- rota de entregas em lote (v0.2.709) --------------------------------------- */
+  .parada-rota { border-left: 5px solid var(--linha); }
+  .parada-rota.chegou { border-left-color: var(--aviso); }
+  .parada-rota.entregue { border-left-color: var(--ok); opacity: .75; }
+  .parada-rota .chip.pendente { background: var(--cartao-2); color: var(--suave); }
+  .parada-rota .chip.chegou { background: var(--aviso-fundo); color: var(--aviso); }
+  .parada-rota .chip.entregue { background: var(--ok-fundo); color: var(--ok-forte); }
+  .parada-rota .itens-parada { margin-top: 10px; font-size: 14.5px; color: var(--tinta-2); }
+  .banner-rota { display: flex; gap: 10px; align-items: center; padding: 14px 16px; border-radius: var(--raio-p); margin-bottom: 14px; font-weight: 600; font-size: 14.5px; }
+  .banner-rota.ok { background: var(--ok-fundo); color: var(--ok-forte); }
+  .banner-rota.atraso { background: var(--erro-fundo); color: var(--erro); }
+  .banner-rota svg { width: 22px; height: 22px; flex: none; }
 </style>
 <script src="/expedicao/vendor/jsQR.js"></script>
+<script src="/expedicao/rota-ui.js"></script>
 <script>
 (() => {
   'use strict';
   const CHAVE_SESSAO = 'kuru-expedicao-sessao';
   const PIN_MAX = 8;
   const $ = (id) => document.getElementById(id);
-  const telas = ['telaCarregando', 'telaInicio', 'telaLogin', 'telaBalcao', 'telaConsulta'];
+  const telas = ['telaCarregando', 'telaInicio', 'telaLogin', 'telaBalcao', 'telaConsulta', 'telaRota'];
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const vibrar = (p) => { try { navigator.vibrate?.(p); } catch { /* sem suporte */ } };
 
@@ -607,18 +650,7 @@
   };
   const ico = (nome, extra = '') => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${ICONES[nome]}</svg>`;
 
-  const tokenDaUrl = (caminho) => (String(caminho).match(/^\/(?:expedicao\/)?e\/([A-Za-z0-9]{6,20})(?:[/?#]|$)/) || [])[1] || '';
-  // Etiquetas antigas continuam válidas ao serem lidas no portal novo.
-  function tokenDaEtiqueta(valor) {
-    const bruto = String(valor || '').trim();
-    if (/^[A-Za-z0-9]{6,20}$/.test(bruto)) return bruto;
-    try {
-      const url = new URL(bruto);
-      const hosts = [location.host, 'parts-seals.com.br', 'www.parts-seals.com.br', 'parts-seals-expedicao.netlify.app'];
-      if (/^https?:$/.test(url.protocol) && hosts.includes(url.host)) return tokenDaUrl(url.pathname);
-    } catch { /* não é um link de etiqueta */ }
-    return '';
-  }
+  const tokenDaUrl = (caminho) => (String(caminho).match(/\/e\/([A-Za-z0-9]{6,20})(?:[/?#]|$)/) || [])[1] || '';
   let token = tokenDaUrl(location.pathname);
 
   // --- sessão -------------------------------------------------------------------------
@@ -637,6 +669,9 @@
     // da sessão, nunca um passo à parte que algum chamador possa esquecer.
     if (carrinho.length) limparCarrinho();
     contexto = { modo: 'entrega' }; salvarContexto();
+    // A rota continua "em_andamento" no servidor (não cancela sozinha) —
+    // só para de acompanhar aqui; logar de novo retoma via `retomarRotaSeHouver()`.
+    telaEntrega.encerrar();
   }
 
   // --- carrinho (marcar expedição, v0.2.697) -------------------------------------------
@@ -648,7 +683,10 @@
   const CHAVE_CARRINHO = 'kuru-expedicao-carrinho';
   const CHAVE_FLUXO = 'kuru-expedicao-fluxo';
   let contexto = (() => {
-    try { const v = JSON.parse(localStorage.getItem(CHAVE_FLUXO)); return v?.modo === 'balcao' ? v : { modo: 'entrega' }; }
+    try {
+      const v = JSON.parse(localStorage.getItem(CHAVE_FLUXO));
+      return v && ['balcao', 'entrega', 'rota'].includes(v.modo) ? { ...v, modo: v.modo === 'balcao' ? 'balcao' : 'entrega' } : { modo: 'entrega' };
+    }
     catch { return { modo: 'entrega' }; }
   })();
   const chaveCliente = v => String(v || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -726,11 +764,21 @@
   }
   async function escolherModo(modo) {
     if (marcando) { aviso('Aguarde a conclusão da expedição.'); return; }
-    if (modo !== contexto.modo && carrinho.length) {
-      if (!(await confirmarEstilizado({ titulo: 'Iniciar outro método?', texto: 'Os itens ainda não finalizados serão removidos do carrinho.', textoConfirmar: 'Trocar método' }))) return;
-      limparCarrinho();
+    // Toda entrada em entrega começa uma conferência nova, inclusive a mesma opção.
+    if (modo !== 'balcao') {
+      limparCarrinho(); contexto = { modo: 'entrega' };
+      if (sessao()) {
+        token = null; ultimaConsulta = null;
+        history.replaceState({ tela: 'telaInicio' }, '', location.pathname.startsWith('/expedicao') ? '/expedicao/' : '/');
+      }
     }
-    contexto = modo === contexto.modo ? contexto : { modo };
+    else {
+      if (modo !== contexto.modo && carrinho.length) {
+        if (!(await confirmarEstilizado({ titulo: 'Iniciar coleta?', texto: 'Os itens ainda não finalizados serão removidos do carrinho.', textoConfirmar: 'Iniciar coleta' }))) return;
+        limparCarrinho();
+      }
+      contexto = modo === contexto.modo ? contexto : { modo };
+    }
     salvarContexto();
     tokenJaAutoAdicionado = null;
     if (!sessao()) { abrirLogin(); return; }
@@ -750,12 +798,13 @@
   }
   const chaveCarrinho = (i) => `${i.numeroOp}||${i.codItem}`;
   const noCarrinho = (numeroOp, codItem) => carrinho.some((i) => i.numeroOp === numeroOp && i.codItem === codItem);
-  const clienteDoCarrinho = () => carrinho[0]?.cliente || '';
+  const clienteDoCarrinho = () => contexto.clienteAtual || carrinho.at(-1)?.cliente || '';
   function removerDoCarrinho(numeroOp, codItem) {
     carrinho = carrinho.filter((i) => !(i.numeroOp === numeroOp && i.codItem === codItem));
+    delete contexto.operacaoId; salvarContexto();
     salvarCarrinho();
   }
-  function limparCarrinho() { carrinho = []; salvarCarrinho(); }
+  function limparCarrinho() { carrinho = []; delete contexto.clienteAtual; delete contexto.operacaoId; salvarCarrinho(); salvarContexto(); }
 
   // --- sobreposição genérica (pós-escaneamento, revisão do carrinho, alertas) ----------
   // Uma única sobreposição, reaproveitada pra tudo — nunca duas abertas ao
@@ -856,7 +905,7 @@
   async function api(caminho, opcoes = {}) {
     const s = sessao();
     const controle = new AbortController();
-    const prazo = setTimeout(() => controle.abort(), 20000);
+    const prazo = setTimeout(() => controle.abort(), caminho === 'marcar' || caminho === 'rotas' ? 60000 : 20000);
     try {
       const r = await fetch(`/expedicao/api/${caminho}`, {
         ...opcoes, signal: controle.signal, cache: 'no-store',
@@ -895,7 +944,7 @@
     document.body.classList.toggle('com-barra', comBarra);
     // Botão voltar do Android: cada tela além do início vira um passo no
     // histórico, e voltar leva ao início em vez de sair do site.
-    if (historico && id !== telaAtual && (id === 'telaLogin' || id === 'telaConsulta' || id === 'telaBalcao')) {
+    if (historico && id !== telaAtual && (id === 'telaLogin' || id === 'telaConsulta' || id === 'telaBalcao' || id === 'telaRota')) {
       history.pushState({ tela: id }, '');
     }
     telaAtual = id;
@@ -917,7 +966,7 @@
     $('btnEscanearOutro').hidden = !temCarrinho;
     $('btnMarcarCarrinho').hidden = !temCarrinho;
     $('carrinhoConta').textContent = String(carrinho.length);
-    $('btnMarcarCarrinho').textContent = contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Marcar Expedição';
+    $('btnMarcarCarrinho').textContent = contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Finalizar saída e montar rota';
   }
 
   /** Onde o fundo vermelho termina: no fim do bloco marcado com `data-hero`
@@ -950,7 +999,7 @@
       callback?.();
       return;
     }
-    if (telaAtual === 'telaLogin' || telaAtual === 'telaConsulta' || telaAtual === 'telaBalcao') mostrarInicio({ historico: false });
+    if (telaAtual === 'telaLogin' || telaAtual === 'telaConsulta' || telaAtual === 'telaBalcao' || telaAtual === 'telaRota') mostrarInicio({ historico: false });
   });
 
   let tempoAviso;
@@ -1014,6 +1063,12 @@
 
   function mostrarInicio({ historico = true } = {}) {
     const s = sessao();
+    const comRota = Boolean(telaEntrega.atual && telaEntrega.atual.status === 'em_andamento');
+    $('btnContinuarRota').hidden = !(ligado && s && comRota);
+    if (comRota) {
+      const faltam = telaEntrega.atual.paradas.filter((p) => p.status !== 'entregue').length;
+      $('subContinuarRota').textContent = `${plural(faltam, 'parada', 'paradas')} ainda por entregar`;
+    }
     $('btnExpedir').hidden = !ligado;
     $('subExpedir').textContent = s && token ? 'Abrir o pedido desta etiqueta' : 'Sou motorista · conferir o que vou levar';
     $('btnEscanearInicio').hidden = !(ligado && s);
@@ -1031,6 +1086,9 @@
     const r = await api('estado').catch(semRede);
     ligado = Boolean(r.ligado);
     ligadoBaixa = Boolean(r.ligadoBaixa);
+    // Reabriu o site no meio de uma rota (ou o PC/celular reiniciou): volta
+    // direto pro acompanhamento, antes de qualquer outra coisa.
+    if (primeiraVez && ligado && sessao() && await retomarRotaSeHouver()) return;
     // Motorista que já entrou hoje e escaneou outra caixa vai direto pro pedido.
     if (primeiraVez && ligado && token && sessao()) { telaAtual = 'telaInicio'; abrirConsulta(); return; }
     mostrarInicio({ historico: false });
@@ -1091,6 +1149,7 @@
     }
     vibrar(20);
     gravarSessao({ sessao: r.sessao, nome: r.nome, expira: r.expira, podeMarcar: Boolean(r.podeMarcar) });
+    if (await retomarRotaSeHouver()) return;
     // O PIN ocupa o lugar dele no histórico: voltar do pedido leva ao início.
     if (contexto.modo === 'balcao') abrirBalcao({ historico: false });
     else abrirConsulta({ historico: false });
@@ -1164,7 +1223,9 @@
       }
       for (const a of achados) {
         const valor = String(a.rawValue || '');
-        const novo = tokenDaEtiqueta(valor);
+        let caminho = '';
+        try { const u = new URL(valor); if (u.host === location.host || ['parts-seals.com.br', 'www.parts-seals.com.br', 'parts-seals-expedicao.netlify.app'].includes(u.hostname)) caminho = u.pathname; } catch { /* não é link */ }
+        const novo = tokenDaUrl(caminho) || (/^[A-Za-z0-9]{6,20}$/.test(valor) ? valor : '');
         if (novo) {
           lendo = false; vibrar(40);
           $('mira').classList.add('achou');
@@ -1204,7 +1265,8 @@
       <p id="erroCodigo" role="alert"></p><button class="btn forte" type="submit">Ler etiqueta</button></form>`);
     $('formCodigo').addEventListener('submit', ev => {
       ev.preventDefault(); const bruto = $('codigoEtiqueta').value.trim();
-      const novo = tokenDaEtiqueta(bruto);
+      let novo = /^[A-Za-z0-9]{6,20}$/.test(bruto) ? bruto : '';
+      try { const u = new URL(bruto); if (u.host === location.host || ['parts-seals.com.br', 'www.parts-seals.com.br', 'parts-seals-expedicao.netlify.app'].includes(u.hostname)) novo = tokenDaUrl(u.pathname); } catch {}
       if (!novo) { $('erroCodigo').textContent = 'Use o código ou o link de uma etiqueta da Parts Seals.'; return; }
       aoFecharSobreposicao = () => abrirToken(novo); history.back();
     });
@@ -1324,22 +1386,24 @@
     }
     const pendentes = d.itens.filter((i) => !i.despachado && !noCarrinho(i.numeroOp, i.codItem)
       && (!d.destaque || i.numeroOp === d.destaque));
-    if (!pendentes.length) return;
     const clienteAtual = clienteDoCarrinho();
-    if (clienteAtual && d.cliente && clienteAtual !== d.cliente) {
+    if (clienteAtual && d.cliente && chaveCliente(clienteAtual) !== chaveCliente(d.cliente)) {
       const ok = await confirmarEstilizado({
         titulo: `Esse item não é da ${clienteAtual}!`,
-        texto: `O carrinho já tem itens de ${clienteAtual}, e este pedido é de ${d.cliente}. Favor conferir se está correto.`,
+        texto: `Você estava conferindo ${clienteAtual}. Esta etiqueta é de ${d.cliente}. Confirma que quer adicionar este cliente à mesma saída?`,
         textoConfirmar: 'Adicionar mesmo assim', textoCancelar: 'Cancelar', perigo: true,
       });
       if (!ok) return;
     }
+    contexto.clienteAtual = d.cliente; salvarContexto();
+    if (!pendentes.length) { aviso('Esta etiqueta já está no carrinho ou não tem itens pendentes.'); return; }
     for (const i of pendentes) {
       carrinho.push({
         numeroOp: i.numeroOp, codItem: i.codItem, descricao: i.descricao, quantidade: i.quantidade,
         pedido: i.pedido, cliente: d.cliente,
       });
     }
+    delete contexto.operacaoId; salvarContexto();
     salvarCarrinho();
     vibrar(20);
     atualizarBarraBaixo();
@@ -1352,7 +1416,7 @@
       <h2>${plural(n, 'item adicionado', 'itens adicionados')}</h2>
       <p>${esc(cliente)} · ${plural(carrinho.length, 'item no carrinho', 'itens no carrinho')} ao todo.</p>
       <div class="modal-botoes">
-        <button class="btn forte" type="button" id="posScanMarcar">${contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Marcar Expedição'}</button>
+        <button class="btn forte" type="button" id="posScanMarcar">${contexto.modo === 'balcao' ? 'Finalizar coleta' : 'Finalizar saída e montar rota'}</button>
         <button class="btn" type="button" id="posScanEscanear">Adicionar outro QR code</button>
       </div>`);
     $('posScanMarcar').addEventListener('click', () => { aoFecharSobreposicao = abrirRevisaoCarrinho; history.back(); });
@@ -1394,12 +1458,12 @@
       <div class="modal-grupo-titulo">${ico('caixa', 'style="width:16px;height:16px"')}<span>${esc(cliente)} · ${plural(itens.length, 'item', 'itens')}</span></div>
       ${itens.map(htmlItemRevisao).join('')}`).join('');
     abrirSobreposicao(`
-      <h2>${contexto.modo === 'balcao' ? 'Conferir a coleta · passo 3 de 3' : 'Conferir antes de marcar'}</h2>
+      <h2>${contexto.modo === 'balcao' ? 'Conferir a coleta · passo 3 de 3' : 'Conferir antes de sair para entregar'}</h2>
       ${contexto.modo === 'balcao' ? `<div class="coleta-info">Cliente: <b>${esc(contexto.cliente)}</b>Quem retira: <b>${esc(contexto.retirante)}</b></div>` : ''}
       <p id="revisaoResumo">${textoResumoRevisao()}</p>
       <div id="revisaoLista">${corpo}</div>
       <div class="modal-botoes">
-        <button class="btn forte" type="button" id="revisaoConfirmar">${contexto.modo === 'balcao' ? 'Confirmar e finalizar coleta' : 'Confirmar e marcar'}</button>
+        <button class="btn forte" type="button" id="revisaoConfirmar">${contexto.modo === 'balcao' ? 'Confirmar e finalizar coleta' : 'Confirmar saída e montar rota'}</button>
         <button class="btn" type="button" id="revisaoCancelar">Voltar</button>
       </div>`);
     $('revisaoLista').addEventListener('click', (ev) => {
@@ -1419,10 +1483,14 @@
   let marcando = false;
   /** Envia o carrinho pra `/api/marcar`. O servidor relê tudo fresco do
    *  Banco de Ordens e confere de novo quem já está despachado — o que foi
-   *  gravado é o que importa, nunca o que a tela achava que ia acontecer. */
+   *  gravado é o que importa, nunca o que a tela achava que ia acontecer.
+   *  Em modo "rota" (vários clientes), quem recebe o carrinho é
+   *  `/api/rotas` — a baixa é a mesma, só que o servidor também monta a
+   *  sequência de paradas; ver `confirmarRota()`, logo abaixo. */
   async function confirmarMarcacao() {
     if (!carrinho.length || marcando) return;
     if (!coletaValida()) { abrirBalcao(); return; }
+    if (contexto.modo !== 'balcao') { await confirmarRota(); return; }
     marcando = true;
     const itens = carrinho.map((i) => ({ numeroOp: i.numeroOp, codItem: i.codItem }));
     abrirSobreposicao(`
@@ -1468,6 +1536,30 @@
       } else aoFecharSobreposicao = () => abrirConsulta({ historico: false });
       history.back();
     });
+  }
+
+  // Uma única opção de entrega: a baixa de saída já monta a viagem.
+  const telaEntrega = window.criarTelaEntrega({ $, esc, ico, api, mostrar, mostrarInicio, aviso, vibrar, ajustarFaixa, confirmarEstilizado });
+  function pararPollRota() { telaEntrega.parar(); }
+  function retomarRotaSeHouver(opcoes) { return telaEntrega.retomar(opcoes); }
+  async function confirmarRota() {
+    marcando = true;
+    if (!contexto.operacaoId) { contexto.operacaoId = crypto.randomUUID(); salvarContexto(); }
+    const itens = carrinho.map(i => ({ numeroOp: i.numeroOp, codItem: i.codItem }));
+    abrirSobreposicao(`<div class="modal-icone">${ico('relogio')}</div><h2>Finalizando a saída…</h2><p>Calculando a sequência de entregas e o retorno à empresa. Aguarde.</p>`);
+    const r = await api('marcar', { method: 'POST', body: JSON.stringify({ itens, modo: 'entrega', operacaoId: contexto.operacaoId }) }).catch(semRede);
+    marcando = false;
+    const resultado = () => {
+      if (!r.ok) {
+        aviso(r.erro || 'Não foi possível finalizar. Confira a internet e tente novamente.');
+        if (r.rota) telaEntrega.abrir(r.rota, { historico: false });
+        return;
+      }
+      limparCarrinho(); tokenJaAutoAdicionado = null; atualizarBarraBaixo();
+      if (r.rota) telaEntrega.abrir(r.rota, { historico: false }); else mostrarResultadoMarcacao(r);
+    };
+    if ($('sobreposicao').hidden) resultado();
+    else { aoFecharSobreposicao = resultado; history.back(); }
   }
 
   function desenharConsulta(d) {
@@ -1613,6 +1705,8 @@
     $('expedirEscolhas').hidden = !abrindo;
     $('btnExpedir').setAttribute('aria-expanded', String(abrindo));
   });
+  $('btnContinuarRota').addEventListener('click', () => { if (telaEntrega.atual) telaEntrega.abrir(telaEntrega.atual); });
+  $('btnRetomarEntrega').addEventListener('click', async () => { if (!sessao()) { abrirLogin(); return; } if (!await retomarRotaSeHouver()) aviso('Você não tem uma rota em andamento.'); });
   $('btnEntrega').addEventListener('click', () => {
     $('expedirEscolhas').hidden = true;
     $('btnExpedir').setAttribute('aria-expanded', 'false');
@@ -1631,7 +1725,7 @@
     if (carrinho.some(i => chaveCliente(i.cliente) !== chaveCliente(escolhido))) { $('erroBalcao').textContent = 'O carrinho tem etiquetas de outro cliente. Remova-as ou mantenha o cliente desta coleta.'; return; }
     contexto = { modo: 'balcao', retirante, cliente:escolhido }; salvarContexto();
     token = ''; ultimaConsulta = null; tokenJaAutoAdicionado = null;
-    history.replaceState({ tela: 'telaBalcao' }, '', '/expedicao/'); abrirConsulta();
+    history.replaceState({ tela: 'telaBalcao' }, '', '/'); abrirConsulta();
   });
   $('formBalcao').addEventListener('input', () => { $('erroBalcao').textContent = ''; });
   $('clienteBalcao').addEventListener('input', () => { clienteEscolhido=''; mostrarSugestoesClientes(); });

@@ -52,6 +52,9 @@ function zerarBanco() {
     expedicao_celular_tentativas: [],
     audit_log: [],
     pcp_avisos_whatsapp: [],
+    expedicao_rotas: [],
+    expedicao_rotas_paradas: [],
+    expedicao_rotas_eventos: [],
   });
 }
 
@@ -86,12 +89,21 @@ function filtrar(linhas, params) {
 
 global.fetch = async (url, opcoes = {}) => {
   const u = new URL(url);
+  if (u.hostname === 'api.heigit.org') return { ok: true, json: async () => ({ durations: [[0,100],[100,0]] }) };
   const caminho = decodeURIComponent(u.pathname.replace('/rest/v1/', ''));
   const metodo = opcoes.method || 'GET';
   const resposta = (status, corpo) => ({ ok: status < 300, status, text: async () => (corpo === undefined ? '' : JSON.stringify(corpo)) });
   if (caminho === 'rpc/app_login') {
     const u2 = usuarios[JSON.parse(opcoes.body).p_pin];
     return resposta(200, u2 ? [u2] : []);
+  }
+  if (caminho === 'rpc/expedicao_rota_criar') {
+    const dados = JSON.parse(opcoes.body), rota = { id: 1, usuario_id: dados.p_usuario_id, usuario_nome: dados.p_usuario_nome, operacao_id: dados.p_operacao_id, status: 'em_andamento', ...dados.p_rota };
+    banco.expedicao_rotas.push(rota);
+    const baixas = dados.p_baixas.map((b, i) => ({ id: banco.expedicao_baixas.length+i+1, ...b }));
+    banco.expedicao_baixas.push(...baixas);
+    banco.expedicao_rotas_paradas.push(...dados.p_paradas.map((p,i)=>({id:i+1,rota_id:rota.id,status:'pendente',revisao:0,...p})));
+    return resposta(200,{rota_id:rota.id,repetida:false,baixas});
   }
   const params = [...new URLSearchParams(u.search.replace(/\+/g, '%2B'))].map(([k, v]) => [k, encodeURIComponent(v)]);
   const tabela = banco[caminho];
@@ -529,11 +541,15 @@ async function principal() {
     prepararWhatsapp();
     banco.expedicao_baixas=[];
     banco.pcp_ajustes.push({tipo:'entrega',chave:'padrao||OUTRO',valor:'Entregamos'});
+    banco.pcp_ajustes.push({tipo:'sistema',chave:'expedicao_rota_empresa',valor:{endereco:'EMPRESA',latitude:-22.9,longitude:-47.05}});
+    banco.clientes_enderecos.push({id:2,cliente:'OUTRO',cliente_chave:'OUTRO',endereco:'Rua Outro, 10',latitude:-22.95,longitude:-47.06});
+    process.env.OPENROUTESERVICE_API_KEY='chave-simulada';
     const r=await marcar({itens:[{numeroOp:'29800/1',codItem:'44360'},{numeroOp:'29801/1',codItem:'99999'}]});
     assert.equal(r.status,200,r.erro);assert.equal(r.whatsapp.enfileirados,2);
     const outra=banco.pcp_avisos_whatsapp.find(a=>a.cliente==='OUTRO');
     assert.equal(outra.itens[0].acao,'ENTREGA');assert.equal(outra.itens[0].badge,'Finalizado');
     assert.equal(banco.pcp_avisos_whatsapp.find(a=>a.cliente!=='OUTRO').itens[0].badge,'Parcial');
+    assert.equal(r.rota.paradas.length,1,'entrega própria também cria a rota');
   });
   await teste('WhatsApp: falha da fila conserva baixa e aviso para recuperação automática', async()=>{
     prepararWhatsapp();falharFila=true;

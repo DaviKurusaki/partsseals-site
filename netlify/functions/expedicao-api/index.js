@@ -68,6 +68,7 @@
  */
 
 const crypto = require('node:crypto');
+const { criarRotasApi } = require('./expedicao-rota-api.cjs');
 const { criarExpedicao } = require('./expedicao-consulta.cjs');
 const { anexarAviso, criarFilaExpedicaoCelular } = require('./expedicao-aviso.cjs');
 
@@ -682,18 +683,31 @@ async function rotaClientes(evento) {
   return erro(503, 'Não foi possível carregar todo o cadastro. Tente novamente.');
 }
 
+const rotasApi = criarRotasApi({ db, lerSessao, ligado, ligadoBaixa, erro, responder, texto, chaveCliente,
+  metodosDeEntrega, chavesDeEntrega, dataIso, grupoEntrega, expedicao, montarGruposDeBaixa,
+  TABELA_ORDENS, LIMITE_CARRINHO, prepararAvisosWhatsapp, filaExpedicaoCelular });
+
 exports.handler = async (evento) => {
   if (!SUPABASE_URL || !SUPABASE_KEY || !SEGREDO) {
     return erro(500, 'O site ainda não foi configurado: faltam as variáveis SUPABASE_URL, SUPABASE_ANON_KEY e KURU_SEGREDO_SESSAO na Netlify.');
   }
-  const rota = texto(evento.path).split('/').filter(Boolean).pop();
+  const partes = texto(evento.path).split('/').filter(Boolean);
+  const rota = partes.at(-1), penultima = partes.at(-2);
   try {
     if (rota === 'estado' && evento.httpMethod === 'GET') {
       return responder(200, { ok: true, ligado: await ligado(), ligadoBaixa: await ligadoBaixa() });
     }
     if (rota === 'login' && evento.httpMethod === 'POST') return await rotaLogin(evento);
     if (rota === 'consulta' && evento.httpMethod === 'GET') return await rotaConsulta(evento);
-    if (rota === 'marcar' && evento.httpMethod === 'POST') return await rotaMarcar(evento);
+    if (rota === 'marcar' && evento.httpMethod === 'POST') {
+      let corpo; try { corpo = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Dados inválidos.'); }
+      return corpo.modo === 'balcao' ? await rotaMarcar(evento) : await rotasApi.criar(evento);
+    }
+    if (rota === 'rotas' && evento.httpMethod === 'POST') return await rotasApi.criar(evento);
+    if (penultima === 'rotas') {
+      if (rota === 'atual' && evento.httpMethod === 'GET') return await rotasApi.atual(evento);
+      if (evento.httpMethod === 'POST' && ['posicao', 'entregar', 'corrigir', 'reordenar', 'ciencia', 'cancelar'].includes(rota)) return await rotasApi[rota](evento);
+    }
     if (rota === 'clientes' && evento.httpMethod === 'GET') return await rotaClientes(evento);
     return erro(404, 'Caminho desconhecido.');
   } catch (err) {
@@ -706,5 +720,6 @@ exports.handler = async (evento) => {
 exports._testes = {
   dataIso, chaveCliente, chavesDeEntrega, valorDoAjuste, criarSessao, lerSessao, proximaMeiaNoiteMs,
   grupoEntrega, acaoDoGrupo, montarGruposDeBaixa,
+  RAIO_CERCA_M: 100, MINUTOS_ATRASO: 10,
   recuperarAvisosWhatsapp: filaExpedicaoCelular.recuperar,
 };

@@ -101,6 +101,25 @@ function itemBate(valor, item) {
 }
 
 function filtrarPorItem(expedicoes, fiscal, fiscalNotas, consulta = {}) {
+  // A leitura em lote junta várias requisições. Antes de comparar códigos,
+  // devolve a cada item somente as baixas de sua própria OP/pedido.
+  const { numerosOp, pedidos } = valoresRaw(consulta);
+  const requisicoes = new Set(chavesRequisicao(consulta.numeroOp, consulta.pedido));
+  for (const i of consulta.itens || []) for (const k of chavesRequisicao(i.numeroOp, i.pedido)) requisicoes.add(k);
+  const daRequisicao = (linha) => {
+    const req = numeroBase(linha.requisicao);
+    if (req) return requisicoes.has(req);
+    return chavesRequisicao('', linha.pedido).some(k => requisicoes.has(k));
+  };
+  const daOpOuPedido = (linha) => {
+    const op = texto(linha.numero_op);
+    if (op && numerosOp.length) return numerosOp.some(n => op === n
+      || (!op.includes('/') && numeroBase(op) && numeroBase(op) === numeroBase(n)));
+    return pedidos.includes(texto(linha.pedido));
+  };
+  expedicoes = expedicoes.filter(daRequisicao);
+  fiscal = fiscal.filter(daRequisicao);
+  fiscalNotas = fiscalNotas.filter(daOpOuPedido);
   const item = itemDaConsulta(consulta);
   if (!item) return { expedicoes, fiscal, fiscalNotas };
   return {
@@ -122,13 +141,13 @@ function porQuando(a, b) {
 }
 
 /** `requisicoes` é um array — normalmente as duas chaves de `chavesRequisicao()`. */
-async function lerFonte(tabela, requisicoes, colunas) {
+async function lerFonte(tabela, requisicoes, colunas, cacheMs = 30000) {
   try {
     const r = await db.selecionar(tabela, {
       colunas,
       filtros: [{ coluna: 'requisicao', operador: 'em', valor: requisicoes }],
       limite: 1000,
-      cacheMs: 30000,
+      cacheMs,
     });
     return { ok: true, linhas: r.linhas, erro: null };
   } catch (err) {
@@ -147,7 +166,7 @@ const COLUNAS_FISCAL_NOTAS_ITENS = ['id', 'nf_id', 'numero_op', 'cod_item', 'ped
  * `pedido` CRUS (`valoresRaw()`), não por base numérica — os dois vêm do
  * mesmo `banco_ordens_itens` que alimenta as outras duas fontes.
  */
-async function lerFonteFiscalNotas(numerosOp, pedidos) {
+async function lerFonteFiscalNotas(numerosOp, pedidos, cacheMs = 30000) {
   if (!numerosOp.length && !pedidos.length) return { ok: true, linhas: [], erro: null };
   try {
     const [porOp, porPedido] = await Promise.all([
@@ -155,14 +174,14 @@ async function lerFonteFiscalNotas(numerosOp, pedidos) {
         ? db.selecionar('fiscal_notas_itens', {
           colunas: COLUNAS_FISCAL_NOTAS_ITENS,
           filtros: [{ coluna: 'numero_op', operador: 'em', valor: numerosOp }],
-          limite: 1000, cacheMs: 30000,
+          limite: 1000, cacheMs,
         })
         : { linhas: [] },
       pedidos.length
         ? db.selecionar('fiscal_notas_itens', {
           colunas: COLUNAS_FISCAL_NOTAS_ITENS,
           filtros: [{ coluna: 'pedido', operador: 'em', valor: pedidos }],
-          limite: 1000, cacheMs: 30000,
+          limite: 1000, cacheMs,
         })
         : { linhas: [] },
     ]);
@@ -175,7 +194,7 @@ async function lerFonteFiscalNotas(numerosOp, pedidos) {
     const { linhas: nfs } = await db.selecionar('fiscal_notas', {
       colunas: ['id', 'numero_nf', 'cliente'],
       filtros: [{ coluna: 'id', operador: 'em', valor: nfIds }],
-      limite: 500, cacheMs: 30000,
+      limite: 500, cacheMs,
     });
     const nfPorId = new Map(nfs.map((n) => [n.id, n]));
     return {
@@ -307,13 +326,14 @@ async function consultar(consulta = {}) {
   if (!requisicoes.length) throw new Error('Numero da OP invalido para consultar a expedicao.');
 
   const { numerosOp, pedidos } = valoresRaw(consulta);
+  const cacheMs = consulta.cacheMs ?? 30000;
 
   const [expedicoes, fiscal, fiscalNotas] = await Promise.all([
     lerFonte('expedicao_baixas', requisicoes,
-      ['pedido', 'cliente', 'acao', 'responsavel', 'baixado_por', 'evento_em', 'itens']),
+      ['requisicao', 'pedido', 'cliente', 'acao', 'responsavel', 'baixado_por', 'evento_em', 'itens'], cacheMs),
     lerFonte('fiscal_pedidos', requisicoes,
-      ['produto', 'pedido', 'cliente', 'status', 'nf', 'rastreio', 'baixado_por', 'evento_em']),
-    lerFonteFiscalNotas(numerosOp, pedidos),
+      ['requisicao', 'produto', 'pedido', 'cliente', 'status', 'nf', 'rastreio', 'baixado_por', 'evento_em'], cacheMs),
+    lerFonteFiscalNotas(numerosOp, pedidos, cacheMs),
   ]);
   const fontes = {
     expedicoes: { ok: expedicoes.ok, erro: expedicoes.erro },
