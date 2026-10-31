@@ -1,0 +1,6 @@
+# Canal para relatar vulnerabilidades de segurança no site da Parts Seals.
+Contact: mailto:contato@parts-seals.com.br
+Expires: 2027-10-31T23:59:00.000Z
+Preferred-Languages: pt, en, es
+Canonical: https://parts-seals.com.br/.well-known/security.txt
+Policy: https://parts-seals.com.br/politica-de-privacidade.html

@@ -9,10 +9,15 @@ if (path.dirname(output) !== root || path.basename(output) !== 'dist') {
 }
 fs.rmSync(output, { recursive: true, force: true });
 fs.mkdirSync(output, { recursive: true });
-for (const name of ['index.html', 'en.html', 'es.html', 'materiais.html', 'style.css', 'script.js', 'robots.txt', 'sitemap.xml', '_redirects', '_headers']) {
+for (const name of [
+  'index.html', 'en.html', 'es.html', 'materiais.html',
+  'politica-de-privacidade.html', 'privacy.html', 'privacidad.html', '404.html',
+  'favicon.ico', 'site.webmanifest',
+  'style.css', 'script.js', 'robots.txt', 'sitemap.xml', '_redirects', '_headers',
+]) {
   fs.copyFileSync(path.join(root, name), path.join(output, name));
 }
-for (const name of ['assets', 'css', 'js', 'expedicao']) {
+for (const name of ['assets', 'css', 'js', 'expedicao', '.well-known']) {
   fs.cpSync(path.join(root, name), path.join(output, name), {
     recursive: true,
     filter: (file) => !path.relative(root, file).split(path.sep).includes('DataSheets'),

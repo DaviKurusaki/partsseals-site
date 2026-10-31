@@ -1,4 +1,7 @@
 User-agent: *
 Allow: /
+# Sistema interno de expedição (também marcado com X-Robots-Tag: noindex).
+Disallow: /expedicao
+Disallow: /e/
 
 Sitemap: https://parts-seals.com.br/sitemap.xml
