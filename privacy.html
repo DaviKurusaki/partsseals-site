@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <title>Privacy Policy | Parts Seals</title>
   <meta name="description" content="How Parts Seals Vedações Industriais handles personal data under the Brazilian General Data Protection Law (LGPD – Law 13,709/2018).">
   <meta name="robots" content="index, follow">
@@ -29,6 +29,7 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/analytics.js" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -38,7 +39,7 @@
     "name": "Privacy Policy | Parts Seals",
     "description": "How Parts Seals Vedações Industriais handles personal data under the Brazilian General Data Protection Law (LGPD – Law 13,709/2018).",
     "inLanguage": "en",
-    "dateModified": "2026-10-31",
+    "dateModified": "2026-11-01",
     "isPartOf": {
       "@id": "https://parts-seals.com.br/#website"
     },
@@ -81,7 +82,7 @@
         <p class="eyebrow">LGPD · Law 13,709/2018</p>
         <h1>Privacy Policy</h1>
         <p>What personal data we handle, why we handle it and how you can exercise your rights.</p>
-        <p><small>Last updated: October 31, 2026.</small></p>
+        <p><small>Last updated: November 1, 2026.</small></p>
       </div>
     </section>
 
@@ -92,7 +93,7 @@
 
         <h2>2. Summary</h2>
         <div class="legal-box">
-          <p><strong>No tracking, advertising or analytics cookies.</strong></p>
+          <p><strong>Analytics cookies only with your permission</strong>: Google Analytics is used only if you click "Accept" on the cookie notice. No advertising cookies.</p>
           <p><strong>No forms</strong> send data to our servers: contact happens through WhatsApp, e-mail or phone, at your initiative.</p>
           <p><strong>We do not sell</strong> or share personal data for marketing purposes.</p>
         </div>
@@ -102,16 +103,23 @@
           <li><strong>Sales and technical contact</strong> — when you reach us by WhatsApp, e-mail or phone we receive your name, phone, e-mail, company and whatever you send (photos, dimensions, drawings, application details), used to reply, quote, manufacture and deliver. <em>Legal basis: pre-contractual steps and contract performance (art. 7, V) and legitimate interest (art. 7, IX).</em></li>
           <li><strong>Billing and shipping data</strong> — company name, tax ID, address and contacts needed for invoicing and delivery. <em>Legal basis: contract performance and legal obligations (art. 7, II and V).</em></li>
           <li><strong>Technical access logs</strong> — our hosting provider automatically records IP address, date and time, page and browser type for security and operation. <em>Legal basis: legal obligation (Brazilian Internet Civil Framework, art. 15) and legitimate interest.</em></li>
+          <li><strong>Visit statistics (Google Analytics)</strong> — only if you accept, we collect browsing data: pages visited, date and time, time on page, traffic source, device and browser type, approximate location (country, state and city, estimated from IP) and clicks on contact buttons (WhatsApp, phone, e-mail) and PDF downloads. We use this data in aggregate to understand our audience and improve the site. Google Analytics 4 does not log or store full IP addresses. We do not use Google Analytics for advertising, remarketing or user profiling, and Google Signals is disabled. <em>Legal basis: consent (art. 7, I), which you may withdraw at any time.</em></li>
           <li><strong>Material selector and questions</strong> — processed in your own browser and never sent to us, unless you choose to open WhatsApp with the pre-filled message.</li>
           <li><strong>Shipping system</strong> — the /expedicao area is for internal staff and order label lookups. Device location is only requested during an active delivery route, and the camera only to scan labels.</li>
         </ul>
 
         <h2>4. Cookies</h2>
-        <p>This website uses no tracking, advertising or audience analytics cookies, so no cookie consent banner is shown. If this changes, this policy will be updated and your consent requested before any collection.</p>
+        <p>On your first visit we show a notice so you can <strong>accept or decline</strong> Google Analytics statistics cookies. Until you accept, Google Analytics is not loaded and no data is sent to Google.</p>
+        <ul>
+          <li><strong>_ga</strong> and <strong>_ga_&lt;ID&gt;</strong> (Google Analytics) — statistically distinguish visitors and sessions. Duration: up to 2 years. Only set after you accept.</li>
+          <li><strong>ps-consentimento-analytics</strong> (browser local storage, not a cookie) — remembers your choice for 12 months.</li>
+        </ul>
+        <p>You can change your mind at any time through the <strong>"Cookie preferences"</strong> link in the footer; declining deletes the Google Analytics cookies. You can also block cookies in your browser or install the <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">Google Analytics opt-out add-on</a>. We use no social media pixels or advertising cookies.</p>
 
         <h2>5. Third parties</h2>
         <ul>
           <li><strong>Netlify, Inc.</strong> — website hosting (servers in the USA and other countries).</li>
+          <li><strong>Google LLC (Google Analytics)</strong> — visit statistics, only with your consent (<a href="https://policies.google.com/privacy?hl=en" target="_blank" rel="noopener noreferrer">Google privacy policy</a>).</li>
           <li><strong>WhatsApp / Meta</strong> — when you choose to contact us on WhatsApp.</li>
           <li><strong>E-mail provider</strong> — to receive and send messages.</li>
           <li><strong>Carriers</strong> — name, address and phone for deliveries.</li>
@@ -127,6 +135,7 @@
           <li>Conversations and quotes that did not become orders: up to 2 years after the last contact.</li>
           <li>Customer, order and invoice data: for the period required by tax and accounting law (usually 5 years).</li>
           <li>Website access logs: at least 6 months, kept by the hosting provider.</li>
+          <li>Google Analytics statistics: 14 months, after which detailed data is automatically deleted by Google.</li>
         </ul>
 
         <h2>8. Your rights</h2>

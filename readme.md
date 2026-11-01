@@ -26,6 +26,7 @@ Também é possível abrir `index.html` diretamente no navegador, mas o Live Ser
 - `css/materials.css`: estilos da biblioteca de materiais e do visualizador.
 - `js/script.js`: menu mobile, FAQ, animações e links editáveis de contato.
 - `js/materials.js`: recomendações do seletor, mensagem de WhatsApp e controles do visualizador.
+- `js/analytics.js`: Google Analytics 4 com aviso de cookies (LGPD). Veja [o guia do Google Analytics](docs/google-analytics.md) para ativar e ler os relatórios.
 - `assets/logo.png`: logo da Parts Seals.
 - `assets/logo-header-white.png`: versão recortada para o cabeçalho em fundo escuro.
 - `assets/logo-footer-white.png`: versão da logo para fundo escuro, usada no rodapé.

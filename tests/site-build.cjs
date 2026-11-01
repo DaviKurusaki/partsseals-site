@@ -13,6 +13,12 @@ for (const name of [...pages, '404.html', 'expedicao/index.html']) {
     const local = decodeURIComponent(url.pathname) === '/' ? 'index.html' : decodeURIComponent(url.pathname).slice(1);
     assert(fs.existsSync(path.join(output, local)), `${name}: recurso ausente ${url.pathname}`);
   }
+  if (name !== 'expedicao/index.html') {
+    assert(/<script src="\/?js\/analytics\.js" defer><\/script>/.test(html), `${name}: falta js/analytics.js`);
+    assert(/script-src 'self' https:\/\/www\.googletagmanager\.com/.test(html), `${name}: CSP sem o Google Analytics`);
+  } else {
+    assert(!html.includes('analytics'), 'A expedição não deve ser medida');
+  }
   if (pages.includes(name)) {
     assert.match(html, /rel="canonical" href="https:\/\/parts-seals\.com\.br\//);
     assert(!/noindex/.test(html), `${name}: página pública não deve receber noindex`);

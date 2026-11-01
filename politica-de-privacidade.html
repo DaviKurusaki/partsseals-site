@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <title>Política de Privacidade | Parts Seals</title>
   <meta name="description" content="Como a Parts Seals Vedações Industriais trata dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD – Lei 13.709/2018).">
   <meta name="robots" content="index, follow">
@@ -29,6 +29,7 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/analytics.js" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -38,7 +39,7 @@
     "name": "Política de Privacidade | Parts Seals",
     "description": "Como a Parts Seals Vedações Industriais trata dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD – Lei 13.709/2018).",
     "inLanguage": "pt-BR",
-    "dateModified": "2026-10-31",
+    "dateModified": "2026-11-01",
     "isPartOf": {
       "@id": "https://parts-seals.com.br/#website"
     },
@@ -81,7 +82,7 @@
         <p class="eyebrow">LGPD · Lei 13.709/2018</p>
         <h1>Política de Privacidade</h1>
         <p>Transparência sobre quais dados pessoais tratamos, por que tratamos e como você pode exercer seus direitos.</p>
-        <p><small>Última atualização: 31 de outubro de 2026.</small></p>
+        <p><small>Última atualização: 1º de novembro de 2026.</small></p>
       </div>
     </section>
 
@@ -92,7 +93,7 @@
 
         <h2>2. Resumo</h2>
         <div class="legal-box">
-          <p><strong>Não usamos cookies</strong> de rastreamento, publicidade ou estatísticas.</p>
+          <p><strong>Cookies de estatística só com a sua autorização</strong>: usamos o Google Analytics apenas se você clicar em "Aceitar" no aviso de cookies. Não usamos cookies de publicidade.</p>
           <p><strong>Não há formulário</strong> que envie dados para nossos servidores: o contato acontece por WhatsApp, e-mail ou telefone, por iniciativa sua.</p>
           <p><strong>Não vendemos</strong> nem compartilhamos dados pessoais para fins de marketing.</p>
         </div>
@@ -102,17 +103,24 @@
           <li><strong>Contato comercial e técnico</strong> — quando você nos chama pelo WhatsApp, e-mail ou telefone, recebemos nome, telefone, e-mail, empresa e o conteúdo enviado (fotos, medidas, desenhos técnicos, descrição da aplicação). Usamos esses dados para responder, elaborar orçamentos e fabricar e entregar pedidos. <em>Base legal: procedimentos preliminares e execução de contrato (art. 7º, V) e legítimo interesse (art. 7º, IX).</em></li>
           <li><strong>Dados de faturamento e entrega</strong> — razão social, CNPJ/CPF, endereço e contatos necessários para emissão de nota fiscal e envio. <em>Base legal: execução de contrato e cumprimento de obrigação legal ou regulatória (art. 7º, II e V).</em></li>
           <li><strong>Registros técnicos de acesso</strong> — como em qualquer site, o provedor de hospedagem registra automaticamente endereço IP, data e hora, página acessada e tipo de navegador, para segurança e funcionamento do serviço. <em>Base legal: cumprimento de obrigação legal (Marco Civil da Internet, art. 15) e legítimo interesse.</em></li>
+          <li><strong>Estatísticas de visitas (Google Analytics)</strong> — somente se você aceitar, coletamos dados de navegação: páginas visitadas, data e hora, tempo de permanência, origem da visita (ex.: Google, link direto), tipo de aparelho e navegador, localização aproximada (país, estado e cidade, estimada pelo IP) e cliques em botões de contato (WhatsApp, telefone, e-mail) e downloads de PDF. Usamos esses dados de forma agregada para entender a audiência e melhorar o site. O Google Analytics 4 não registra nem armazena o endereço IP completo. Não usamos o Google Analytics para publicidade, remarketing ou perfis de usuários, e os Sinais do Google ficam desativados. <em>Base legal: consentimento (art. 7º, I), que pode ser revogado a qualquer momento.</em></li>
           <li><strong>Seletor técnico e "Pergunte sobre materiais"</strong> — as respostas são processadas no seu próprio navegador e não são enviadas para nós. Só recebemos essas informações se você escolher abrir a conversa no WhatsApp com a mensagem pronta.</li>
           <li><strong>Sistema de expedição</strong> — a área /expedicao é de uso interno da equipe e de consulta de etiquetas de pedidos. A localização do aparelho só é solicitada durante uma rota de entrega em andamento, para confirmar a entrega, e a câmera apenas para leitura de etiquetas.</li>
         </ul>
 
         <h2>4. Cookies e armazenamento local</h2>
-        <p>Este site não utiliza cookies de rastreamento, de publicidade ou ferramentas de análise de audiência (como Google Analytics ou pixels de redes sociais). Por isso não exibimos banner de consentimento de cookies. Se isso mudar, esta política será atualizada e o seu consentimento será solicitado antes de qualquer coleta.</p>
+        <p>Na primeira visita exibimos um aviso para você <strong>aceitar ou recusar</strong> os cookies de estatística do Google Analytics. Enquanto você não aceitar, o Google Analytics não é carregado e nenhum dado é enviado ao Google.</p>
+        <ul>
+          <li><strong>_ga</strong> e <strong>_ga_&lt;ID&gt;</strong> (Google Analytics) — distinguem visitantes e sessões de forma estatística. Duração: até 2 anos. Só são gravados após o seu aceite.</li>
+          <li><strong>ps-consentimento-analytics</strong> (armazenamento local do navegador, não é cookie) — guarda a sua escolha por 12 meses, para não perguntarmos a cada página.</li>
+        </ul>
+        <p>Você pode mudar de ideia a qualquer momento pelo link <strong>"Preferências de cookies"</strong> no rodapé do site. Ao recusar, os cookies do Google Analytics são apagados. Também é possível bloquear cookies nas configurações do navegador ou instalar o <a href="https://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">complemento de desativação do Google Analytics</a>. Não usamos pixels de redes sociais nem cookies de publicidade.</p>
 
         <h2>5. Compartilhamento com terceiros</h2>
         <p>Os dados podem ser tratados pelos seguintes operadores e serviços, cada um com sua própria política de privacidade:</p>
         <ul>
           <li><strong>Netlify, Inc.</strong> — hospedagem do site (servidores nos EUA e outros países).</li>
+          <li><strong>Google LLC (Google Analytics)</strong> — estatísticas de visitas, somente com o seu consentimento (<a href="https://policies.google.com/privacy?hl=pt-BR" target="_blank" rel="noopener noreferrer">política de privacidade do Google</a>).</li>
           <li><strong>WhatsApp / Meta</strong> — quando você opta por falar conosco pelo WhatsApp.</li>
           <li><strong>Provedor de e-mail</strong> — para recebimento e envio de mensagens.</li>
           <li><strong>Transportadoras</strong> — nome, endereço e telefone para entrega de pedidos.</li>
@@ -121,13 +129,14 @@
         <p>Links para Google Maps, Google Avaliações e LinkedIn levam a sites de terceiros, que tratam dados conforme as próprias políticas.</p>
 
         <h2>6. Transferência internacional</h2>
-        <p>Alguns dos serviços acima (como hospedagem e WhatsApp) podem armazenar dados fora do Brasil. Essas transferências ocorrem conforme o art. 33 da LGPD, com fornecedores que adotam cláusulas contratuais e medidas de segurança adequadas.</p>
+        <p>Alguns dos serviços acima (como hospedagem, Google Analytics e WhatsApp) podem armazenar dados fora do Brasil. Essas transferências ocorrem conforme o art. 33 da LGPD, com fornecedores que adotam cláusulas contratuais e medidas de segurança adequadas.</p>
 
         <h2>7. Por quanto tempo guardamos</h2>
         <ul>
           <li>Conversas e orçamentos não convertidos em pedido: até 2 anos após o último contato, para histórico técnico e novos orçamentos.</li>
           <li>Dados de clientes, pedidos e notas fiscais: pelo prazo exigido pela legislação fiscal e contábil (em geral, 5 anos).</li>
           <li>Registros de acesso ao site: mínimo de 6 meses (Marco Civil da Internet), mantidos pelo provedor de hospedagem.</li>
+          <li>Estatísticas do Google Analytics: 14 meses; depois os dados detalhados são excluídos automaticamente pelo Google.</li>
         </ul>
         <p>Encerrados os prazos, os dados são excluídos ou anonimizados.</p>
 

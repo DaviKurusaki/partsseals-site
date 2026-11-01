@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="description" content="Guia técnico de materiais da Parts Seals: aplicações, exemplos de perfis e visualização protegida de datasheets para vedações e peças industriais.">
   <meta name="theme-color" content="#0b0d10">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -32,6 +32,7 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/analytics.js" defer></script>
   <link rel="stylesheet" href="css/materials.css">
   <script type="application/ld+json">
   {
