@@ -1,0 +1,882 @@
+<title>Engrenagem Infinita</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#0d1820">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Saira:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one-screen phone app. Brass HUD on top, blueprint stage with the spinning gear, tabbed workshop panel below. */
+:root{
+  color-scheme:dark;
+  --bg:#0d1820; --bg2:#13262f; --card:#18303d; --card2:#1d3a49; --line:#27485a;
+  --grid:rgba(88,211,198,.07);
+  --ink:#eaf1ec; --mute:#8fa9b2; --dim:#5d7883;
+  --brass:#e3a83c; --brass-hi:#ffd98a; --brass-lo:#8f6420; --brass-ink:#1d1406;
+  --cool:#58d3c6; --hot:#ff6b3d; --ok:#8be39a;
+  --fd:'Bungee','Impact','Arial Black',sans-serif;
+  --fb:'Saira','Segoe UI',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--fb);font-size:14px;overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--cool);outline-offset:2px}
+#app{height:100%;max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:10px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 0}
+
+/* HUD */
+.hud{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.hud .lbl{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.money{font-family:var(--fd);font-size:clamp(28px,8.5vw,40px);line-height:1.05;color:var(--brass-hi);font-variant-numeric:tabular-nums;text-shadow:0 2px 0 var(--brass-lo)}
+.pps{font-weight:700;color:var(--cool);font-variant-numeric:tabular-nums;font-size:15px}
+.pps small{color:var(--mute);font-weight:500}
+.hudr{display:flex;gap:8px;align-items:center}
+.iconbtn{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--card);display:grid;place-items:center;color:var(--mute)}
+.iconbtn svg{width:20px;height:20px}
+.pat{display:flex;flex-direction:column;align-items:flex-end;font-size:11px;color:var(--mute);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.pat b{font-family:var(--fd);font-size:16px;color:var(--brass);letter-spacing:0}
+
+/* Stage */
+.stage{position:relative;flex:0 0 40%;min-height:210px;border:1px solid var(--line);border-radius:16px;overflow:hidden;touch-action:none;cursor:pointer;
+  background:
+    linear-gradient(var(--grid) 1px,transparent 1px) 0 0/24px 24px,
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px) 0 0/24px 24px,
+    radial-gradient(ellipse at 50% 55%,var(--bg2),var(--bg) 75%)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stamp{position:absolute;right:12px;top:10px;font-size:10px;letter-spacing:.18em;color:var(--dim);text-transform:uppercase;font-weight:600;pointer-events:none}
+.heat{position:absolute;left:12px;right:12px;bottom:12px;height:8px;border-radius:4px;background:rgba(0,0,0,.4);overflow:hidden;pointer-events:none}
+.heat i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cool),var(--brass),var(--hot));transition:width .08s linear}
+.heatlbl{position:absolute;right:12px;bottom:24px;font-family:var(--fd);font-size:13px;color:var(--mute);pointer-events:none;font-variant-numeric:tabular-nums}
+.heatlbl.on{color:var(--hot)}
+.buffs{position:absolute;left:12px;bottom:26px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.chip{font-family:var(--fd);font-size:11px;padding:4px 8px;border-radius:6px;background:var(--brass);color:var(--brass-ink);box-shadow:0 0 18px rgba(227,168,60,.5);animation:pulse 1s ease-in-out infinite}
+.chip.turbo{background:var(--cool);box-shadow:0 0 18px rgba(88,211,198,.5)}
+.hint{position:absolute;left:50%;top:14px;transform:translateX(-50%);font-family:var(--fd);font-size:13px;color:var(--brass-hi);pointer-events:none;animation:pulse 1.2s ease-in-out infinite;white-space:nowrap}
+.toasts{position:absolute;left:10px;right:10px;top:34px;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.toast{background:rgba(13,24,32,.92);border:1px solid var(--brass);color:var(--ink);border-radius:9px;padding:5px 10px;font-size:12px;font-weight:600;text-align:center;animation:toast 3.2s ease forwards;max-width:100%}
+.toast b{font-family:var(--fd);color:var(--brass-hi);font-weight:400}
+.toast.ach{border-color:var(--cool)}
+.toast.ach b{color:var(--cool)}
+.gold{position:absolute;width:58px;height:58px;border:0;padding:0;background:none;animation:bob 1.1s ease-in-out infinite;filter:drop-shadow(0 0 14px rgba(255,217,138,.85));z-index:3;touch-action:none}
+.gold svg{width:100%;height:100%;animation:spin 6s linear infinite}
+.gold.out{animation:fade .6s forwards}
+
+/* Tabs */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.tab{position:relative;padding:10px 4px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-family:var(--fd);font-size:11px;color:var(--mute);letter-spacing:.02em}
+.tab[aria-selected="true"]{background:var(--brass);color:var(--brass-ink);border-color:var(--brass)}
+.tab .dot{position:absolute;top:-4px;right:-4px;width:12px;height:12px;border-radius:50%;background:var(--hot);border:2px solid var(--bg);animation:pulse 1s infinite}
+
+/* Panel */
+.panel{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding-bottom:16px;-webkit-overflow-scrolling:touch}
+.list{display:flex;flex-direction:column;gap:8px}
+.bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:8px;padding-bottom:8px;background:var(--bg)}
+.bar .lbl{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:var(--card);padding:6px 10px;font-family:var(--fd);font-size:11px;color:var(--mute)}
+.seg button[aria-pressed="true"]{background:var(--cool);color:var(--bg)}
+
+.card{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--card);transition:transform .06s,border-color .2s,background .2s}
+.card:active{transform:scale(.975)}
+.card.can{border-color:var(--brass-lo);background:var(--card2)}
+.card.can .cost{color:var(--brass-hi)}
+.card:not(.can) .cost{color:var(--dim)}
+.card .ico{width:44px;height:44px;border-radius:10px;background:rgba(0,0,0,.25);display:grid;place-items:center;color:var(--brass)}
+.card .ico svg{width:30px;height:30px}
+.card .ico.t{font-family:var(--fd);font-size:13px;color:var(--cool)}
+.nm{font-weight:700;font-size:15px;display:flex;gap:8px;align-items:baseline;line-height:1.2}
+.nm span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.own{font-family:var(--fd);font-size:15px;color:var(--cool);font-weight:400;flex:none}
+.sub{font-size:12px;color:var(--mute);line-height:1.35;font-variant-numeric:tabular-nums}
+.ms{display:flex;align-items:center;gap:8px;margin-top:5px;font-size:10px;color:var(--dim);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.ms .tr{flex:1;height:4px;background:rgba(0,0,0,.35);border-radius:2px;overflow:hidden}
+.ms .tr i{display:block;height:100%;background:var(--cool);width:0}
+.price{text-align:right;min-width:68px}
+.q{display:block;font-size:11px;color:var(--mute);font-weight:600}
+.cost{font-family:var(--fd);font-size:14px;font-variant-numeric:tabular-nums}
+.card.locked{opacity:.55;pointer-events:none}
+.card.locked .ico{color:var(--dim)}
+.empty{padding:22px 8px;text-align:center;color:var(--mute);line-height:1.5}
+.empty b{color:var(--ink)}
+.foot{font-size:12px;color:var(--dim);text-align:center;padding-top:6px}
+
+/* Patentes */
+.pp{display:flex;flex-direction:column;gap:12px}
+.box{border:1px solid var(--line);border-radius:14px;background:var(--card);padding:14px}
+.box h3{margin:0 0 6px;font-family:var(--fd);font-weight:400;font-size:16px;color:var(--brass-hi)}
+.box p{margin:0;color:var(--mute);line-height:1.5}
+.big{font-family:var(--fd);font-size:30px;color:var(--brass-hi);line-height:1.1}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.stats div{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.stats b{display:block;font-family:var(--fd);font-weight:400;font-size:15px;color:var(--ink);letter-spacing:0;text-transform:none}
+.cta{width:100%;margin-top:12px;padding:14px;border-radius:12px;border:0;background:var(--brass);color:var(--brass-ink);font-family:var(--fd);font-size:14px}
+.cta:disabled{background:var(--card2);color:var(--dim);cursor:default}
+.cta.arm{background:var(--hot);color:#fff;animation:pulse .6s infinite}
+.tal{display:grid;grid-template-columns:52px minmax(0,1fr);gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
+.tal:first-of-type{border-top:0}
+.tal .n{font-family:var(--fd);font-size:14px;color:var(--dim);text-align:center}
+.tal .t{font-weight:700}
+.tal .d{font-size:12px;color:var(--mute)}
+.tal.on .n{color:var(--brass)}
+.tal:not(.on) .t{color:var(--mute)}
+
+/* Conquistas */
+.achs{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.ach{border:1px solid var(--line);border-radius:12px;padding:10px;background:var(--card);min-width:0}
+.ach .t{font-weight:700;font-size:13px;color:var(--mute)}
+.ach .d{font-size:11px;color:var(--dim);line-height:1.35}
+.ach.on{border-color:var(--cool)}
+.ach.on .t{color:var(--ink)}
+.ach.on .d{color:var(--mute)}
+
+/* Modal */
+.modal{position:fixed;inset:0;z-index:20;background:rgba(4,9,12,.78);display:grid;place-items:center;padding:24px max(16px,env(safe-area-inset-left,0px))}
+.sheet{width:100%;max-width:380px;border:1px solid var(--brass-lo);border-radius:18px;background:var(--bg2);padding:22px;text-align:center;animation:pop .35s cubic-bezier(.2,1.6,.4,1)}
+.sheet h2{margin:0 0 6px;font-family:var(--fd);font-weight:400;font-size:20px;color:var(--brass-hi);text-wrap:balance}
+.sheet p{margin:0;color:var(--mute);line-height:1.5}
+.sheet .big{margin:12px 0 2px}
+
+@keyframes pulse{50%{opacity:.6}}
+@keyframes bob{50%{transform:translateY(-8px) scale(1.06)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes fade{to{opacity:0;transform:scale(.4)}}
+@keyframes pop{from{transform:scale(.8);opacity:0}}
+@keyframes toast{0%{opacity:0;transform:translateY(-8px)}8%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+</style>
+
+<div id="app">
+  <header class="hud">
+    <div>
+      <div class="lbl">Peças fabricadas</div>
+      <div class="money" id="money">0</div>
+      <div class="pps"><span id="pps">0</span> <small>por segundo</small></div>
+    </div>
+    <div class="hudr">
+      <div class="pat" id="patBox" hidden>Patentes<b id="patN">0</b></div>
+      <button class="iconbtn" id="snd" aria-label="Som ligado"></button>
+    </div>
+  </header>
+
+  <section class="stage" id="stage" aria-label="Engrenagem principal: toque para fabricar peças">
+    <canvas id="cv"></canvas>
+    <div class="stamp" id="stamp">Planta nº 1</div>
+    <div class="hint" id="hint">Toque na engrenagem!</div>
+    <div class="toasts" id="toasts"></div>
+    <div class="buffs" id="buffs"></div>
+    <div class="heatlbl" id="heatlbl">×1,0</div>
+    <div class="heat"><i id="heat"></i></div>
+  </section>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-gen" data-tab="gen">Máquinas</button>
+    <button class="tab" role="tab" id="tab-up" data-tab="up">Melhorias</button>
+    <button class="tab" role="tab" id="tab-pat" data-tab="pat">Patentes</button>
+    <button class="tab" role="tab" id="tab-ach" data-tab="ach">Troféus</button>
+  </nav>
+
+  <section class="panel" id="panel"></section>
+</div>
+
+<div class="modal" id="modal" hidden>
+  <div class="sheet">
+    <h2 id="mT"></h2>
+    <p id="mP"></p>
+    <div class="big" id="mB"></div>
+    <button class="cta" id="mOk">Coletar</button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const TAU = Math.PI * 2;
+const KEY = 'engrenagem-infinita-v1';
+const $ = s => document.querySelector(s);
+
+/* ---------- Números ---------- */
+const SUF = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc', 'UDc', 'DDc', 'TDc', 'QaDc', 'QiDc', 'SxDc', 'SpDc', 'OcDc', 'NoDc', 'Vg'];
+function fmt(n) {
+  if (!isFinite(n)) return '∞';
+  if (n < 1000) {
+    if (n < 10 && n % 1 !== 0) return (Math.floor(n * 10) / 10).toFixed(1).replace('.', ',');
+    return String(Math.floor(n));
+  }
+  const e = Math.floor(Math.log10(n) / 3);
+  if (e < SUF.length) {
+    const v = n / Math.pow(10, e * 3);
+    const s = v < 10 ? (Math.floor(v * 100) / 100).toFixed(2) : v < 100 ? (Math.floor(v * 10) / 10).toFixed(1) : Math.floor(v).toFixed(0);
+    return s.replace('.', ',') + ' ' + SUF[e];
+  }
+  return n.toExponential(2).replace('.', ',');
+}
+const fmtX = m => '×' + (m >= 100 ? fmt(m) : (Math.round(m * 10) / 10).toString().replace('.', ','));
+function fmtTime(s) {
+  s = Math.floor(s);
+  const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  if (h) return `${h} h ${m} min`;
+  if (m) return `${m} min`;
+  return `${s} s`;
+}
+
+/* ---------- Ícones ---------- */
+const sv = b => `<svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${b}</svg>`;
+const ICONS = [
+  sv('<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="5"/><circle cx="16" cy="7.5" r="1.6" fill="currentColor"/><circle cx="24.5" cy="16" r="1.6" fill="currentColor"/><circle cx="16" cy="24.5" r="1.6" fill="currentColor"/><circle cx="7.5" cy="16" r="1.6" fill="currentColor"/>'),
+  sv('<circle cx="16" cy="16" r="10" stroke-width="5"/>'),
+  sv('<rect x="5" y="5" width="22" height="22" rx="3"/><rect x="11" y="11" width="10" height="10" rx="1"/><path d="M5 11h6M21 21h6"/>'),
+  sv('<circle cx="16" cy="16" r="12"/><circle cx="16" cy="16" r="7"/><path d="M9 16c0-2 1-4 3-5"/>'),
+  sv('<circle cx="13" cy="18" r="8"/><circle cx="13" cy="18" r="2.5"/><path d="M19 12l7-6M23 4h5v5"/>'),
+  sv('<path d="M6 6h20M16 6v10M9 16h14v5H9zM5 27h22"/>'),
+  sv('<rect x="3" y="12" width="12" height="9" rx="1"/><path d="M15 16.5h10M25 13v7M28 15v3"/><path d="M5 25h22"/>'),
+  sv('<rect x="3" y="18" width="26" height="7" rx="3.5"/><circle cx="8" cy="21.5" r="1.4" fill="currentColor"/><circle cx="16" cy="21.5" r="1.4" fill="currentColor"/><circle cx="24" cy="21.5" r="1.4" fill="currentColor"/><rect x="8" y="10" width="6" height="6"/><rect x="18" y="12" width="5" height="4"/>'),
+  sv('<path d="M6 27h10M11 27V19l6-7 6 3"/><circle cx="11" cy="19" r="2"/><circle cx="17" cy="12" r="2"/><path d="M23 15l3-3M23 15l3 2"/>'),
+  sv('<path d="M3 27V15l7 4v-4l7 4v-4l7 4V6h4v21z"/><path d="M8 23h3M15 23h3"/>'),
+  sv('<circle cx="16" cy="16" r="6"/><ellipse cx="16" cy="16" rx="14" ry="5" transform="rotate(-20 16 16)"/><circle cx="27" cy="9" r="1.5" fill="currentColor"/>'),
+  sv('<path d="M16 3l3.5 8.5L28 13l-6.5 6 1.8 9L16 23.5 8.7 28l1.8-9L4 13l8.5-1.5z"/><circle cx="16" cy="16" r="3"/>'),
+];
+const NUT = `<svg viewBox="0 0 64 64"><defs><radialGradient id="gg" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff6d6"/><stop offset=".45" stop-color="#ffd25e"/><stop offset="1" stop-color="#a86d10"/></radialGradient></defs><path d="M32 3l25 14.5v29L32 61 7 46.5v-29z" fill="url(#gg)" stroke="#6b4508" stroke-width="2"/><circle cx="32" cy="32" r="11" fill="#5a3a06" stroke="#ffe7a3" stroke-width="2"/></svg>`;
+
+/* ---------- Conteúdo ---------- */
+const GENS = [
+  { n: 'Rolamento', c: 15, p: 0.1, d: 'Gira sem reclamar.' },
+  { n: 'O-ring', c: 100, p: 1, d: 'Veda até vazamento de tédio.' },
+  { n: 'Gaxeta', c: 1100, p: 8, d: 'Aperto firme, produção firme.' },
+  { n: 'Retentor', c: 12e3, p: 47, d: 'Nenhuma peça escapa.' },
+  { n: 'Bomba hidráulica', c: 13e4, p: 260, d: '300 bar de pura vontade.' },
+  { n: 'Prensa', c: 1.4e6, p: 1400, d: 'Esmaga metas.' },
+  { n: 'Torno CNC', c: 2e7, p: 7800, d: 'Precisão de 0,01 mm.' },
+  { n: 'Linha de montagem', c: 3.3e8, p: 44e3, d: 'Nunca para. Nunca.' },
+  { n: 'Robô industrial', c: 5.1e9, p: 26e4, d: 'Não pede férias.' },
+  { n: 'Megafábrica', c: 7.5e10, p: 1.6e6, d: 'Visível do espaço.' },
+  { n: 'Usina orbital', c: 1e12, p: 1e7, d: 'Gravidade zero, lucro máximo.' },
+  { n: 'Forja estelar', c: 1.4e13, p: 6.5e7, d: 'Funde estrelas em vedações.' },
+];
+const MILES = [10, 25, 50, 100, 150, 200, 250, 300, 400, 500];
+const milesHit = n => MILES.filter(m => n >= m).length;
+const nextMile = n => MILES.find(m => n < m) ?? null;
+const prevMile = n => { let p = 0; for (const m of MILES) if (n >= m) p = m; return p; };
+
+const UPS = [];
+[[100, 2, 'Luva de borracha'], [1000, 2, 'Chave de boca'], [2e4, 3, 'Martelo pneumático'], [5e5, 3, 'Punho hidráulico'], [2e7, 4, 'Toque de mestre'], [1e9, 5, 'Mão de titânio'], [5e10, 5, 'Dedo de tungstênio'], [1e13, 10, 'Toque cósmico'], [1e16, 10, 'Toque da singularidade']]
+  .forEach(([c, m, n], i) => UPS.push({ id: 't' + i, n, d: `Cada toque vale ×${m}`, c, k: 'tap', m, tag: 'TOQ' }));
+[[5e4, .01, 'Sincronia I'], [5e6, .02, 'Sincronia II'], [5e9, .03, 'Sincronia III'], [5e12, .04, 'Sincronia IV']]
+  .forEach(([c, p, n], i) => UPS.push({ id: 'p' + i, n, d: `Toques ganham +${p * 100}% da produção por segundo`, c, k: 'pct', p, tag: 'SYN' }));
+[[1e5, 1.5, 'Lubrificação premium'], [1e8, 1.5, 'Manutenção preditiva'], [1e11, 2, 'Lean manufacturing'], [1e14, 2, 'Seis Sigma'], [1e17, 3, 'Fábrica autônoma'], [1e20, 3, 'Singularidade fabril']]
+  .forEach(([c, m, n], i) => UPS.push({ id: 'G' + i, n, d: `Toda a produção ×${String(m).replace('.', ',')}`, c, k: 'glob', m, tag: 'ALL' }));
+[[3e5, .75, 'Ímã de ouro'], [3e9, .75, 'Ímã de ouro II']]
+  .forEach(([c, m, n], i) => UPS.push({ id: 'f' + i, n, d: 'Peças douradas aparecem com mais frequência', c, k: 'gf', m, tag: 'AU' }));
+UPS.push({ id: 'd0', n: 'Brilho duradouro', d: 'Efeitos dourados duram ×1,5', c: 2e7, k: 'gd', m: 1.5, tag: 'AU' });
+const GT = [1, 10, 25, 50, 100], GM = [2, 2, 2, 3, 3], GC = [10, 60, 1500, 8e4, 5e7];
+const GN = ['Revisão', 'Ajuste fino', 'Vedação dupla', 'Liga especial', 'Engenharia reversa'];
+GENS.forEach((g, gi) => GT.forEach((t, ti) => UPS.push({ id: `g${gi}_${ti}`, n: `${GN[ti]}: ${g.n}`, d: `${g.n} produz ×${GM[ti]}`, c: g.c * GC[ti], k: 'gen', g: gi, m: GM[ti], t })));
+UPS.sort((a, b) => a.c - b.c);
+const UPI = Object.fromEntries(UPS.map(u => [u.id, u]));
+
+const TAL = [
+  [1, 'Patente de toque', 'Toques valem ×2'],
+  [3, 'Kit inicial', 'Recomeça com 10 Rolamentos e 5 O-rings'],
+  [5, 'Faro para ouro', 'Peças douradas aparecem 30% mais'],
+  [10, 'Turno da noite', 'Ganhos offline a 100%, até 8 h'],
+  [25, 'Compra em lote', 'Máquinas 10% mais baratas'],
+  [50, 'Reflexo de produção', 'Toques ganham +2% da produção/s'],
+  [100, 'Frenesi eterno', 'Frenesi dura o dobro'],
+  [250, 'Império da vedação', 'Toda a produção ×3'],
+];
+
+const totalGens = () => S.gens.reduce((a, b) => a + b, 0);
+const ACH = [
+  ['Primeiro giro', 'Toque na engrenagem', () => S.taps >= 1],
+  ['Dedo aquecido', '100 toques', () => S.taps >= 100],
+  ['Tendinite industrial', '1.000 toques', () => S.taps >= 1e3],
+  ['Pistão humano', '10.000 toques', () => S.taps >= 1e4],
+  ['Primeiro lote', '1.000 peças no total', () => S.lifetime >= 1e3],
+  ['Milionário de peças', '1 M de peças no total', () => S.lifetime >= 1e6],
+  ['Bilhão vedado', '1 B de peças no total', () => S.lifetime >= 1e9],
+  ['Trilhão em estoque', '1 T de peças no total', () => S.lifetime >= 1e12],
+  ['Galpão infinito', '1 Qa de peças no total', () => S.lifetime >= 1e15],
+  ['Economia planetária', '1 Qi de peças no total', () => S.lifetime >= 1e18],
+  ['Além da matemática', '1 Sx de peças no total', () => S.lifetime >= 1e21],
+  ['Oficina', '10 máquinas', () => totalGens() >= 10],
+  ['Chão de fábrica', '50 máquinas', () => totalGens() >= 50],
+  ['Polo industrial', '200 máquinas', () => totalGens() >= 200],
+  ['Distrito fabril', '500 máquinas', () => totalGens() >= 500],
+  ['Mil engrenagens', '1.000 máquinas', () => totalGens() >= 1000],
+  ['Catálogo completo', 'Tenha uma de cada máquina', () => S.gens.every(n => n > 0)],
+  ['Centenário', '100 de uma mesma máquina', () => S.gens.some(n => n >= 100)],
+  ['Ritmo', '100 peças por segundo', () => pps() >= 100],
+  ['Embalado', '10 K peças por segundo', () => pps() >= 1e4],
+  ['Turbinado', '1 M peças por segundo', () => pps() >= 1e6],
+  ['Velocidade de escape', '1 B peças por segundo', () => pps() >= 1e9],
+  ['Dobra espacial', '1 T peças por segundo', () => pps() >= 1e12],
+  ['Brilhou', 'Pegue 1 peça dourada', () => S.gold >= 1],
+  ['Garimpeiro', 'Pegue 10 peças douradas', () => S.gold >= 10],
+  ['Midas da vedação', 'Pegue 50 peças douradas', () => S.gold >= 50],
+  ['Sobrecarga', 'Leve o calor ao máximo', () => S.heatMax],
+  ['Inventor', 'Registre sua primeira patente', () => S.prestiges >= 1],
+  ['Escritório de patentes', 'Recomece 5 vezes', () => S.prestiges >= 5],
+  ['Lenda da engenharia', 'Recomece 20 vezes', () => S.prestiges >= 20],
+  ['Caixa de ferramentas', '10 melhorias instaladas', () => S.ups.length >= 10],
+  ['Oficina tunada', '40 melhorias instaladas', () => S.ups.length >= 40],
+];
+
+/* ---------- Estado ---------- */
+function fresh() {
+  return { v: 1, money: 0, runTotal: 0, lifetime: 0, taps: 0, gens: GENS.map(() => 0), ups: [], ach: [], patents: 0, prestiges: 0, gold: 0, heatMax: false, muted: false, buy: '1', tab: 'gen', hinted: false, frenzy: 0, turbo: 0, last: Date.now(), seenAch: 0 };
+}
+let S = fresh();
+let M = null;
+const tal = n => S.patents >= n;
+
+function recalc() {
+  const m = { tap: 1, pct: 0, glob: 1, gm: S.gens.map(n => Math.pow(2, milesHit(n))), gf: 1, gd: 1 };
+  for (const id of S.ups) {
+    const u = UPI[id]; if (!u) continue;
+    if (u.k === 'tap') m.tap *= u.m;
+    else if (u.k === 'pct') m.pct += u.p;
+    else if (u.k === 'glob') m.glob *= u.m;
+    else if (u.k === 'gen') m.gm[u.g] *= u.m;
+    else if (u.k === 'gf') m.gf *= u.m;
+    else if (u.k === 'gd') m.gd *= u.m;
+  }
+  if (tal(1)) m.tap *= 2;
+  if (tal(5)) m.gf *= 0.77;
+  if (tal(50)) m.pct += 0.02;
+  if (tal(250)) m.glob *= 3;
+  m.glob *= (1 + 0.1 * S.patents) * (1 + 0.02 * S.ach.length);
+  M = m;
+}
+const disc = () => tal(25) ? 0.9 : 1;
+const buffMul = () => S.frenzy > 0 ? 7 : 1;
+function basePps() { let s = 0; for (let i = 0; i < GENS.length; i++) s += S.gens[i] * GENS[i].p * M.gm[i]; return s * M.glob; }
+const pps = () => basePps() * buffMul();
+let heat = 0;
+const heatMul = () => 1 + heat / 50;
+const tapValue = () => (M.tap * (1 + 0.1 * S.patents) + M.pct * basePps()) * heatMul() * (S.turbo > 0 ? 25 : 1);
+
+const R = 1.15;
+function unitCost(i) { return GENS[i].c * Math.pow(R, S.gens[i]) * disc(); }
+function costOf(i, n) { return unitCost(i) * (Math.pow(R, n) - 1) / (R - 1); }
+function maxBuy(i) { return Math.max(0, Math.floor(Math.log(S.money * (R - 1) / unitCost(i) + 1) / Math.log(R))); }
+function qtyFor(i) { return S.buy === 'max' ? Math.max(1, maxBuy(i)) : +S.buy; }
+
+function earn(v) { S.money += v; S.runTotal += v; S.lifetime += v; }
+
+const patentTotal = () => Math.floor(Math.sqrt(S.lifetime / 1e9));
+const patentGain = () => Math.max(0, patentTotal() - S.patents);
+
+/* ---------- Persistência ---------- */
+function save() {
+  S.last = Date.now();
+  try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {}
+}
+function load(data) {
+  let raw = data && data.state ? data.state : null;
+  if (!raw) { try { raw = JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { raw = null; } }
+  if (raw && typeof raw === 'object') {
+    S = Object.assign(fresh(), raw);
+    S.gens = GENS.map((_, i) => +(raw.gens && raw.gens[i]) || 0);
+    S.ups = Array.isArray(raw.ups) ? raw.ups.filter(id => UPI[id]) : [];
+    S.ach = Array.isArray(raw.ach) ? raw.ach : [];
+    return !(data && data.state);
+  }
+  return false;
+}
+
+/* ---------- Áudio e vibração ---------- */
+let AC = null;
+function audioInit() {
+  if (AC || S.muted) return;
+  try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { AC = null; }
+}
+function tone(freq, dur, type = 'square', vol = 0.05, delay = 0, slide = 0) {
+  if (!AC || S.muted) return;
+  try {
+    const t = AC.currentTime + delay;
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type; o.frequency.setValueAtTime(freq, t);
+    if (slide) o.frequency.exponentialRampToValueAtTime(freq * slide, t + dur);
+    g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+  } catch (e) {}
+}
+const sfx = {
+  tap: () => tone(180 + heat * 4 + Math.random() * 30, 0.06, 'square', 0.035, 0, 0.6),
+  buy: () => { tone(520, 0.07, 'triangle', 0.07); tone(780, 0.1, 'triangle', 0.07, 0.06); },
+  up: () => { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.12, 'triangle', 0.06, i * 0.06)); },
+  gold: () => { [784, 988, 1175, 1568, 1976].forEach((f, i) => tone(f, 0.16, 'sine', 0.08, i * 0.05)); },
+  ach: () => { tone(660, 0.12, 'sine', 0.07); tone(990, 0.2, 'sine', 0.07, 0.1); },
+  mile: () => { [392, 523, 659, 784].forEach((f, i) => tone(f, 0.14, 'sawtooth', 0.04, i * 0.07)); },
+  no: () => tone(120, 0.08, 'square', 0.03),
+};
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+/* ---------- Toasts ---------- */
+const toastsEl = $('#toasts');
+function toast(html, cls = '') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + cls; t.innerHTML = html;
+  toastsEl.appendChild(t);
+  while (toastsEl.children.length > 3) toastsEl.firstChild.remove();
+  setTimeout(() => t.remove(), 3300);
+}
+
+/* ---------- Palco / canvas ---------- */
+const stage = $('#stage'), cv = $('#cv'), ctx = cv.getContext('2d');
+let W = 0, H = 0, DPR = 1;
+function resize() {
+  DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+  W = stage.clientWidth; H = stage.clientHeight;
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+}
+try { new ResizeObserver(resize).observe(stage); } catch (e) { window.addEventListener('resize', resize); }
+resize();
+
+let ang = 0, kick = 0, squash = 0;
+const floats = [], sparks = [];
+function burst(x, y, n, gold) {
+  for (let i = 0; i < n; i++) {
+    const a = Math.random() * TAU, sp = 80 + Math.random() * (gold ? 320 : 180);
+    sparks.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - 60, life: 0.5 + Math.random() * 0.5, t: 0, gold });
+  }
+}
+function gearPath(r, teeth, holes) {
+  const ri = r * 0.84, w = TAU / teeth;
+  ctx.beginPath();
+  for (let k = 0; k < teeth; k++) {
+    const a = k * w;
+    const pts = [[ri, a], [r, a + w * 0.12], [r, a + w * 0.42], [ri, a + w * 0.56]];
+    for (const [rr, aa] of pts) ctx.lineTo(Math.cos(aa) * rr, Math.sin(aa) * rr);
+  }
+  ctx.closePath();
+  ctx.moveTo(r * 0.2, 0); ctx.arc(0, 0, r * 0.2, 0, TAU, true);
+  if (holes) for (let k = 0; k < holes; k++) {
+    const a = k / holes * TAU, cx = Math.cos(a) * r * 0.52, cy = Math.sin(a) * r * 0.52, hr = r * 0.17;
+    ctx.moveTo(cx + hr, cy); ctx.arc(cx, cy, hr, 0, TAU, true);
+  }
+}
+function drawGear(x, y, r, teeth, a, main, glow) {
+  ctx.save(); ctx.translate(x, y); ctx.rotate(a);
+  if (main) {
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r * 1.05);
+    g.addColorStop(0, '#ffe7a3'); g.addColorStop(0.45, '#e3a83c'); g.addColorStop(1, '#7c5414');
+    ctx.fillStyle = g;
+    if (glow > 0) { ctx.shadowColor = `rgba(255,107,61,${glow})`; ctx.shadowBlur = 40 * glow; }
+  } else {
+    const g = ctx.createRadialGradient(-r * 0.3, -r * 0.35, r * 0.1, 0, 0, r);
+    g.addColorStop(0, '#5f8796'); g.addColorStop(1, '#22414f');
+    ctx.fillStyle = g;
+  }
+  gearPath(r, teeth, main ? 6 : 4);
+  ctx.fill('evenodd');
+  ctx.shadowBlur = 0;
+  ctx.lineWidth = Math.max(1, r * 0.025);
+  ctx.strokeStyle = main ? 'rgba(60,36,4,.7)' : 'rgba(10,20,26,.7)';
+  ctx.stroke();
+  ctx.beginPath(); ctx.arc(0, 0, r * 0.3, 0, TAU);
+  ctx.strokeStyle = main ? 'rgba(255,240,200,.35)' : 'rgba(180,220,230,.2)'; ctx.stroke();
+  ctx.restore();
+}
+
+function draw(dt) {
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  const p = pps();
+  const omega = 0.35 + 0.22 * Math.log10(1 + p) + heat * 0.035 + kick;
+  kick *= Math.pow(0.04, dt);
+  ang += omega * dt;
+  squash *= Math.pow(0.002, dt);
+  const cx = W / 2, cy = H / 2 - 4;
+  const R0 = Math.min(W, H) * 0.34;
+  const sc = 1 - squash * 0.07;
+  const T1 = 24, T2 = 14, T3 = 10;
+  const r2 = R0 * T2 / T1, r3 = R0 * T3 / T1;
+  // engrenagens laterais (engrenando visualmente)
+  const d2 = (R0 + r2) * 0.9, a2 = -2.5;
+  drawGear(cx + Math.cos(a2) * d2, cy + Math.sin(a2) * d2, r2, T2, -ang * T1 / T2 + 0.11, false, 0);
+  const d3 = (R0 + r3) * 0.9, a3 = 0.55;
+  drawGear(cx + Math.cos(a3) * d3, cy + Math.sin(a3) * d3, r3, T3, -ang * T1 / T3 + 0.2, false, 0);
+  ctx.save(); ctx.translate(cx, cy); ctx.scale(sc, sc);
+  drawGear(0, 0, R0, T1, ang, true, heat > 60 ? (heat - 60) / 40 : 0);
+  ctx.restore();
+  // faíscas
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i]; s.t += dt;
+    if (s.t > s.life) { sparks.splice(i, 1); continue; }
+    s.vy += 520 * dt; s.x += s.vx * dt; s.y += s.vy * dt;
+    const k = 1 - s.t / s.life;
+    ctx.fillStyle = s.gold ? `rgba(255,217,138,${k})` : `rgba(255,${150 + 80 * k | 0},80,${k})`;
+    ctx.fillRect(s.x, s.y, 3, 3);
+  }
+  // números flutuantes
+  ctx.textAlign = 'center';
+  for (let i = floats.length - 1; i >= 0; i--) {
+    const f = floats[i]; f.t += dt;
+    if (f.t > 1) { floats.splice(i, 1); continue; }
+    const k = 1 - f.t;
+    const size = (f.big ? 22 : 17) * (1 + 0.25 * Math.max(0, 0.15 - f.t) / 0.15);
+    ctx.font = `${size}px Bungee, Impact, sans-serif`;
+    ctx.fillStyle = f.c ? f.c.replace('A', k) : `rgba(255,217,138,${k})`;
+    ctx.strokeStyle = `rgba(13,24,32,${k * 0.8})`; ctx.lineWidth = 4;
+    const y = f.y - 70 * f.t;
+    ctx.strokeText(f.txt, f.x, y); ctx.fillText(f.txt, f.x, y);
+  }
+}
+
+/* ---------- Toque ---------- */
+const hint = $('#hint');
+stage.addEventListener('pointerdown', e => {
+  if (e.target.closest('.gold')) return;
+  e.preventDefault();
+  audioInit();
+  const r = stage.getBoundingClientRect();
+  const x = e.clientX - r.left, y = e.clientY - r.top;
+  const v = tapValue();
+  earn(v); S.taps++;
+  heat = Math.min(100, heat + 6.5);
+  if (heat >= 100 && !S.heatMax) S.heatMax = true;
+  kick = Math.min(kick + 1.6, 14); squash = 1;
+  floats.push({ x: x + (Math.random() * 20 - 10), y, t: 0, txt: '+' + fmt(v), big: heat > 80 || S.turbo > 0, c: S.turbo > 0 ? 'rgba(88,211,198,A)' : heat > 80 ? 'rgba(255,140,90,A)' : null });
+  if (floats.length > 40) floats.shift();
+  burst(x, y, heat > 80 ? 8 : 4, false);
+  sfx.tap(); buzz(6);
+  if (!S.hinted && S.taps >= 8) { S.hinted = true; hint.hidden = true; }
+});
+
+/* ---------- Peça dourada ---------- */
+let goldT = 18;
+const goldInterval = () => (35 + Math.random() * 55) * M.gf;
+function spawnGold() {
+  const el = document.createElement('button');
+  el.className = 'gold'; el.type = 'button'; el.setAttribute('aria-label', 'Peça dourada: toque para um bônus');
+  el.innerHTML = NUT;
+  el.style.left = (12 + Math.random() * Math.max(10, W - 82)) + 'px';
+  el.style.top = (12 + Math.random() * Math.max(10, H - 100)) + 'px';
+  stage.appendChild(el);
+  const kill = setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 600); }, 13000);
+  el.addEventListener('pointerdown', ev => {
+    ev.stopPropagation(); ev.preventDefault();
+    if (el.dataset.hit) return; el.dataset.hit = 1;
+    clearTimeout(kill); audioInit();
+    const rr = stage.getBoundingClientRect(), b = el.getBoundingClientRect();
+    goldHit(b.left - rr.left + b.width / 2, b.top - rr.top + b.height / 2);
+    el.remove();
+  });
+}
+function goldHit(x, y) {
+  S.gold++;
+  const r = Math.random();
+  const dur = M.gd;
+  if (r < 0.45) {
+    S.frenzy = Math.max(S.frenzy, 30 * dur * (tal(100) ? 2 : 1));
+    toast('<b>FRENESI!</b> Produção ×7 por ' + Math.round(S.frenzy) + ' s');
+  } else if (r < 0.85) {
+    const amt = Math.max(13, Math.min(S.money * 0.15, basePps() * 900) + 13);
+    earn(amt);
+    floats.push({ x, y, t: 0, txt: '+' + fmt(amt), big: true });
+    toast('<b>SORTE GRANDE!</b> +' + fmt(amt) + ' peças');
+  } else {
+    S.turbo = Math.max(S.turbo, 12 * dur);
+    toast('<b>TOQUE TURBO!</b> Toques ×25 por ' + Math.round(S.turbo) + ' s. Toque rápido!');
+  }
+  burst(x, y, 40, true); sfx.gold(); buzz([20, 40, 30]);
+  checkAch();
+}
+
+/* ---------- Compras ---------- */
+function buyGen(i) {
+  const n = qtyFor(i), c = costOf(i, n);
+  if (S.money < c) { sfx.no(); return false; }
+  const before = milesHit(S.gens[i]);
+  S.money -= c; S.gens[i] += n;
+  const after = milesHit(S.gens[i]);
+  recalc();
+  if (after > before) {
+    toast(`<b>MARCO!</b> ${GENS[i].n} ×${Math.pow(2, after - before)} produção`);
+    sfx.mile(); buzz([15, 30, 15]);
+  } else { sfx.buy(); buzz(10); }
+  checkAch();
+  return true;
+}
+function buyUp(id) {
+  const u = UPI[id];
+  if (!u || S.ups.includes(id) || S.money < u.c) { sfx.no(); return; }
+  S.money -= u.c; S.ups.push(id); recalc();
+  sfx.up(); buzz(15);
+  toast(`<b>${u.n}</b> instalada`);
+  upKey = ''; checkAch();
+}
+function prestige() {
+  const g = patentGain(); if (g < 1) return;
+  const keep = { lifetime: S.lifetime, taps: S.taps, ach: S.ach, patents: S.patents + g, prestiges: S.prestiges + 1, gold: S.gold, heatMax: S.heatMax, muted: S.muted, buy: S.buy, hinted: true, seenAch: S.seenAch };
+  S = Object.assign(fresh(), keep);
+  if (tal(3)) { S.gens[0] = 10; S.gens[1] = 5; }
+  heat = 0; recalc(); save();
+  sfx.gold(); buzz([30, 50, 30, 50, 60]);
+  burst(W / 2, H / 2, 80, true);
+  toast(`<b>+${g} PATENTES!</b> Produção +${g * 10}% para sempre`);
+  setTab('gen', true);
+}
+
+/* ---------- Conquistas ---------- */
+function checkAch() {
+  let got = false;
+  ACH.forEach(([t, d, f], i) => {
+    if (S.ach.includes(i)) return;
+    let ok = false; try { ok = f(); } catch (e) {}
+    if (ok) { S.ach.push(i); got = true; toast(`Troféu: <b>${t}</b> · produção +2%`, 'ach'); }
+  });
+  if (got) { recalc(); sfx.ach(); }
+}
+
+/* ---------- Interface ---------- */
+const panel = $('#panel');
+const tabs = [...document.querySelectorAll('.tab')];
+tabs.forEach(t => t.addEventListener('click', () => { audioInit(); setTab(t.dataset.tab); }));
+let refs = {};
+let upKey = '';
+function setTab(t, force) {
+  if (S.tab === t && !force && panel.childElementCount) return;
+  S.tab = t;
+  tabs.forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  panel.scrollTop = 0;
+  upKey = '';
+  if (t === 'gen') buildGens();
+  else if (t === 'up') buildUps();
+  else if (t === 'pat') buildPat();
+  else buildAch();
+  update(true);
+}
+function setText(el, v) { if (el && el.textContent !== v) el.textContent = v; }
+function setCls(el, c, on) { if (el && el.classList.contains(c) !== on) el.classList.toggle(c, on); }
+
+function buildGens() {
+  panel.innerHTML = `<div class="bar"><span class="lbl">Comprar</span><div class="seg" id="seg">${['1', '10', '100', 'max'].map(b => `<button type="button" data-b="${b}" aria-pressed="${S.buy === b}">${b === 'max' ? 'MÁX' : '×' + b}</button>`).join('')}</div></div><div class="list" id="gl"></div>`;
+  $('#seg').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    S.buy = b.dataset.b;
+    document.querySelectorAll('#seg button').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+    update(true);
+  });
+  const gl = $('#gl');
+  refs = { gens: [] };
+  GENS.forEach((g, i) => {
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 'card';
+    el.innerHTML = `<div class="ico">${ICONS[i]}</div><div><div class="nm"><span class="n"></span><span class="own"></span></div><div class="sub"></div><div class="ms"><span class="ml"></span><span class="tr"><i></i></span></div></div><div class="price"><span class="q"></span><span class="cost"></span></div>`;
+    el.addEventListener('click', () => { audioInit(); if (buyGen(i)) { el.animate && el.animate([{ transform: 'scale(.96)' }, { transform: 'scale(1)' }], { duration: 160 }); update(true); } });
+    gl.appendChild(el);
+    refs.gens.push({ el, n: el.querySelector('.n'), own: el.querySelector('.own'), sub: el.querySelector('.sub'), ml: el.querySelector('.ml'), tr: el.querySelector('.tr i'), q: el.querySelector('.q'), cost: el.querySelector('.cost'), ms: el.querySelector('.ms') });
+  });
+}
+function updGens() {
+  let mystery = false;
+  GENS.forEach((g, i) => {
+    const r = refs.gens[i];
+    const shown = i === 0 || S.gens[i] > 0 || S.gens[i - 1] > 0;
+    if (!shown) {
+      if (!mystery) {
+        mystery = true; r.el.hidden = false; setCls(r.el, 'locked', true);
+        setText(r.n, '???'); setText(r.own, ''); setText(r.sub, 'Compre a máquina anterior para revelar');
+        r.ms.hidden = true; setText(r.q, ''); setText(r.cost, fmt(unitCost(i)));
+      } else r.el.hidden = true;
+      return;
+    }
+    r.el.hidden = false; setCls(r.el, 'locked', false); r.ms.hidden = false;
+    const n = qtyFor(i), c = costOf(i, n);
+    setCls(r.el, 'can', S.money >= c);
+    setText(r.n, g.n); setText(r.own, S.gens[i] ? String(S.gens[i]) : '');
+    const each = g.p * M.gm[i] * M.glob * buffMul();
+    setText(r.sub, S.gens[i] ? `${fmt(each)}/s cada · ${fmt(each * S.gens[i])}/s no total` : `${g.d} ${fmt(each)}/s cada.`);
+    const nx = nextMile(S.gens[i]);
+    if (nx) {
+      const pv = prevMile(S.gens[i]);
+      setText(r.ml, `${S.gens[i]}/${nx} → ×2`);
+      r.tr.style.width = ((S.gens[i] - pv) / (nx - pv) * 100) + '%';
+    } else { setText(r.ml, 'Todos os marcos'); r.tr.style.width = '100%'; }
+    setText(r.q, '×' + n); setText(r.cost, fmt(c));
+  });
+}
+
+function visibleUps() {
+  return UPS.filter(u => !S.ups.includes(u.id) && (u.k === 'gen' ? S.gens[u.g] >= u.t : S.runTotal >= u.c * 0.2));
+}
+function buildUps() {
+  const vis = visibleUps();
+  upKey = vis.map(u => u.id).join();
+  refs = { ups: [] };
+  if (!vis.length) {
+    panel.innerHTML = `<div class="empty"><b>Nenhuma melhoria disponível agora.</b><br>Compre mais máquinas e fabrique mais peças para destravar novas.</div><div class="foot">${S.ups.length} melhorias instaladas</div>`;
+    return;
+  }
+  panel.innerHTML = `<div class="list" id="ul"></div><div class="foot">${S.ups.length} melhorias instaladas</div>`;
+  const ul = $('#ul');
+  vis.forEach(u => {
+    const el = document.createElement('button');
+    el.type = 'button'; el.className = 'card';
+    const ico = u.k === 'gen' ? `<div class="ico">${ICONS[u.g]}</div>` : `<div class="ico t">${u.tag}</div>`;
+    el.innerHTML = `${ico}<div><div class="nm"><span>${u.n}</span></div><div class="sub">${u.d}</div></div><div class="price"><span class="q">custo</span><span class="cost">${fmt(u.c)}</span></div>`;
+    el.addEventListener('click', () => { audioInit(); buyUp(u.id); });
+    ul.appendChild(el);
+    refs.ups.push({ el, u });
+  });
+}
+function updUps() {
+  const key = visibleUps().map(u => u.id).join();
+  if (key !== upKey) { const st = panel.scrollTop; buildUps(); panel.scrollTop = st; }
+  for (const r of refs.ups || []) setCls(r.el, 'can', S.money >= r.u.c);
+}
+
+function buildPat() {
+  panel.innerHTML = `<div class="pp">
+    <div class="box">
+      <h3>Escritório de patentes</h3>
+      <p>Recomece a fábrica do zero e transforme tudo o que você já produziu em patentes. Cada patente dá <b style="color:var(--ink)">+10% de produção para sempre</b>.</p>
+      <div class="stats">
+        <div>Patentes atuais<b id="pa">0</b></div>
+        <div>Bônus atual<b id="pb">+0%</b></div>
+        <div>Ganho ao recomeçar<b id="pg" style="color:var(--brass-hi)">+0</b></div>
+        <div>Próxima patente em<b id="pn">0</b></div>
+      </div>
+      <button class="cta" id="pbtn" type="button">Registrar patentes</button>
+    </div>
+    <div class="box"><h3>Marcos de patentes</h3><div id="tl"></div></div>
+  </div>`;
+  $('#tl').innerHTML = TAL.map(([n, t, d]) => `<div class="tal" data-n="${n}"><div class="n">${n}</div><div><div class="t">${t}</div><div class="d">${d}</div></div></div>`).join('');
+  const btn = $('#pbtn'); let armT = null;
+  btn.addEventListener('click', () => {
+    if (patentGain() < 1) return;
+    if (!btn.classList.contains('arm')) {
+      btn.classList.add('arm'); btn.textContent = 'Toque de novo para confirmar';
+      clearTimeout(armT); armT = setTimeout(() => { btn.classList.remove('arm'); btn.textContent = 'Registrar patentes'; }, 3000);
+    } else { clearTimeout(armT); prestige(); }
+  });
+}
+function updPat() {
+  const g = patentGain();
+  setText($('#pa'), fmt(S.patents)); setText($('#pb'), '+' + fmt(S.patents * 10) + '%');
+  setText($('#pg'), '+' + fmt(g));
+  const nextT = patentTotal() + 1;
+  setText($('#pn'), fmt(Math.max(0, nextT * nextT * 1e9 - S.lifetime)));
+  const btn = $('#pbtn');
+  if (btn) { btn.disabled = g < 1; if (g < 1 && !btn.classList.contains('arm')) setText(btn, 'Fabrique 1 B de peças no total'); else if (!btn.classList.contains('arm')) setText(btn, `Registrar +${fmt(g)} patentes e recomeçar`); }
+  document.querySelectorAll('.tal').forEach(el => setCls(el, 'on', S.patents >= +el.dataset.n));
+}
+
+function buildAch() {
+  S.seenAch = S.ach.length;
+  panel.innerHTML = `<div class="pp"><div class="box"><h3>Estatísticas</h3><div class="stats">
+    <div>Peças na vida<b id="s1"></b></div><div>Toques<b id="s2"></b></div>
+    <div>Máquinas<b id="s3"></b></div><div>Peças douradas<b id="s4"></b></div>
+    <div>Troféus<b id="s5"></b></div><div>Bônus dos troféus<b id="s6"></b></div>
+  </div></div><div class="achs" id="al"></div></div>`;
+  $('#al').innerHTML = ACH.map(([t, d], i) => `<div class="ach" data-i="${i}"><div class="t">${t}</div><div class="d">${d}</div></div>`).join('');
+}
+function updAch() {
+  S.seenAch = S.ach.length;
+  setText($('#s1'), fmt(S.lifetime)); setText($('#s2'), fmt(S.taps)); setText($('#s3'), fmt(totalGens()));
+  setText($('#s4'), fmt(S.gold)); setText($('#s5'), `${S.ach.length}/${ACH.length}`); setText($('#s6'), `+${S.ach.length * 2}%`);
+  document.querySelectorAll('.ach').forEach(el => setCls(el, 'on', S.ach.includes(+el.dataset.i)));
+}
+
+const moneyEl = $('#money'), ppsEl = $('#pps'), heatEl = $('#heat'), heatLbl = $('#heatlbl'), buffsEl = $('#buffs');
+let buffKey = '';
+function dot(tab, on) {
+  const b = tabs.find(t => t.dataset.tab === tab);
+  let d = b.querySelector('.dot');
+  if (on && !d) { d = document.createElement('span'); d.className = 'dot'; b.appendChild(d); }
+  else if (!on && d) d.remove();
+}
+function update() {
+  setText(moneyEl, fmt(S.money));
+  setText(ppsEl, fmt(pps()));
+  $('#patBox').hidden = S.patents < 1;
+  setText($('#patN'), fmt(S.patents));
+  setText($('#stamp'), 'Planta nº ' + (S.prestiges + 1));
+  if (S.tab === 'gen') updGens();
+  else if (S.tab === 'up') updUps();
+  else if (S.tab === 'pat') updPat();
+  else updAch();
+  dot('up', S.tab !== 'up' && visibleUps().some(u => S.money >= u.c));
+  const g = patentGain();
+  dot('pat', S.tab !== 'pat' && g >= Math.max(1, S.patents * 0.5));
+  dot('ach', S.tab !== 'ach' && S.ach.length > S.seenAch);
+  const bk = (S.frenzy > 0 ? 'F' + Math.ceil(S.frenzy) : '') + (S.turbo > 0 ? 'T' + Math.ceil(S.turbo) : '');
+  if (bk !== buffKey) {
+    buffKey = bk;
+    buffsEl.innerHTML = (S.frenzy > 0 ? `<span class="chip">Frenesi ×7 · ${Math.ceil(S.frenzy)}s</span>` : '') + (S.turbo > 0 ? `<span class="chip turbo">Turbo ×25 · ${Math.ceil(S.turbo)}s</span>` : '');
+  }
+}
+
+/* ---------- Som ---------- */
+const sndBtn = $('#snd');
+const ICON_ON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg>';
+const ICON_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h4l5-4v14l-5-4H4z"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+function paintSnd() { sndBtn.innerHTML = S.muted ? ICON_OFF : ICON_ON; sndBtn.setAttribute('aria-label', S.muted ? 'Som desligado' : 'Som ligado'); }
+sndBtn.addEventListener('click', () => { S.muted = !S.muted; if (!S.muted) audioInit(); paintSnd(); save(); });
+
+/* ---------- Modal offline ---------- */
+const modal = $('#modal');
+$('#mOk').addEventListener('click', () => { modal.hidden = true; audioInit(); sfx.gold(); });
+function offline() {
+  const now = Date.now();
+  const secs = Math.max(0, (now - (S.last || now)) / 1000);
+  if (secs < 30) return;
+  const cap = tal(10) ? 8 * 3600 : 2 * 3600;
+  const eff = tal(10) ? 1 : 0.5;
+  const t = Math.min(secs, cap);
+  const gain = basePps() * t * eff;
+  S.frenzy = Math.max(0, S.frenzy - secs); S.turbo = Math.max(0, S.turbo - secs);
+  if (gain <= 0) return;
+  earn(gain);
+  $('#mT').textContent = 'Bem-vindo de volta!';
+  $('#mP').textContent = `Sua fábrica trabalhou por ${fmtTime(t)} enquanto você estava fora${eff < 1 ? ' (a 50% da velocidade)' : ''}.`;
+  $('#mB').textContent = '+' + fmt(gain);
+  modal.hidden = false;
+}
+
+/* ---------- Loop ---------- */
+let lastT = performance.now(), uiT = 0, achT = 0, saveT = 0;
+function frame(now) {
+  let dt = (now - lastT) / 1000; lastT = now;
+  if (dt > 1) { // aba esteve em segundo plano
+    const lost = Math.min(dt, 8 * 3600);
+    earn(basePps() * lost);
+    dt = 0.016;
+  }
+  dt = Math.min(dt, 0.1);
+  earn(pps() * dt);
+  heat = Math.max(0, heat - (heat > 80 ? 18 : 26) * dt);
+  if (S.frenzy > 0) S.frenzy = Math.max(0, S.frenzy - dt);
+  if (S.turbo > 0) S.turbo = Math.max(0, S.turbo - dt);
+  goldT -= dt;
+  if (goldT <= 0) { spawnGold(); goldT = goldInterval(); }
+  draw(dt);
+  heatEl.style.width = heat + '%';
+  setText(heatLbl, fmtX(heatMul()));
+  setCls(heatLbl, 'on', heat > 80);
+  uiT += dt; achT += dt; saveT += dt;
+  if (uiT > 0.1) { uiT = 0; update(); }
+  if (achT > 1) { achT = 0; checkAch(); }
+  if (saveT > 5) { saveT = 0; save(); }
+  requestAnimationFrame(frame);
+}
+
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+window.addEventListener('pagehide', save);
+
+function start(data) {
+  const fromStorage = load(data);
+  recalc();
+  if (fromStorage) offline();
+  hint.hidden = S.hinted;
+  paintSnd();
+  setTab(S.tab || 'gen', true);
+  lastT = performance.now();
+  requestAnimationFrame(frame);
+}
+try { window.claude?.hot?.snapshot?.(() => ({ state: S })); } catch (e) {}
+const hot = window.claude?.hot;
+if (hot && hot.ready) hot.ready(start); else start(hot?.data ?? {});
+})();
+</script>
