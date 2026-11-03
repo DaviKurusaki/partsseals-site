@@ -3,10 +3,11 @@
  * ÚNICO lugar do site que usa a chave service_role.
  *
  * Essa chave ignora todas as regras do banco. Por isso este módulo só sabe
- * fazer duas coisas, e nada mais:
- *   1. chamar as 4 funções da Área do Cliente (lista fixa abaixo);
+ * fazer estas operações específicas:
+ *   1. chamar as funções específicas da Área do Cliente (lista fixa abaixo);
  *   2. apagar um usuário do Supabase Auth que ficou órfão num cadastro que
  *      falhou no meio (admin API).
+ *   3. baixar documento do bucket privado, depois de autorizado pela RPC.
  * Qualquer outro nome de função é recusado antes de sair da Netlify. A
  * expedição (expedicao-api) nunca importa este arquivo e segue com a anon.
  *
@@ -19,6 +20,9 @@ const FUNCOES_PERMITIDAS = Object.freeze([
   'site_cliente_meu_cadastro',
   'site_cliente_registrar_acesso',
   'site_cliente_meus_pedidos',
+  'site_cliente_buscar_empresa',
+  'site_cliente_documentos',
+  'site_cliente_documento',
 ]);
 
 class ErroServico extends Error {
@@ -39,7 +43,7 @@ async function lerJson(resposta) {
   try { return JSON.parse(texto); } catch { return null; }
 }
 
-/** Chama uma das 4 funções permitidas. Devolve o JSON da função. */
+/** Chama uma das funções permitidas. Devolve o JSON da função. */
 async function rpc(nome, parametros = {}) {
   if (!FUNCOES_PERMITIDAS.includes(nome)) throw new ErroServico(`Função não permitida: ${nome}`, { codigo: 'FUNCAO_NAO_PERMITIDA' });
   if (!configurado()) throw new ErroServico('Serviço do banco não configurado.', { codigo: 'SEM_CONFIG' });
@@ -62,4 +66,21 @@ async function apagarUsuario(id) {
   return true;
 }
 
-module.exports = { rpc, apagarUsuario, configurado, FUNCOES_PERMITIDAS, ErroServico };
+/** Caminho obtido exclusivamente da RPC que já conferiu o titular. */
+async function baixarDocumento(documento) {
+  if (!/^[0-9a-f-]{36}\/(pdf|xml|boleto)\.(pdf|xml)$/.test(documento?.caminho || '')
+    || !Number.isInteger(documento.tamanho) || documento.tamanho<1 || documento.tamanho>4194304) throw new ErroServico('Documento inválido.');
+  const resposta = await fetch(`${url()}/storage/v1/object/site-notas-clientes/${documento.caminho}`, {headers:cabecalhos()});
+  if (!resposta.ok) throw new ErroServico('Documento indisponível.', {status:resposta.status});
+  if (Number(resposta.headers.get('content-length'))>4194304) throw new ErroServico('Documento maior que o permitido.');
+  const partes=[]; let tamanho=0;
+  for await (const parte of resposta.body) {
+    tamanho+=parte.length;
+    if(tamanho>4194304) throw new ErroServico('Documento maior que o permitido.');
+    partes.push(parte);
+  }
+  const bytes=Buffer.concat(partes);
+  if(bytes.length!==documento.tamanho || require('node:crypto').createHash('sha256').update(bytes).digest('hex')!==documento.sha256) throw new ErroServico('Documento divergente.');
+  return bytes;
+}
+module.exports = { rpc, apagarUsuario, baixarDocumento, configurado, FUNCOES_PERMITIDAS, ErroServico };

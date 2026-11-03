@@ -105,6 +105,12 @@
   .cli-filtros { grid-column: 1 / -1; grid-row: 2; padding-top: 4px; }
 }
 .cli-input option { color: var(--text); background: var(--surface-2); }
+.cli-cadastro-empresa { position: relative; min-width: 0; }
+.cli-cadastro-empresa--aberta { z-index: 40; }
+.cli-empresa-ajuda { color: var(--muted); font-size: 0.82rem; }
+.cli-empresa-ajuda:empty { display: none; }
+.cli-empresa-sugestao { display: grid; gap: 2px; }
+.cli-empresa-sugestao small { color: var(--muted); font-size: 0.78rem; font-weight: 400; }
 .cli-empresa { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
 
 /* O painel aberto é opaco e usa as mesmas cores, inclusive no Windows. */
@@ -203,3 +209,16 @@
   .cli-ferramenta:hover { transform: none; }
   .cli-ferramenta, .cli-seletor__botao svg { transition: none; }
 }
+.cli-nfs { display: flex; flex-wrap: wrap; gap: 8px; }
+.cli-nf { display: inline-flex; align-items: center; gap: 10px; padding: 4px 0; background: none; border: 0; color: var(--accent-light); font: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.cli-nf:focus-visible { outline: 2px solid currentColor; outline-offset: 4px; border-radius: 3px; }
+.cli-documentos { width: min(520px, calc(100% - 32px)); max-height: 85dvh; padding: 24px; border: 1px solid rgba(255,255,255,.18); border-radius: 18px; background: #121619; color: #f1f4f8; box-shadow: 0 24px 90px #0009; }
+.cli-documentos::backdrop { background: #000b; backdrop-filter: blur(4px); }
+.cli-documentos-topo { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.cli-documentos-topo h2 { font-size: 1.25rem; margin: 0; }
+.cli-fechar { width: 40px; height: 40px; flex-shrink: 0; border: 1px solid #ffffff30; border-radius: 10px; background: #ffffff08; color: inherit; font-size: 28px; cursor: pointer; }
+.cli-documentos-lista { display: grid; gap: 10px; }
+.cli-documento { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; border: 1px solid #ffffff25; border-radius: 12px; padding: 18px; color: inherit; background: #ffffff06; text-decoration: none; }
+.cli-documento:hover, .cli-documento:focus-visible { border-color: var(--accent-light); background: #ffffff0d; }
+.cli-documento span { font-size: .9rem; color: #b3c0ce; }
+.cli-documentos p { margin-top: 16px; color: #bac2cc; }

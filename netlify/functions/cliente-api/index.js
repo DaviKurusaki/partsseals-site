@@ -13,7 +13,7 @@
  *
  * Decisões que não são óbvias:
  *  - **Duas chaves, cada uma no seu lugar.** A anon só fala com o Supabase
- *    Auth (supabase-auth.cjs). A service_role só chama as 4 funções
+ *    Auth (supabase-auth.cjs). A service_role só chama as funções permitidas
  *    site_cliente_* e apaga usuário órfão (supabase-servico.cjs, lista
  *    fixa). Nenhuma tabela é lida direto.
  *  - **O id do usuário vem sempre do TOKEN**, validado em /auth/v1/user.
@@ -32,7 +32,7 @@
 
 const auth = require('./supabase-auth.cjs');
 const servico = require('./supabase-servico.cjs');
-const { validarCadastro, emailValido, texto } = require('./validacao.cjs');
+const { validarCadastro, emailValido, texto, digitos, cnpjValido } = require('./validacao.cjs');
 
 const BASE = String(process.env.SITE_CLIENTE_URL || 'https://parts-seals.com.br/cliente').replace(/\/+$/, '');
 const COOKIE_ACESSO = 'ps_cli_at';
@@ -246,11 +246,53 @@ async function rotaPedidos(evento) {
   return responder(200, { ok: true, dias, empresas, pedidos: Array.isArray(r?.pedidos) ? r.pedidos : [] }, s.cookies);
 }
 
+async function rotaEmpresas(evento) {
+  const q = evento.queryStringParameters || {};
+  const nome = texto(q.nome), cnpj = digitos(q.cnpj);
+  if (nome.length > 150 || (cnpj ? !cnpjValido(cnpj) : nome.replace(/[^\p{L}\p{N}]/gu, '').length < 3)) {
+    return erro(400, 'Digite pelo menos 3 letras do nome ou um CNPJ completo e válido.');
+  }
+  const r = await servico.rpc('site_cliente_buscar_empresa', { p_nome: cnpj ? null : nome, p_cnpj: cnpj || null });
+  const empresas = (Array.isArray(r) ? r : []).slice(0, 8).filter(e => cnpjValido(e?.cnpj)).map(e => ({
+    nome: texto(e.nome).slice(0, 150), razao_social: texto(e.razao_social).slice(0, 200), cnpj: digitos(e.cnpj),
+  }));
+  return responder(200, { ok: true, empresas });
+}
+
 const ROTAS = {
   'POST cadastro': rotaCadastro, 'POST entrar': rotaEntrar, 'POST sair': rotaSair,
   'POST esqueci-senha': rotaEsqueci, 'POST nova-senha': rotaNovaSenha,
-  'GET eu': rotaEu, 'GET pedidos': rotaPedidos,
+  'GET eu': rotaEu, 'GET pedidos': rotaPedidos, 'GET empresas': rotaEmpresas,
+  'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
 };
+
+async function rotaDocumentos(evento) {
+  const s=await sessao(evento);
+  if(!s) return semSessao();
+  const q=evento.queryStringParameters || {};
+  if(!/^[1-9]\d{0,14}$/.test(q.empresa || '') || !/^\d{1,9}$/.test(q.nf || '')) return erro(400,'Nota inválida.',{},s.cookies);
+  const documentos=await servico.rpc('site_cliente_documentos',{p_auth_user_id:s.usuario.id,p_empresa_id:q.empresa,p_numero:String(Number(q.nf))});
+  return responder(200,{ok:true,documentos:(Array.isArray(documentos)?documentos:[]).map(d=>({id:d.id,tipo:d.tipo,numero:d.numero}))},s.cookies);
+}
+async function rotaArquivo(evento) {
+  const s=await sessao(evento);
+  if(!s) return semSessao();
+  const id=(evento.queryStringParameters || {}).id;
+  if(!/^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i.test(id || '')) return erro(404,'Documento indisponível.',{},s.cookies);
+  // Repete a autorização a cada abertura: bloquear o contato ou remover a
+  // empresa corta imediatamente o acesso, mesmo com um link já conhecido.
+  const d=await servico.rpc('site_cliente_documento',{p_auth_user_id:s.usuario.id,p_id:id});
+  if(!d || !['pdf','xml','boleto'].includes(d.tipo) || !/^\d{1,9}$/.test(d.numero)) return erro(404,'Documento indisponível.',{},s.cookies);
+  const bytes=await servico.baixarDocumento(d),xml=d.tipo==='xml';
+  const r={statusCode:200,isBase64Encoded:true,body:bytes.toString('base64'),headers:{
+    'Content-Type':xml?'application/xml; charset=utf-8':'application/pdf',
+    'Content-Disposition':`${xml?'attachment':'inline'}; filename="${d.tipo}-NF-${d.numero}.${xml?'xml':'pdf'}"`,
+    'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-Robots-Tag':'noindex, nofollow',
+    'Content-Security-Policy':"default-src 'none'; sandbox",
+  }};
+  if(s.cookies.length) r.multiValueHeaders={'Set-Cookie':s.cookies};
+  return r;
+}
 
 exports.handler = async (evento) => {
   if (!auth.configurado() || !servico.configurado()) {

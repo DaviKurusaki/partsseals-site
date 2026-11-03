@@ -107,7 +107,9 @@
       partes.push('<div class="cli-info">' + ICONES[ICONE_METODO[p.metodo_entrega] || "caixa"] + "<div><span>Entrega</span><strong>" + esc(p.metodo_entrega) + "</strong></div></div>");
     }
     var nfs = (p.nfs || []).filter(Boolean);
-    if (nfs.length) partes.push('<div class="cli-info">' + ICONES.nota + "<div><span>Nota fiscal</span><strong>" + nfs.map(esc).join(", ") + "</strong></div></div>");
+    if (nfs.length) partes.push('<div class="cli-info">' + ICONES.nota + '<div><span>Nota fiscal · documentos</span><div class="cli-nfs">' + nfs.map(function(nf) {
+      return '<button class="cli-nf" type="button" data-nf="'+esc(nf)+'" data-empresa="'+esc(p.empresa_id)+'" aria-label="Ver documentos da nota fiscal '+esc(nf)+'">'+esc(nf)+' <span aria-hidden="true">↗</span></button>';
+    }).join('') + '</div></div></div>');
     var rs = R.rastreios(p);
     if (rs.length) {
       partes.push('<div class="cli-info">' + ICONES.caixa + "<div><span>Rastreio</span>" + rs.map(function (r) {

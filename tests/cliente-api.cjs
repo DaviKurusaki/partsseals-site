@@ -1,7 +1,7 @@
 'use strict';
 /**
  * Testes da Área do Cliente (netlify/functions/cliente-api), sem Supabase
- * nem Netlify: Auth e as 4 funções RPC simulados em memória (fetch trocado).
+ * nem Netlify: Auth, RPCs permitidas e Storage simulados em memória.
  *
  *   node tests/cliente-api.cjs
  */
@@ -16,6 +16,8 @@ async function teste(nome, fn) {
 }
 
 const ANON = 'chave-anon-teste', SERVICE = 'chave-service-teste';
+const DOC_ID='11111111-1111-4111-8111-111111111111',PDF=Buffer.from('%PDF-1.4\nTESTE PRIVADO');
+const DOC={id:DOC_ID,tipo:'pdf',numero:'10727',caminho:DOC_ID+'/pdf.pdf',tamanho:PDF.length,sha256:require('node:crypto').createHash('sha256').update(PDF).digest('hex')};
 process.env.SUPABASE_URL = 'https://simulado.supabase.co';
 process.env.SUPABASE_ANON_KEY = ANON;
 process.env.SUPABASE_SERVICE_ROLE_KEY = SERVICE;
@@ -29,6 +31,7 @@ function zerar() {
   Object.assign(estado, {
     usuarios: new Map(), acessos: new Map(), renovacoes: new Map(), cadastros: new Map(),
     chamadas: [], falharRegistrar: null, recuperacoes: [], pedidosChamados: [],
+    documentoCorrompido:false,documentosChamados:[],
   });
 }
 const emitirTokens = (userId, { expirado = false } = {}) => {
@@ -46,6 +49,11 @@ global.fetch = async (url, opcoes = {}) => {
   const corpo = opcoes.body ? JSON.parse(opcoes.body) : null;
   estado.chamadas.push({ caminho: u.pathname, metodo, apikey: h.apikey, auth: h.Authorization });
   const bearer = String(h.Authorization || '').replace(/^Bearer /, '');
+  if(u.pathname.startsWith('/storage/v1/object/')) {
+    assert.equal(h.apikey,SERVICE);
+    assert.equal(u.pathname,'/storage/v1/object/site-notas-clientes/'+DOC.caminho);
+    return new Response(estado.documentoCorrompido?Buffer.from('ADULTERADO'):PDF);
+  }
 
   if (u.pathname === '/auth/v1/signup') {
     const existente = usuarioPorEmail(corpo.email);
@@ -83,6 +91,12 @@ global.fetch = async (url, opcoes = {}) => {
   if (u.pathname.startsWith('/rest/v1/rpc/')) {
     if (h.apikey !== SERVICE) return json(401, { code: '42501', message: 'permission denied' });
     const nome = u.pathname.split('/').at(-1);
+    if(nome==='site_cliente_documentos' || nome==='site_cliente_documento') {
+      estado.documentosChamados.push(corpo);
+      const permitido=estado.cadastros.get(corpo.p_auth_user_id)?.status==='aprovado';
+      return json(200,nome==='site_cliente_documentos' ? (permitido && corpo.p_empresa_id==='1'?[DOC]:[]) : (permitido && corpo.p_id===DOC_ID?DOC:null));
+    }
+    if (nome === 'site_cliente_buscar_empresa') return json(200, [{ nome: 'ACME', razao_social: 'ACME LTDA', cnpj: '11222333000181', email: 'nao-devolver@example.com' }]);
     if (nome === 'site_cliente_registrar') {
       if (estado.falharRegistrar) return json(400, { code: estado.falharRegistrar, message: 'falha simulada' });
       if ([...estado.cadastros.values()].some((c) => c.email === corpo.p_email)) return json(409, { code: '23505', message: 'Este e-mail já está cadastrado.' });
@@ -129,7 +143,7 @@ function navegador() {
         assert.match(c, /HttpOnly/); assert.match(c, /Secure/); assert.match(c, /SameSite=Lax/); assert.match(c, /Path=\/cliente/);
         if (attrs.some((a) => a.trim() === 'Max-Age=0')) jar.delete(k); else jar.set(k, decodeURIComponent(v.join('=')));
       }
-      return { status: r.statusCode, corpo: JSON.parse(r.body), headers: r.headers };
+      return { status: r.statusCode, corpo: r.isBase64Encoded ? Buffer.from(r.body,'base64') : JSON.parse(r.body), headers: r.headers };
     },
   };
 }
@@ -143,6 +157,16 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
 
 (async () => {
   console.log('Área do Cliente — API');
+
+  await teste('busca de empresa antes do login devolve somente nome e CNPJ', async () => {
+    zerar();
+    const r = await navegador().chamar('GET', 'empresas', { query: { nome: 'ACME' } });
+    assert.equal(r.status, 200);
+    assert.deepEqual(r.corpo.empresas, [{ nome: 'ACME', razao_social: 'ACME LTDA', cnpj: '11222333000181' }]);
+    assert.equal((await navegador().chamar('GET', 'empresas', { query: { cnpj: CNPJ } })).status, 200);
+    assert.equal((await navegador().chamar('GET', 'empresas', { query: { nome: 'a' } })).status, 400);
+    assert.equal((await navegador().chamar('GET', 'empresas', { query: { cnpj: '123' } })).status, 400);
+  });
 
   await teste('cadastro válido cria login e cadastro pendente, com só dígitos e aceite LGPD', async () => {
     zerar();
@@ -319,8 +343,8 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
     assert.equal(r.statusCode, 403);
   });
 
-  await teste('a service_role só é usada nas 4 RPCs e na exclusão de órfão; o Auth só com a anon', async () => {
-    const permitidos = /^\/rest\/v1\/rpc\/site_cliente_(registrar|meu_cadastro|registrar_acesso|meus_pedidos)$|^\/auth\/v1\/admin\/users\//;
+  await teste('a service_role só chama operações permitidas; o Auth usa a anon', async () => {
+    const permitidos = /^\/rest\/v1\/rpc\/site_cliente_(registrar|meu_cadastro|registrar_acesso|meus_pedidos|buscar_empresa|documentos|documento)$|^\/auth\/v1\/admin\/users\//;
     // Junta as chamadas de um fluxo inteiro, incluindo órfão apagado.
     zerar(); estado.falharRegistrar = 'XX000';
     await navegador().chamar('POST', 'cadastro', { corpo: valido() });
@@ -337,6 +361,36 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
     }
     await assert.rejects(servico.rpc('app_login', {}), /não permitida/);
     await assert.rejects(servico.rpc('site_kuru_listar', {}), /não permitida/);
+  });
+
+  await teste('documentos exigem sessão; empresa e usuário são conferidos antes de buscar o arquivo', async () => {
+    zerar();const anon=navegador();
+    assert.equal((await anon.chamar('GET','documentos',{query:{empresa:'1',nf:'10727'}})).status,401);
+    assert.equal((await anon.chamar('GET','arquivo',{query:{id:DOC_ID}})).status,401);
+    await anon.chamar('POST','cadastro',{corpo:valido()});confirmar('maria@acme.com.br');
+    const b=await entrarComo('maria@acme.com.br');
+    assert.equal((await b.chamar('GET','arquivo',{query:{id:DOC_ID}})).status,404);
+    assert(!estado.chamadas.some(c=>c.caminho.startsWith('/storage/')));
+    definirStatus('maria@acme.com.br','aprovado');
+    const lista=await b.chamar('GET','documentos',{query:{empresa:'1',nf:'10727',auth_user_id:'injetado'}});
+    assert.deepEqual(lista.corpo.documentos,[{id:DOC_ID,tipo:'pdf',numero:'10727'}]);
+    assert.equal(estado.documentosChamados.at(-1).p_auth_user_id,usuarioPorEmail('maria@acme.com.br').id);
+    assert.equal((await b.chamar('GET','documentos',{query:{empresa:'2',nf:'10727'}})).corpo.documentos.length,0);
+    assert.equal((await b.chamar('GET','arquivo',{query:{id:'../../qualquer'}})).status,404);
+    const arquivo=await b.chamar('GET','arquivo',{query:{id:DOC_ID}});
+    assert.deepEqual(arquivo.corpo,PDF);assert.equal(arquivo.headers['Content-Type'],'application/pdf');
+    assert.equal(arquivo.headers['Cache-Control'],'private, no-store');assert.match(arquivo.headers['Content-Disposition'],/inline; filename="pdf-NF-10727.pdf"/);
+    definirStatus('maria@acme.com.br','bloqueado');
+    const antes=estado.chamadas.filter(c=>c.caminho.startsWith('/storage/')).length;
+    assert.equal((await b.chamar('GET','arquivo',{query:{id:DOC_ID}})).status,404);
+    assert.equal(estado.chamadas.filter(c=>c.caminho.startsWith('/storage/')).length,antes);
+  });
+  await teste('download com hash divergente é recusado, sem devolver bytes ao cliente', async () => {
+    zerar();await navegador().chamar('POST','cadastro',{corpo:valido()});confirmar('maria@acme.com.br');definirStatus('maria@acme.com.br','aprovado');
+    const b=await entrarComo('maria@acme.com.br');estado.documentoCorrompido=true;
+    const r=await b.chamar('GET','arquivo',{query:{id:DOC_ID}});
+    assert.equal(r.status,502);assert(!Buffer.isBuffer(r.corpo));
+    await assert.rejects(servico.baixarDocumento({...DOC,caminho:'../../outro-bucket'}),/inválido/);
   });
 
   await teste('a expedição não importa nem lê a service_role', async () => {

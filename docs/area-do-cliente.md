@@ -80,7 +80,7 @@ vazia explica o período e os filtros, sem ampliar consultas automaticamente.
 
 ```text
 navegador ── /cliente/api/* ──> função Netlify cliente-api ──┬─> Supabase Auth        (chave anon)
-   (cookies HttpOnly)                                         └─> 4 funções site_cliente_* (service_role)
+   (cookies HttpOnly)                                         └─> RPCs permitidas e arquivos privados (service_role)
 ```
 
 - Páginas: `/cliente` (painel), `/cliente/entrar`, `/cliente/cadastro` e
@@ -91,8 +91,11 @@ navegador ── /cliente/api/* ──> função Netlify cliente-api ──┬�
     e trocar senha no Supabase Auth, **só com a chave anon**.
   - `supabase-servico.cjs`: o **único** lugar com a service_role. Só chama
     `site_cliente_registrar`, `site_cliente_meu_cadastro`,
-    `site_cliente_registrar_acesso` e `site_cliente_meus_pedidos` (lista fixa;
-    qualquer outro nome é recusado) e apaga usuário órfão do Auth.
+    `site_cliente_registrar_acesso`, `site_cliente_meus_pedidos`,
+    `site_cliente_buscar_empresa`, `site_cliente_documentos` e
+    `site_cliente_documento` (lista fixa; qualquer outro nome é recusado).
+    Também apaga usuário órfão do Auth e baixa arquivos do bucket fixo
+    `site-notas-clientes`, com caminho autorizado pela RPC e hash conferido.
   - `validacao.cjs`: regras do cadastro (CNPJ com dígitos verificadores,
     e-mail, WhatsApp com DDD, nome com sobrenome, idade de 16 a 100 anos,
     senha de 8 a 72 caracteres, aceite da política).
@@ -135,7 +138,7 @@ Site configuration > Environment variables, com escopo **Functions**:
 |---|---|
 | `SUPABASE_URL` | já existe (expedição) |
 | `SUPABASE_ANON_KEY` | já existe; aqui só para o Supabase Auth |
-| `SUPABASE_SERVICE_ROLE_KEY` | **nova**. Só para as 4 funções e a exclusão de órfão |
+| `SUPABASE_SERVICE_ROLE_KEY` | RPCs permitidas, arquivos privados autorizados e exclusão de órfão |
 | `SITE_CLIENTE_URL` | opcional; padrão `https://parts-seals.com.br/cliente` (base dos links dos e-mails) |
 
 A `SUPABASE_SERVICE_ROLE_KEY` ignora todas as regras do banco. Ela fica
@@ -205,3 +208,27 @@ válido e inválidos, e-mail repetido sem login órfão, órfão apagado quando 
 registro falha, telas de pendente/recusado/bloqueado sem pedidos, pedidos
 pelo id do token, cookie inválido, renovação automática, limite de 730 dias e
 o uso da service_role só onde é permitido.
+
+### Empresa/CNPJ e documentos da NF
+
+Executar no Supabase os scripts `145_site_busca_empresa.sql` e
+`146_site_documentos_fiscais.sql` do Kuru. Sem o 145, o cadastro continua
+manual. Nome parcial permite escolher a empresa; nome exato ou CNPJ válido
+preenche o outro campo usando o cadastro do Kuru, sem dispensar a aprovação.
+
+Clicar no número da NF abre o menu de PDF, XML e boleto. A API valida a sessão
+e o vínculo aprovado com o CNPJ em cada abertura, inclusive de um link antigo.
+PDF abre em outra aba; XML é baixado. Nenhum arquivo é público ou fica em dist.
+Bloquear o contato ou remover a empresa revoga o acesso.
+
+A origem é sincronizada pelo Kuru aberto na estação automática, a cada cinco
+minutos: PDFs/XMLs das pastas PDF11/CopiaXML11 do ARGUS e boletos da pasta
+FACTORING da caixa nfe@parts-seals.com.br. Configuração e senha no painel
+Comercial > Site > Documentos das notas; a senha fica cifrada somente no PC.
+A ativação completa está documentada em docs/site-documentos-aniversarios.md
+no repositório Kuru. Arquivos ainda não sincronizados aparecem como indisponíveis.
+
+Os testes tests/cliente-cadastro-documentos.cjs usam Happy DOM externo para
+preenchimento, escolha, resposta atrasada, menu e links privados. A API também
+testa bloqueio e recusa de download com hash divergente. Nenhum teste envia
+mensagens ou abre a caixa de e-mail real.

@@ -56,7 +56,10 @@
           <div class="cli-grade cli-grade--2">
             <div class="cli-campo">
               <label for="empresa">Empresa</label>
-              <input class="cli-input" id="empresa" name="empresa" autocomplete="organization" required maxlength="150">
+              <div class="cli-cadastro-empresa">
+                <input class="cli-input" id="empresa" name="empresa" autocomplete="organization" required maxlength="150" role="combobox" aria-autocomplete="list" aria-controls="empresas-sugestoes" aria-expanded="false">
+                <div class="cli-seletor__opcoes" id="empresas-sugestoes" role="listbox" aria-label="Empresas encontradas" hidden></div>
+              </div>
               <span class="cli-erro" data-erro="empresa" hidden></span>
             </div>
             <div class="cli-campo">
@@ -65,6 +68,7 @@
               <span class="cli-erro" data-erro="cnpj" hidden></span>
             </div>
           </div>
+          <small class="cli-empresa-ajuda" data-empresa-ajuda role="status" aria-live="polite"></small>
           <div class="cli-campo">
             <label for="cargo">Cargo <small>(opcional)</small></label>
             <input class="cli-input" id="cargo" name="cargo" autocomplete="organization-title" maxlength="80">
@@ -111,6 +115,7 @@
   <footer class="cli-rodape">Parts Seals Vedações Industriais · <a href="/politica-de-privacidade.html">Política de Privacidade</a></footer>
   <script src="/cliente/js/regras.js"></script>
   <script src="/cliente/js/comum.js"></script>
+  <script src="/cliente/js/empresa-cadastro.js"></script>
   <script src="/cliente/js/cadastro.js"></script>
 </body>
 </html>
