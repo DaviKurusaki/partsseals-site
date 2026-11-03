@@ -17,10 +17,10 @@ for (const name of [
 ]) {
   fs.copyFileSync(path.join(root, name), path.join(output, name));
 }
-for (const name of ['assets', 'css', 'js', 'expedicao', '.well-known']) {
+for (const name of ['assets', 'css', 'js', 'expedicao', 'cliente', '.well-known']) {
   fs.cpSync(path.join(root, name), path.join(output, name), {
     recursive: true,
     filter: (file) => !path.relative(root, file).split(path.sep).includes('DataSheets'),
   });
 }
-console.log('Site institucional e /expedicao prontos em dist/.');
+console.log('Site institucional, /expedicao e /cliente prontos em dist/.');

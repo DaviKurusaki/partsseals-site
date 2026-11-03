@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Criar acesso | Área do Cliente | Parts Seals</title>
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/cliente/cliente.css">
+</head>
+<body class="cli-corpo">
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header class="cli-topo">
+    <div class="cli-topo__conteudo">
+      <a class="cli-marca" href="/" aria-label="Parts Seals — página inicial"><img src="/assets/logo-header-white.png" alt="Parts Seals Vedações Industriais" width="799" height="188"></a>
+      <span class="cli-topo__titulo">Área do Cliente</span>
+      <div class="cli-topo__acoes"><a class="btn btn-secondary" href="/cliente/entrar">Entrar</a></div>
+    </div>
+  </header>
+
+  <main id="conteudo" class="cli-principal">
+    <div class="cli-estreito">
+      <section class="cli-cartao" data-formulario>
+        <h1>Criar acesso</h1>
+        <p class="cli-sub">Acompanhe seus pedidos na Parts Seals. Depois do cadastro, nossa equipe confere os dados e libera seu acesso.</p>
+        <p class="cli-aviso cli-aviso--erro" data-aviso role="alert" tabindex="-1" hidden></p>
+        <form class="cli-form" novalidate data-form>
+          <div class="cli-campo">
+            <label for="nome">Nome completo</label>
+            <input class="cli-input" id="nome" name="nome" autocomplete="name" required maxlength="150">
+            <span class="cli-erro" data-erro="nome" hidden></span>
+          </div>
+          <div class="cli-campo">
+            <label for="nascimento">Data de nascimento</label>
+            <input class="cli-input" id="nascimento" name="nascimento" type="date" autocomplete="bday" required aria-describedby="nascimentoAjuda">
+            <small id="nascimentoAjuda">Usamos para lembrar do seu aniversário 🎉</small>
+            <span class="cli-erro" data-erro="nascimento" hidden></span>
+          </div>
+          <div class="cli-grade cli-grade--2">
+            <div class="cli-campo">
+              <label for="email">E-mail</label>
+              <input class="cli-input" id="email" name="email" type="email" autocomplete="email" inputmode="email" required maxlength="254">
+              <span class="cli-erro" data-erro="email" hidden></span>
+            </div>
+            <div class="cli-campo">
+              <label for="whatsapp">WhatsApp</label>
+              <input class="cli-input" id="whatsapp" name="whatsapp" type="tel" autocomplete="tel-national" inputmode="numeric" placeholder="(19) 99999-9999" required data-mascara="telefone">
+              <span class="cli-erro" data-erro="whatsapp" hidden></span>
+            </div>
+          </div>
+          <div class="cli-grade cli-grade--2">
+            <div class="cli-campo">
+              <label for="empresa">Empresa</label>
+              <input class="cli-input" id="empresa" name="empresa" autocomplete="organization" required maxlength="150">
+              <span class="cli-erro" data-erro="empresa" hidden></span>
+            </div>
+            <div class="cli-campo">
+              <label for="cnpj">CNPJ</label>
+              <input class="cli-input" id="cnpj" name="cnpj" inputmode="numeric" placeholder="00.000.000/0000-00" required data-mascara="cnpj">
+              <span class="cli-erro" data-erro="cnpj" hidden></span>
+            </div>
+          </div>
+          <div class="cli-campo">
+            <label for="cargo">Cargo <small>(opcional)</small></label>
+            <input class="cli-input" id="cargo" name="cargo" autocomplete="organization-title" maxlength="80">
+          </div>
+          <div class="cli-grade cli-grade--2">
+            <div class="cli-campo">
+              <label for="senha">Senha</label>
+              <input class="cli-input" id="senha" name="senha" type="password" autocomplete="new-password" required minlength="8" maxlength="72" aria-describedby="senhaAjuda">
+              <small id="senhaAjuda">Pelo menos 8 caracteres.</small>
+              <span class="cli-erro" data-erro="senha" hidden></span>
+            </div>
+            <div class="cli-campo">
+              <label for="confirmacao">Confirme a senha</label>
+              <input class="cli-input" id="confirmacao" name="confirmacao" type="password" autocomplete="new-password" required maxlength="72">
+              <span class="cli-erro" data-erro="confirmacao" hidden></span>
+            </div>
+          </div>
+          <!-- Campo isca para robôs: pessoas não veem nem preenchem. -->
+          <div class="cli-oculto" aria-hidden="true">
+            <label for="site">Deixe este campo em branco</label>
+            <input id="site" name="site" tabindex="-1" autocomplete="off">
+          </div>
+          <div class="cli-campo">
+            <label class="cli-marcar"><input type="checkbox" name="lgpd" required>
+              <span>Li e aceito a <a href="/politica-de-privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>, inclusive o uso dos meus dados para acessar a Área do Cliente.</span></label>
+            <span class="cli-erro" data-erro="lgpd" hidden></span>
+          </div>
+          <label class="cli-marcar"><input type="checkbox" name="comunicacoes">
+            <span>Aceito receber mensagens da Parts Seals pelo WhatsApp (avisos, novidades e parabéns no aniversário).</span></label>
+          <div class="cli-acoes"><button class="btn btn-primary" type="submit" data-enviar>Criar meu acesso</button></div>
+        </form>
+        <p class="cli-rodape-form">Já tem acesso? <a class="cli-link" href="/cliente/entrar">Entrar</a></p>
+      </section>
+
+      <section class="cli-cartao cli-estado" data-sucesso hidden tabindex="-1">
+        <div class="cli-estado__icone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12l5 5L20 6"/></svg></div>
+        <h1>Cadastro enviado</h1>
+        <p data-sucesso-texto></p>
+        <a class="btn btn-secondary" href="/cliente/entrar">Ir para Entrar</a>
+      </section>
+    </div>
+  </main>
+
+  <footer class="cli-rodape">Parts Seals Vedações Industriais · <a href="/politica-de-privacidade.html">Política de Privacidade</a></footer>
+  <script src="/cliente/js/regras.js"></script>
+  <script src="/cliente/js/comum.js"></script>
+  <script src="/cliente/js/cadastro.js"></script>
+</body>
+</html>

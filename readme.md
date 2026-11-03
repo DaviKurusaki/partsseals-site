@@ -7,6 +7,10 @@ usa `node tools/build_site.cjs` para montar `dist/` com os arquivos públicos e
 empacota a API separadamente. Consulte [a configuração e a migração da expedição](docs/expedicao-migracao.md)
 antes de publicar pela primeira vez com o portal integrado.
 
+A Área do Cliente fica em `/cliente` (cadastro, entrar e acompanhamento de
+pedidos), com a API em `netlify/functions/cliente-api/`. Variáveis, Supabase
+Auth e roteiro de teste em [docs/area-do-cliente.md](docs/area-do-cliente.md).
+
 ## Como rodar no Live Server
 
 1. Abra esta pasta no VS Code.
