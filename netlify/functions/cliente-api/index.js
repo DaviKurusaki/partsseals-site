@@ -8,7 +8,8 @@
  *   POST /cliente/api/esqueci-senha  manda o link de nova senha (resposta sempre igual)
  *   POST /cliente/api/nova-senha     troca a senha com o token do link do e-mail
  *   GET  /cliente/api/eu             cadastro e status (pendente/aprovado/...)
- *   GET  /cliente/api/pedidos?dias=  pedidos do cliente aprovado (até 730 dias)
+ *   GET  /cliente/api/pedidos?dias=  pedidos de todas as empresas liberadas ao
+ *                                    contato aprovado (até 730 dias)
  *
  * Decisões que não são óbvias:
  *  - **Duas chaves, cada uma no seu lugar.** A anon só fala com o Supabase
@@ -238,7 +239,11 @@ async function rotaPedidos(evento) {
   const pedido = Number.parseInt((evento.queryStringParameters || {}).dias, 10);
   const dias = Number.isFinite(pedido) ? Math.min(DIAS_MAXIMO, Math.max(1, pedido)) : DIAS_PADRAO;
   const r = await servico.rpc('site_cliente_meus_pedidos', { p_auth_user_id: s.usuario.id, p_dias: dias });
-  return responder(200, { ok: true, dias, pedidos: Array.isArray(r?.pedidos) ? r.pedidos : [] }, s.cookies);
+  // `empresas` (sql/142 do Kuru): todas as empresas liberadas ao contato,
+  // mesmo as sem pedido no período — o painel monta o filtro com elas.
+  const empresas = (Array.isArray(r?.empresas) ? r.empresas : [])
+    .filter((e) => e && e.id != null).map((e) => ({ id: e.id, nome: texto(e.nome) }));
+  return responder(200, { ok: true, dias, empresas, pedidos: Array.isArray(r?.pedidos) ? r.pedidos : [] }, s.cookies);
 }
 
 const ROTAS = {

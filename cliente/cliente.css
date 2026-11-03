@@ -80,7 +80,10 @@
 .cli-linha-ferr { display: grid; gap: 10px; }
 @media (min-width: 760px) {
   .cli-linha-ferr { grid-template-columns: 1fr auto auto; align-items: center; }
+  .cli-linha-ferr:has(.cli-empresas:not([hidden])) { grid-template-columns: 1fr auto auto auto; }
 }
+.cli-empresas select { width: 100%; }
+.cli-empresa { display: block; color: var(--muted); font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
 
 /* Pedidos */
 .cli-lista { display: grid; gap: 14px; }

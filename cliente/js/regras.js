@@ -46,11 +46,14 @@
 
   function semAcento(v) { return texto(v).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
-  /** filtro: "todos" | "aberto" | "entregue"; busca: nº do pedido ou OC. */
+  /** filtro: "todos" | "aberto" | "entregue"; busca: nº do pedido ou OC;
+   *  empresa: id da empresa ("" ou ausente = todas). */
   function filtrar(pedidos, opcoes) {
     var busca = semAcento(opcoes && opcoes.busca);
     var filtro = (opcoes && opcoes.filtro) || "todos";
+    var empresa = texto(opcoes && opcoes.empresa);
     return (pedidos || []).filter(function (p) {
+      if (empresa && texto(p.empresa_id) !== empresa) return false;
       if (filtro === "aberto" && p.etapa === "entregue") return false;
       if (filtro === "entregue" && p.etapa !== "entregue") return false;
       if (!busca) return true;
