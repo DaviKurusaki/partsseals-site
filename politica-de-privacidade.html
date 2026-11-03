@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://*.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <title>Política de Privacidade | Parts Seals</title>
   <meta name="description" content="Como a Parts Seals Vedações Industriais trata dados pessoais conforme a Lei Geral de Proteção de Dados (LGPD – Lei 13.709/2018).">
   <meta name="robots" content="index, follow">
@@ -29,6 +29,7 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/consentimento.js" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -81,7 +82,7 @@
         <p class="eyebrow">LGPD · Lei 13.709/2018</p>
         <h1>Política de Privacidade</h1>
         <p>Transparência sobre quais dados pessoais tratamos, por que tratamos e como você pode exercer seus direitos.</p>
-        <p><small>Última atualização: 2 de novembro de 2026.</small></p>
+        <p><small>Última atualização: 3 de novembro de 2026.</small></p>
       </div>
     </section>
 
@@ -92,7 +93,7 @@
 
         <h2>2. Resumo</h2>
         <div class="legal-box">
-          <p><strong>Não usamos cookies</strong> de rastreamento, publicidade ou estatísticas. Só a Área do Cliente usa cookies essenciais de sessão, para manter você conectado.</p>
+          <p><strong>Cookies de estatística só com o seu aceite</strong> (Google Analytics). Não usamos cookies de publicidade. A Área do Cliente usa cookies essenciais de sessão, para manter você conectado.</p>
           <p><strong>O único formulário</strong> que envia dados para nossos servidores é o cadastro da Área do Cliente, feito por iniciativa sua. O restante do contato acontece por WhatsApp, e-mail ou telefone.</p>
           <p><strong>Não vendemos</strong> nem compartilhamos dados pessoais para fins de marketing.</p>
         </div>
@@ -108,13 +109,15 @@
         </ul>
 
         <h2>4. Cookies e armazenamento local</h2>
-        <p>Este site não utiliza cookies de rastreamento, de publicidade ou ferramentas de análise de audiência (como Google Analytics ou pixels de redes sociais). Por isso não exibimos banner de consentimento de cookies. Se isso mudar, esta política será atualizada e o seu consentimento será solicitado antes de qualquer coleta.</p>
+        <p>As páginas públicas do site usam o <strong>Google Analytics 4</strong> para estatísticas de audiência: páginas visitadas, tempo de navegação, cliques em "Solicitar orçamento" e em downloads, tipo de aparelho e navegador e região aproximada (cidade/estado). O Google Analytics 4 não armazena o endereço IP completo. Os dados são guardados pelo Google por até 14 meses e usados apenas por nós para melhorar o site; não usamos publicidade nem pixels de redes sociais.</p>
+        <p>Esses cookies <strong>só são ativados se você clicar em "Aceitar"</strong> no aviso exibido na primeira visita. Se recusar, nada é enviado ao Google. Você pode mudar sua escolha a qualquer momento em <button type="button" class="legal-link" data-cookie-preferencias hidden>Preferências de cookies</button><noscript>Preferências de cookies</noscript> (também no rodapé). A escolha fica guardada apenas no seu navegador. <em>Base legal: consentimento (art. 7º, I).</em> A Área do Cliente e a área de expedição não usam Google Analytics.</p>
         <p>A <strong>Área do Cliente</strong> (/cliente) usa apenas cookies estritamente necessários: um de sessão (válido por cerca de uma hora e renovado enquanto você usa), um para renovar a sessão (até 30 dias) e um que marca o horário do último acesso registrado. Eles não podem ser lidos por scripts, valem só para as páginas da Área do Cliente e são apagados quando você clica em Sair.</p>
 
         <h2>5. Compartilhamento com terceiros</h2>
         <p>Os dados podem ser tratados pelos seguintes operadores e serviços, cada um com sua própria política de privacidade:</p>
         <ul>
           <li><strong>Netlify, Inc.</strong> — hospedagem do site (servidores nos EUA e outros países).</li>
+          <li><strong>Google LLC</strong> — Google Analytics, somente com o seu aceite (servidores nos EUA e outros países). <a href="https://policies.google.com/privacy?hl=pt-BR" target="_blank" rel="noopener noreferrer">Política de privacidade do Google</a>.</li>
           <li><strong>Supabase, Inc.</strong> — banco de dados e autenticação da Área do Cliente (login, senha cifrada e envio dos e-mails de confirmação e de nova senha).</li>
           <li><strong>WhatsApp / Meta</strong> — quando você opta por falar conosco pelo WhatsApp.</li>
           <li><strong>Provedor de e-mail</strong> — para recebimento e envio de mensagens.</li>
@@ -167,7 +170,7 @@
   <footer class="site-footer">
     <div class="container footer-bottom">
       <p>&copy; <span id="currentYear"></span> Parts Seals Vedações Industriais · CNPJ 30.705.918/0001-05. Todos os direitos reservados.</p>
-      <p class="footer-legal"><a href="politica-de-privacidade.html">Política de Privacidade</a><span>Qualidade em cada vedação.</span></p>
+      <p class="footer-legal"><a href="politica-de-privacidade.html">Política de Privacidade</a><button type="button" data-cookie-preferencias hidden>Preferências de cookies</button><span>Qualidade em cada vedação.</span></p>
     </div>
   </footer>
 

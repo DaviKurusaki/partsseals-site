@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://*.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <title>Privacy Policy | Parts Seals</title>
   <meta name="description" content="How Parts Seals Vedações Industriais handles personal data under the Brazilian General Data Protection Law (LGPD – Law 13,709/2018).">
   <meta name="robots" content="index, follow">
@@ -29,6 +29,7 @@
   <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/consentimento.js" defer></script>
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",
@@ -81,7 +82,7 @@
         <p class="eyebrow">LGPD · Law 13,709/2018</p>
         <h1>Privacy Policy</h1>
         <p>What personal data we handle, why we handle it and how you can exercise your rights.</p>
-        <p><small>Last updated: October 31, 2026.</small></p>
+        <p><small>Last updated: November 3, 2026.</small></p>
       </div>
     </section>
 
@@ -92,7 +93,7 @@
 
         <h2>2. Summary</h2>
         <div class="legal-box">
-          <p><strong>No tracking, advertising or analytics cookies.</strong></p>
+          <p><strong>Statistics cookies only with your consent</strong> (Google Analytics). No advertising cookies.</p>
           <p><strong>No forms</strong> send data to our servers: contact happens through WhatsApp, e-mail or phone, at your initiative.</p>
           <p><strong>We do not sell</strong> or share personal data for marketing purposes.</p>
         </div>
@@ -107,11 +108,13 @@
         </ul>
 
         <h2>4. Cookies</h2>
-        <p>This website uses no tracking, advertising or audience analytics cookies, so no cookie consent banner is shown. If this changes, this policy will be updated and your consent requested before any collection.</p>
+        <p>The public pages of this website use <strong>Google Analytics 4</strong> for audience statistics: pages visited, browsing time, clicks on "Request a quote" and downloads, device and browser type and approximate region (city/state). Google Analytics 4 does not store full IP addresses. Data is kept by Google for up to 14 months and used only by us to improve the website; we use no advertising or social media pixels.</p>
+        <p>These cookies <strong>are only enabled if you click "Accept"</strong> on the notice shown on your first visit. If you decline, nothing is sent to Google. You can change your choice at any time in <button type="button" class="legal-link" data-cookie-preferencias hidden>Cookie preferences</button><noscript>Cookie preferences</noscript> (also in the footer). Your choice is stored only in your browser. <em>Legal basis: consent (LGPD art. 7, I).</em></p>
 
         <h2>5. Third parties</h2>
         <ul>
           <li><strong>Netlify, Inc.</strong> — website hosting (servers in the USA and other countries).</li>
+          <li><strong>Google LLC</strong> — Google Analytics, only with your consent (servers in the USA and other countries). <a href="https://policies.google.com/privacy?hl=en" target="_blank" rel="noopener noreferrer">Google Privacy Policy</a>.</li>
           <li><strong>WhatsApp / Meta</strong> — when you choose to contact us on WhatsApp.</li>
           <li><strong>E-mail provider</strong> — to receive and send messages.</li>
           <li><strong>Carriers</strong> — name, address and phone for deliveries.</li>
@@ -146,7 +149,7 @@
   <footer class="site-footer">
     <div class="container footer-bottom">
       <p>&copy; <span id="currentYear"></span> Parts Seals Vedações Industriais · CNPJ 30.705.918/0001-05. All rights reserved.</p>
-      <p class="footer-legal"><a href="privacy.html">Privacy Policy</a><span>Quality in every seal.</span></p>
+      <p class="footer-legal"><a href="privacy.html">Privacy Policy</a><button type="button" data-cookie-preferencias hidden>Cookie preferences</button><span>Quality in every seal.</span></p>
     </div>
   </footer>
 

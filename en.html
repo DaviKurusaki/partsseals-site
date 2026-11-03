@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://*.googletagmanager.com; style-src 'self'; img-src 'self' data: https://*.google-analytics.com https://*.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
   <meta name="description" content="Parts Seals Vedações Industriais manufactures custom industrial seals, technical parts, packing seals, scrapers, guide rings, and solutions for industrial maintenance.">
   <meta name="theme-color" content="#0b0d10">
   <meta name="robots" content="index, follow, max-image-preview:large">
@@ -39,6 +39,7 @@
   <link rel="preload" as="image" href="assets/img/hero-industrial.webp" type="image/webp" fetchpriority="high">
   <link rel="stylesheet" href="css/style.css">
   <script src="js/campaign.js"></script>
+  <script src="js/consentimento.js" defer></script>
   <link rel="stylesheet" href="css/materials.css">
   <script type="application/ld+json">
   {
@@ -756,7 +757,7 @@
 
     <div class="container footer-bottom">
       <p>&copy; <span id="currentYear"></span> Parts Seals Vedações Industriais. All rights reserved.</p>
-      <p class="footer-legal"><a href="privacy.html">Privacy Policy</a><span>Quality in every seal.</span></p>
+      <p class="footer-legal"><a href="privacy.html">Privacy Policy</a><button type="button" data-cookie-preferencias hidden>Cookie preferences</button><span>Quality in every seal.</span></p>
     </div>
   </footer>
 
