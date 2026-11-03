@@ -1,5 +1,10 @@
 # Expedição: saída no Kuru, chegada pelo site
 
+A entrada pública mostra somente **Sou cliente** (site da Parts Seals) e
+**Interno**. Interno abre Consultar etiqueta, Entregas confirmadas e Despache;
+o PIN e o controle de chegada permanecem como descrito abaixo. A explicação
+da dupla conferência fica fora da entrada pública.
+
 Há dois controles independentes:
 
 1. **Saída da fábrica:** Acabamento > Expedição e Acabamento > Despachar,

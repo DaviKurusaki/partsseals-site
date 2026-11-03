@@ -9,8 +9,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Expedição">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<title>Parts Seals · Dupla conferência de entrega</title>
-<meta name="description" content="Dupla conferência da chegada ao cliente: NF e rastreio da saída registrada no Kuru Nuvem.">
+<title>Parts Seals · Expedição</title>
+<meta name="description" content="Acesse o site da Parts Seals ou as ferramentas internas de etiquetas e entregas.">
 <link rel="manifest" href="/expedicao/manifest.webmanifest">
 <link rel="icon" href="/expedicao/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/expedicao/icone-180.png">
@@ -474,27 +474,31 @@
 <main>
 <section class="tela" id="telaInicio">
   <div class="boas-vindas" data-hero><small id="saudacao">Bem-vindo</small><h1>Da nossa saída<br>à sua entrega.</h1></div>
-  <button class="escolha principal" id="btnExpedir" type="button" hidden><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4v16M7 4v16M11 4v16M16 4v16M21 4v16"/></svg></span><span class="txt"><strong>Dupla conferência</strong><span>Sou motorista · confirmar a chegada ao cliente</span></span></button>
-  <button class="escolha" id="btnHistorico" type="button"><span class="txt"><strong>Entregas confirmadas</strong><span>Consultar quando chegou e quem conferiu</span></span></button>
-  <button class="escolha" id="btnConsulta" type="button"><span class="txt"><strong>Consultar etiqueta</strong><span>Ver a saída e a chegada de um pedido ou OP</span></span></button>
-  <a class="escolha" href="https://parts-seals.com.br/"><span class="txt"><strong>Sou cliente</strong><span>Conheça a Parts Seals</span></span></a>
-  <div class="nota"><span>A saída é registrada no Acabamento do Kuru Nuvem. Aqui, a NF e o mesmo rastreio confirmam que o pacote chegou ao cliente.</span></div>
+  <a class="escolha principal" id="btnCliente" href="https://parts-seals.com.br/"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/></svg></span><span class="txt"><strong>Sou cliente</strong><span>Conheça a Parts Seals</span></span></a>
+  <button class="escolha" id="btnInterno" type="button" disabled><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span><span class="txt"><strong>Interno</strong><span>Acessar ferramentas</span></span></button>
+</section>
+<section class="tela" id="telaInterno" hidden>
+  <div class="boas-vindas" data-hero><small>Parts Seals</small><h1>Interno</h1></div>
+  <button class="escolha" id="btnConsulta" type="button"><span class="txt"><strong>Consultar etiqueta</strong><span>Consultar um pedido ou OP</span></span></button>
+  <button class="escolha" id="btnHistorico" type="button"><span class="txt"><strong>Entregas confirmadas</strong><span>Ver o histórico de entregas</span></span></button>
+  <button class="escolha principal" id="btnExpedir" type="button"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4v16M7 4v16M11 4v16M16 4v16M21 4v16"/></svg></span><span class="txt"><strong>Despache</strong><span>Ler notas fiscais e rastreio</span></span></button>
+  <button class="btn" id="internoVoltar" type="button">Voltar ao início</button>
 </section>
 <section class="tela" id="telaLogin" hidden><div class="cartao-pin"><div class="cadeado" data-hero>PIN</div><h2>Digite seu PIN</h2><p>O mesmo PIN do Kuru Nuvem</p><div class="pontos" id="pontos"></div><span class="so-leitor" id="pinLeitor" aria-live="polite"></span><p id="erroLogin" role="alert"></p><div class="teclado" id="teclado"></div><button class="voltar" id="btnVoltar" type="button">Voltar</button></div></section>
 <section class="tela" id="telaDespachar" hidden>
-  <div class="boas-vindas" data-hero><small>Chegada ao cliente</small><h1>Dupla conferência</h1></div>
+  <div class="boas-vindas" data-hero><small>Interno</small><h1>Despache</h1></div>
   <p class="cartao despacho-resultado" id="despachoResultado" role="status"></p>
   <div class="cartao despacho-bloco"><h2>1. Confira as notas recebidas</h2><p>No cliente, escaneie as NFs do pacote. Elas precisam ter saída registrada no Kuru Nuvem.</p><button class="btn forte" id="despachoCameraNf" type="button">Escanear código de barras da NF</button>
     <form class="formulario" id="despachoForm"><label for="despachoCodigo">NF ou rastreio · leitor, digitação ou colagem</label><input id="despachoCodigo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="100" placeholder="Chave da NF ou rastreio da saída"><button class="btn" id="despachoLer" type="submit">Conferir código</button></form>
     <p id="despachoSituacao" role="status"></p><p class="despacho-erro" id="despachoErro" role="alert"></p><span class="despacho-conta" id="despachoConta"></span><div id="despachoLista"></div><div class="despacho-clientes" id="despachoClientes" hidden>Há clientes diferentes nesta leva. Confira se todas as NFs estão sendo entregues no destino correto.</div><button class="btn" id="despachoLimpar" type="button">Limpar lista</button>
   </div>
   <div class="cartao despacho-bloco"><h2>2. Confirme o rastreio da saída</h2><p>Leia o mesmo rastreio registrado no Acabamento para confirmar a entrega ao cliente. Esta conferência não despacha nem registra uma nova saída.</p><button class="btn forte" id="despachoCameraRastreio" type="button" disabled>Escanear rastreio e confirmar entrega</button><p>O grupo de Expedição recebe um aviso de entrega confirmada pelo Kuru, quando o remetente estiver conectado.</p></div>
-  <button class="btn" id="despachoVoltar" type="button">Voltar ao início</button>
+  <button class="btn" id="despachoVoltar" type="button">Voltar ao Interno</button>
 </section>
-<section class="tela" id="telaHistorico" hidden><div class="boas-vindas" data-hero><small>Controle de chegada</small><h1>Entregas confirmadas</h1></div><p class="cartao" id="historicoErro" role="status"></p><div class="tela" id="historicoLista"></div><button class="btn" id="historicoMais" type="button" hidden>Carregar mais entregas</button><button class="btn" id="historicoVoltar" type="button">Voltar ao início</button></section>
-<section class="tela" id="telaConsulta" hidden><div class="boas-vindas" data-hero><small>Somente consulta</small><h1>Saída e chegada</h1></div><form class="cartao despacho-bloco formulario" id="consultaForm"><label for="consultaCodigo">Código ou link do QR da etiqueta</label><input id="consultaCodigo" autocomplete="off" placeholder="Código da etiqueta"><button class="btn forte" type="submit">Consultar etiqueta</button><button class="btn" id="consultaCamera" type="button">Escanear QR da etiqueta</button><p id="consultaErro" role="alert"></p></form><div class="tela" id="consultaResultado"></div><button class="btn" id="consultaVoltar" type="button">Voltar ao início</button></section>
+<section class="tela" id="telaHistorico" hidden><div class="boas-vindas" data-hero><small>Controle de chegada</small><h1>Entregas confirmadas</h1></div><p class="cartao" id="historicoErro" role="status"></p><div class="tela" id="historicoLista"></div><button class="btn" id="historicoMais" type="button" hidden>Carregar mais entregas</button><button class="btn" id="historicoVoltar" type="button">Voltar ao Interno</button></section>
+<section class="tela" id="telaConsulta" hidden><div class="boas-vindas" data-hero><small>Somente consulta</small><h1>Saída e chegada</h1></div><form class="cartao despacho-bloco formulario" id="consultaForm"><label for="consultaCodigo">Código ou link do QR da etiqueta</label><input id="consultaCodigo" autocomplete="off" placeholder="Código da etiqueta"><button class="btn forte" type="submit">Consultar etiqueta</button><button class="btn" id="consultaCamera" type="button">Escanear QR da etiqueta</button><p id="consultaErro" role="alert"></p></form><div class="tela" id="consultaResultado"></div><button class="btn" id="consultaVoltar" type="button">Voltar ao Interno</button></section>
 </main>
-<footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Dupla conferência de entrega · Kuru Nuvem</footer>
+<footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Expedição · Kuru Nuvem</footer>
 </div></div>
 <div class="aviso" id="aviso" role="status"></div>
 <div class="leitor despacho-camera" id="despachoLeitor" hidden role="dialog" aria-modal="true" aria-label="Conferir código de barras"><video id="despachoVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="despachoTextoCamera"></div><button class="btn fechar" id="despachoFecharCamera" type="button">Voltar à conferência</button></div>

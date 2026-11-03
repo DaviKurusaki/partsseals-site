@@ -28,12 +28,13 @@
   }
   function mostrar(id,{historico:empilhar=true}={}) {
     document.querySelectorAll('main > .tela').forEach(t=>t.hidden=t.id!==id);
-    const s=sessao();$('usuario').hidden=!s;
+    const s=sessao();$('usuario').hidden=!s||id==='telaInicio';
     if(s){$('nomeUsuario').textContent=s.nome.split(/\s+/)[0];$('avatar').textContent=s.nome.split(/\s+/).slice(0,2).map(p=>p[0]).join('').toUpperCase();}
     if(empilhar&&id!==telaAtual)history.pushState({tela:id},'');
     telaAtual=id;window.scrollTo({top:0});requestAnimationFrame(ajustarFaixa);
   }
-  function inicio(){pararQr();mostrar('telaInicio',{historico:false});$('btnExpedir').hidden=!ligado;$('saudacao').textContent=sessao()?'Olá, '+sessao().nome.split(/\s+/)[0]:'Bem-vindo';}
+  function inicio(){pararQr();mostrar('telaInicio',{historico:false});history.replaceState({tela:'telaInicio'},'');$('saudacao').textContent='Bem-vindo';}
+  function interno({historico=true}={}){pararQr();mostrar('telaInterno',{historico});if(!historico)history.replaceState({tela:'telaInterno'},'');}
   function abrirLogin(){pin='';$('erroLogin').textContent='';desenharPin();mostrar('telaLogin');}
   function desenharPin(){ $('pontos').innerHTML=Array.from({length:Math.max(4,pin.length)},(_,i)=>`<i class="${i<pin.length?'cheio':''}"></i>`).join('');$('pinLeitor').textContent=pin.length+' dígitos'; }
   function tecla(t){if(entrando)return;if(t==='entrar'){entrar();return;}if(t==='apagar')pin=pin.slice(0,-1);else if(pin.length<8)pin+=t;desenharPin();}
@@ -90,21 +91,22 @@
     }catch{if(geracao===leitorGeracao){if(camera)camera.getTracks().forEach(t=>t.stop());camera=null;$('qrVideo').srcObject=null;$('qrTexto').textContent='Libere a câmera ou volte para digitar ou colar o código da etiqueta.';}}
   }
   $('btnExpedir').onclick=()=>{destino='conferencia';abrirDestino();};
+  $('btnInterno').onclick=()=>interno();$('internoVoltar').onclick=inicio;
   $('btnHistorico').onclick=()=>{destino='historico';abrirDestino();};
   $('btnConsulta').onclick=()=>{destino='consulta';abrirDestino();};
-  $('despachoVoltar').onclick=$('historicoVoltar').onclick=$('consultaVoltar').onclick=$('btnLogo').onclick=inicio;
-  $('btnVoltar').onclick=inicio;$('historicoMais').onclick=()=>abrirHistorico(true);
+  $('despachoVoltar').onclick=$('historicoVoltar').onclick=$('consultaVoltar').onclick=()=>interno({historico:false});$('btnLogo').onclick=inicio;
+  $('btnVoltar').onclick=()=>interno({historico:false});$('historicoMais').onclick=()=>abrirHistorico(true);
   $('consultaForm').onsubmit=ev=>{ev.preventDefault();const lido=extrairToken($('consultaCodigo').value);if(!lido){$('consultaErro').textContent='Informe o código ou o link do QR da etiqueta.';return;}token=lido;abrirConsulta();};
   $('consultaCamera').onclick=lerQr;$('qrFechar').onclick=()=>{pararQr();history.back();};
   $('btnSair').onclick=()=>{controlador.limpar();memoria=null;try{localStorage.removeItem(chaveSessao);}catch{}$('consultaResultado').innerHTML='';$('historicoLista').innerHTML='';historico=[];inicio();};
   $('teclado').innerHTML=['1','2','3','4','5','6','7','8','9','apagar','0','entrar'].map(t=>`<button type="button" class="tecla ${t==='entrar'?'entrar':''}" data-t="${t}" aria-label="${t==='apagar'?'Apagar último dígito':t==='entrar'?'Entrar':t}">${t==='apagar'?'⌫':t==='entrar'?'→':t}</button>`).join('');
   $('teclado').onclick=ev=>{const b=ev.target.closest('[data-t]');if(b)tecla(b.dataset.t);};
   document.addEventListener('keydown',ev=>{if($('telaLogin').hidden||ev.ctrlKey||ev.metaKey||ev.altKey)return;if(/^\d$/.test(ev.key)){ev.preventDefault();tecla(ev.key);}else if(ev.key==='Backspace'){ev.preventDefault();tecla('apagar');}else if(ev.key==='Enter'){ev.preventDefault();tecla('entrar');}});
-  window.addEventListener('popstate',()=>{if(!$('qrLeitor').hidden){pararQr();return;}if(!$('despachoLeitor').hidden||history.state?.tela===telaAtual)return;inicio();});
+  window.addEventListener('popstate',()=>{if(!$('qrLeitor').hidden){pararQr();return;}if(!$('despachoLeitor').hidden||history.state?.tela===telaAtual)return;if(history.state?.tela&&history.state.tela!=='telaInicio')interno({historico:false});else inicio();});
   window.addEventListener('resize',ajustarFaixa);window.addEventListener('pagehide',pararQr);
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&!$('qrLeitor').hidden){pararQr();history.back();}});
   controlador=window.criarTelaConferencia({api,sessao,mostrar,abrirLogin,ligado:()=>ligado&&confirmarLigado,aviso,esc});
   // Rascunhos de saída da versão antiga não podem reaparecer no novo controle.
   try{localStorage.removeItem('kuru-expedicao-carrinho');localStorage.removeItem('kuru-expedicao-fluxo');}catch{}
-  api('estado').then(r=>{ligado=Boolean(r.ligado);confirmarLigado=Boolean(r.ligadoBaixa);inicio();if(!r.ok)aviso(r.erro);token=extrairToken(location.pathname);if(token){destino='consulta';abrirDestino();}});
+  api('estado').then(r=>{ligado=Boolean(r.ligado);confirmarLigado=Boolean(r.ligadoBaixa);inicio();$('btnInterno').disabled=false;if(!r.ok)aviso(r.erro);token=extrairToken(location.pathname);if(token){destino='consulta';abrirDestino();}});
 })();
