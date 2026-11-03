@@ -62,7 +62,8 @@
   // --- pedidos ------------------------------------------------------------------
 
   function etiquetaEtapa(etapa) {
-    var classe = etapa === "entregue" ? " cli-etiqueta--entregue" : ["aguardando_retirada", "em_rota", "com_transportadora"].indexOf(etapa) >= 0 ? " cli-etiqueta--caminho" : "";
+    etapa = R.etapaDoSite(etapa);
+    var classe = etapa === "despachado" ? " cli-etiqueta--despachado" : etapa === "aguardando_retirada" ? " cli-etiqueta--retirada" : "";
     return '<span class="cli-etiqueta' + classe + '">' + esc(R.ROTULO_ETAPA[etapa] || "Em andamento") + "</span>";
   }
 
@@ -107,16 +108,16 @@
   }
 
   function cartaoPedido(p) {
-    var entregue = p.etapa === "entregue";
-    var prazo = entregue
-      ? '<div class="cli-prazo cli-prazo--entregue"><span>Situação</span><strong>Entregue</strong></div>'
+    var despachado = R.etapaDoSite(p.etapa) === "despachado";
+    var prazo = despachado
+      ? '<div class="cli-prazo cli-prazo--despachado"><span>Situação</span><strong>DESPACHADO</strong></div>'
       : (p.data_prevista ? '<div class="cli-prazo"><span>Previsão</span><strong>' + esc(R.dataBr(p.data_prevista)) + "</strong></div>" : "");
     var meta = [];
     if (p.pedido_cliente) meta.push("Sua OC: " + esc(p.pedido_cliente));
     if (p.data_pedido) meta.push("Pedido em " + esc(R.dataBr(p.data_pedido)));
-    var linhaEntregue = "";
-    if (entregue && p.entregue_em) {
-      linhaEntregue = '<p class="cli-entregue">Entregue em ' + esc(R.dataHoraBr(p.entregue_em)) + (p.recebido_por ? ", recebido por " + esc(p.recebido_por) : "") + "</p>";
+    var linhaRecebimento = "";
+    if (despachado && p.entregue_em) {
+      linhaRecebimento = '<p class="cli-recebimento">Recebido em ' + esc(R.dataHoraBr(p.entregue_em)) + (p.recebido_por ? ", por " + esc(p.recebido_por) : "") + "</p>";
     }
     var progresso = R.progressoItens(p);
     // O mesmo nº de pedido pode existir em duas empresas: o id leva a empresa.
@@ -125,8 +126,8 @@
     return '<article class="cli-pedido" aria-labelledby="' + idTitulo + '">' +
       '<div class="cli-pedido__topo"><div>' + empresa + '<h2 class="cli-pedido__num" id="' + idTitulo + '">Pedido ' + esc(p.pedido) + "</h2>" +
       (meta.length ? '<p class="cli-pedido__meta">' + meta.join(" · ") + "</p>" : "") +
-      (progresso ? '<span class="cli-parcial">' + progresso.entregues + " de " + progresso.total + " itens entregues</span>" : "") +
-      "</div>" + prazo + "</div>" + linhaEntregue + linhaDoTempo(p) + blocoDetalhes(p) + blocoItens(p) + "</article>";
+      (progresso ? '<span class="cli-parcial">' + progresso.despachados + " de " + progresso.total + " itens despachados</span>" : "") +
+      "</div>" + prazo + "</div>" + linhaRecebimento + linhaDoTempo(p) + blocoDetalhes(p) + blocoItens(p) + "</article>";
   }
 
   function esqueleto() {
@@ -147,8 +148,8 @@
     var r = R.resumo(R.filtrar(estado.pedidos, { empresa: estado.empresa }));
     document.querySelector("[data-resumo]").innerHTML =
       '<div class="cli-numero cli-numero--producao"><strong>' + r.producao + "</strong><span>Em produção</span></div>" +
-      '<div class="cli-numero cli-numero--caminho"><strong>' + r.caminho + "</strong><span>A caminho</span></div>" +
-      '<div class="cli-numero cli-numero--entregue"><strong>' + r.entregue + "</strong><span>Entregues</span></div>";
+      '<div class="cli-numero cli-numero--retirada"><strong>' + r.retirada + "</strong><span>Aguardando retirada</span></div>" +
+      '<div class="cli-numero cli-numero--despachado"><strong>' + r.despachado + "</strong><span>DESPACHADO</span></div>";
   }
 
   function carregarPedidos() {
@@ -197,7 +198,7 @@
       '<div class="cli-filtros" role="group" aria-label="Filtrar pedidos">' +
       '<button class="cli-chip" type="button" data-filtro="todos" aria-pressed="true">Todos</button>' +
       '<button class="cli-chip" type="button" data-filtro="aberto" aria-pressed="false">Em aberto</button>' +
-      '<button class="cli-chip" type="button" data-filtro="entregue" aria-pressed="false">Entregues</button></div>' +
+      '<button class="cli-chip" type="button" data-filtro="despachado" aria-pressed="false">DESPACHADO</button></div>' +
       '<div class="cli-empresas" data-empresas hidden></div>' +
       '<label class="cli-oculto" for="periodo">Período</label>' +
       '<select class="cli-input" id="periodo" data-periodo><option value="90">Últimos 90 dias</option><option value="180" selected>Últimos 6 meses</option>' +

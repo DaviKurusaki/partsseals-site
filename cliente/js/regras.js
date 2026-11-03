@@ -6,47 +6,42 @@
 (function (raiz) {
   "use strict";
 
-  var ETAPAS = ["recebido", "em_producao", "pronto", "aguardando_retirada", "em_rota", "com_transportadora", "entregue"];
-  var INDICE = { recebido: 0, em_producao: 1, pronto: 2, aguardando_retirada: 3, em_rota: 3, com_transportadora: 3, entregue: 4 };
+  var ETAPAS = ["recebido", "em_producao", "pronto", "aguardando_retirada", "em_rota", "com_transportadora", "entregue", "despachado"];
+  var INDICE = { recebido: 0, em_producao: 1, pronto: 2, aguardando_retirada: 2, despachado: 3 };
   var GRUPO = { recebido: "producao", em_producao: "producao", pronto: "producao",
-    aguardando_retirada: "caminho", em_rota: "caminho", com_transportadora: "caminho", entregue: "entregue" };
+    aguardando_retirada: "retirada", despachado: "despachado" };
   var ROTULO_ETAPA = {
     recebido: "Pedido recebido", em_producao: "Em produção", pronto: "Pronto",
-    aguardando_retirada: "Aguardando retirada", em_rota: "A caminho", com_transportadora: "Na transportadora", entregue: "Entregue",
+    aguardando_retirada: "Aguardando retirada", em_rota: "DESPACHADO", com_transportadora: "DESPACHADO", entregue: "DESPACHADO", despachado: "DESPACHADO",
   };
 
   function texto(v) { return v === null || v === undefined ? "" : String(v).trim(); }
 
-  /** Rótulo do 4º passo: pela etapa, ou (antes de chegar lá) pelo método de entrega. */
-  function rotuloQuartoPasso(pedido) {
-    var e = pedido && pedido.etapa;
-    if (e === "aguardando_retirada" || e === "em_rota" || e === "com_transportadora") return ROTULO_ETAPA[e];
-    var m = texto(pedido && pedido.metodo_entrega);
-    if (m === "Cliente Retira") return "Aguardando retirada";
-    if (m === "Transportadora" || m === "Correio" || m === "Azul Cargo") return "Na transportadora";
-    return "A caminho";
+  // O banco mantém os eventos detalhados; no site, toda saída é DESPACHADO.
+  function etapaDoSite(etapa) {
+    return ["em_rota", "com_transportadora", "entregue"].indexOf(etapa) >= 0 ? "despachado" : etapa;
   }
 
-  /** Os 5 passos da linha do tempo com o estado de cada um. */
+  /** Os 4 passos da linha do tempo com o estado de cada um. */
   function passos(pedido) {
-    var atual = INDICE[pedido && pedido.etapa];
+    var atual = INDICE[etapaDoSite(pedido && pedido.etapa)];
     if (atual === undefined) atual = 0;
-    var nomes = ["Pedido recebido", "Em produção", "Pronto", rotuloQuartoPasso(pedido), "Entregue"];
+    var nomes = ["Pedido recebido", "Em produção", "Pronto", "DESPACHADO"];
     return nomes.map(function (nome, i) {
-      var estado = i < atual ? "feito" : i === atual ? (atual === 4 ? "feito" : "atual") : "futuro";
+      var estado = i < atual ? "feito" : i === atual ? (atual === 3 ? "feito" : "atual") : "futuro";
       return { nome: nome, estado: estado, corrente: i === atual };
     });
   }
 
   function resumo(pedidos) {
-    var r = { producao: 0, caminho: 0, entregue: 0 };
-    (pedidos || []).forEach(function (p) { var g = GRUPO[p.etapa]; if (g) r[g] += 1; });
+    var r = { producao: 0, retirada: 0, despachado: 0 };
+    (pedidos || []).forEach(function (p) { var g = GRUPO[etapaDoSite(p.etapa)]; if (g) r[g] += 1; });
     return r;
   }
 
   function semAcento(v) { return texto(v).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
-  /** filtro: "todos" | "aberto" | "entregue"; busca: nº do pedido ou OC;
+  /** filtro: "todos" | "aberto" | "despachado"; busca: nº do pedido ou OC;
    *  empresa: id da empresa ("" ou ausente = todas). */
   function filtrar(pedidos, opcoes) {
     var busca = semAcento(opcoes && opcoes.busca);
@@ -54,24 +49,24 @@
     var empresa = texto(opcoes && opcoes.empresa);
     return (pedidos || []).filter(function (p) {
       if (empresa && texto(p.empresa_id) !== empresa) return false;
-      if (filtro === "aberto" && p.etapa === "entregue") return false;
-      if (filtro === "entregue" && p.etapa !== "entregue") return false;
+      var despachado = etapaDoSite(p.etapa) === "despachado";
+      if (filtro === "aberto" && despachado) return false;
+      if (filtro === "despachado" && !despachado) return false;
       if (!busca) return true;
       return semAcento(p.pedido).indexOf(busca) >= 0 || semAcento(p.pedido_cliente).indexOf(busca) >= 0;
     });
   }
 
-  /** "X de Y itens entregues" — só quando os itens estão em etapas diferentes. */
+  /** "X de Y itens despachados" — só quando parte dos itens já saiu. */
   function progressoItens(pedido) {
     var itens = (pedido && pedido.itens) || [];
     if (itens.length < 2) return null;
     var etapas = {};
-    itens.forEach(function (i) { etapas[i.etapa] = true; });
+    itens.forEach(function (i) { etapas[etapaDoSite(i.etapa)] = true; });
     if (Object.keys(etapas).length < 2) return null;
-    var entregues = itens.filter(function (i) { return i.etapa === "entregue"; }).length;
-    // Só faz sentido com entrega parcial: "0 de 3 entregues" não informa nada.
-    if (entregues === 0) return null;
-    return { entregues: entregues, total: itens.length };
+    var despachados = itens.filter(function (i) { return etapaDoSite(i.etapa) === "despachado"; }).length;
+    if (despachados === 0) return null;
+    return { despachados: despachados, total: itens.length };
   }
 
   var CORREIOS = /^[A-Z]{2}\d{9}[A-Z]{2}$/;
@@ -136,7 +131,7 @@
   }
 
   var api = {
-    ETAPAS: ETAPAS, ROTULO_ETAPA: ROTULO_ETAPA, passos: passos, rotuloQuartoPasso: rotuloQuartoPasso, resumo: resumo,
+    ETAPAS: ETAPAS, ROTULO_ETAPA: ROTULO_ETAPA, passos: passos, etapaDoSite: etapaDoSite, resumo: resumo,
     filtrar: filtrar, progressoItens: progressoItens, rastreios: rastreios, dataBr: dataBr, dataHoraBr: dataHoraBr,
     quantidade: quantidade, cnpjValido: cnpjValido, mascaraCnpj: mascaraCnpj, mascaraTelefone: mascaraTelefone, digitos: digitos,
   };

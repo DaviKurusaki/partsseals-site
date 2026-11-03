@@ -10,6 +10,15 @@ tabela nem função: só chama as quatro funções abaixo.
 
 ## Como funciona
 
+O acompanhamento mostra quatro passos: **Pedido recebido → Em produção →
+Pronto → DESPACHADO**. Os estados do banco `em_rota`, `com_transportadora`
+e `entregue` aparecem como DESPACHADO no site, inclusive nos itens, no resumo
+e no filtro. `aguardando_retirada` continua em aberto até existir saída.
+O método de entrega, as notas e o rastreio continuam disponíveis. Quando há
+registro de recebimento, sua data e a pessoa que recebeu são exibidas como
+recebimento; essa data não vira uma data de despacho. Esta mudança é apenas
+de apresentação e não exige SQL novo.
+
 ```text
 navegador ── /cliente/api/* ──> função Netlify cliente-api ──┬─> Supabase Auth        (chave anon)
    (cookies HttpOnly)                                         └─> 4 funções site_cliente_* (service_role)

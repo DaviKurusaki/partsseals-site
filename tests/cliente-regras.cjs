@@ -13,39 +13,47 @@ function teste(nome, fn) { try { fn(); ok += 1; console.log('  ✓', nome); } ca
 
 console.log('Área do Cliente — regras do painel');
 
-teste('linha do tempo: concluídos, atual e futuros; 4º passo pela etapa ou pelo método', () => {
+teste('linha do tempo: quatro passos e DESPACHADO como etapa final para todos os métodos', () => {
   const p = R.passos({ etapa: 'em_producao', metodo_entrega: 'Correio' });
-  assert.deepEqual(p.map((x) => x.estado), ['feito', 'atual', 'futuro', 'futuro', 'futuro']);
-  assert.equal(p[3].nome, 'Na transportadora');
+  assert.deepEqual(p.map((x) => x.estado), ['feito', 'atual', 'futuro', 'futuro']);
+  assert.equal(p[3].nome, 'DESPACHADO');
   assert.ok(p[1].corrente && !p[0].corrente);
-  assert.equal(R.passos({ etapa: 'pronto', metodo_entrega: 'Cliente Retira' })[3].nome, 'Aguardando retirada');
-  assert.equal(R.passos({ etapa: 'pronto', metodo_entrega: 'Entregamos' })[3].nome, 'A caminho');
-  assert.equal(R.passos({ etapa: 'em_rota', metodo_entrega: 'Correio' })[3].nome, 'A caminho');
-  const e = R.passos({ etapa: 'entregue' });
-  assert.ok(e.every((x) => x.estado === 'feito')); assert.ok(e[4].corrente);
+  for (const etapa of ['com_transportadora', 'entregue', 'em_rota', 'despachado']) {
+    for (const metodo of ['Cliente Retira', 'Correio', 'Transportadora', 'Azul Cargo', 'Entregamos', null]) {
+      const e = R.passos({ etapa, metodo_entrega: metodo });
+      assert.equal(e.length, 4);
+      assert.equal(e[3].nome, 'DESPACHADO');
+      assert.ok(e.every((x) => x.estado === 'feito')); assert.ok(e[3].corrente);
+    }
+  }
+  const retirada = R.passos({ etapa: 'aguardando_retirada', metodo_entrega: 'Cliente Retira' });
+  assert.deepEqual(retirada.map(x => x.estado), ['feito', 'feito', 'atual', 'futuro']);
   assert.equal(R.passos({ etapa: 'desconhecida' })[0].estado, 'atual');
 });
 
-teste('resumo: produção (recebido+em produção+pronto), a caminho e entregues', () => {
+teste('resumo: produção, aguardando retirada e saídas unificadas em DESPACHADO', () => {
   const r = R.resumo([{ etapa: 'recebido' }, { etapa: 'em_producao' }, { etapa: 'pronto' }, { etapa: 'em_rota' },
     { etapa: 'aguardando_retirada' }, { etapa: 'com_transportadora' }, { etapa: 'entregue' }]);
-  assert.deepEqual(r, { producao: 3, caminho: 3, entregue: 1 });
+  assert.deepEqual(r, { producao: 3, retirada: 1, despachado: 3 });
 });
 
-teste('busca por nº do pedido ou OC e filtros em aberto/entregues', () => {
-  const ps = [{ pedido: '30001', pedido_cliente: 'OC-778', etapa: 'entregue' }, { pedido: '30002', pedido_cliente: null, etapa: 'pronto' }];
+teste('busca por nº do pedido ou OC e filtros em aberto/DESPACHADO', () => {
+  const ps = [{ pedido: '30001', pedido_cliente: 'OC-778', etapa: 'entregue' }, { pedido: '30002', pedido_cliente: null, etapa: 'pronto' },
+    { pedido: '30931', etapa: 'com_transportadora', metodo_entrega: 'Cliente Retira' }, { pedido: '30004', etapa: 'em_rota' },
+    { pedido: '30005', etapa: 'aguardando_retirada' }];
   assert.deepEqual(R.filtrar(ps, { busca: 'oc-77' }).map((p) => p.pedido), ['30001']);
   assert.deepEqual(R.filtrar(ps, { busca: '30002' }).map((p) => p.pedido), ['30002']);
-  assert.deepEqual(R.filtrar(ps, { filtro: 'aberto' }).map((p) => p.pedido), ['30002']);
-  assert.deepEqual(R.filtrar(ps, { filtro: 'entregue' }).map((p) => p.pedido), ['30001']);
+  assert.deepEqual(R.filtrar(ps, { filtro: 'aberto' }).map((p) => p.pedido), ['30002', '30005']);
+  assert.deepEqual(R.filtrar(ps, { filtro: 'despachado' }).map((p) => p.pedido), ['30001', '30931', '30004']);
   const varias = [{ pedido: '1', empresa_id: 7, etapa: 'entregue' }, { pedido: '2', empresa_id: 9, etapa: 'em_producao' }];
   assert.deepEqual(R.filtrar(varias, { empresa: '9' }).map((p) => p.pedido), ['2']);
   assert.deepEqual(R.filtrar(varias, { empresa: '' }).map((p) => p.pedido), ['1', '2']);
   assert.deepEqual(R.filtrar(varias, { empresa: '7', filtro: 'aberto' }), []);
 });
 
-teste('"X de Y itens entregues" só quando os itens estão em etapas diferentes', () => {
-  assert.deepEqual(R.progressoItens({ itens: [{ etapa: 'entregue' }, { etapa: 'pronto' }, { etapa: 'entregue' }] }), { entregues: 2, total: 3 });
+teste('"X de Y itens despachados" conta saída/rota/recebimento sem criar parcial falsa', () => {
+  assert.deepEqual(R.progressoItens({ itens: [{ etapa: 'entregue' }, { etapa: 'pronto' }, { etapa: 'com_transportadora' }] }), { despachados: 2, total: 3 });
+  assert.equal(R.progressoItens({ itens: [{ etapa: 'entregue' }, { etapa: 'com_transportadora' }, { etapa: 'em_rota' }] }), null);
   assert.equal(R.progressoItens({ itens: [{ etapa: 'pronto' }, { etapa: 'pronto' }] }), null);
   assert.equal(R.progressoItens({ itens: [{ etapa: 'pronto' }] }), null);
   assert.equal(R.progressoItens({ itens: [{ etapa: 'pronto' }, { etapa: 'em_producao' }] }), null);
