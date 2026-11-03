@@ -5,7 +5,8 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const output = path.join(root, 'dist');
 const pages = ['index.html', 'en.html', 'es.html', 'materiais.html', 'politica-de-privacidade.html', 'privacy.html', 'privacidad.html'];
-for (const name of [...pages, '404.html', 'expedicao/index.html']) {
+const paginasCliente = ['cliente/index.html', 'cliente/entrar.html', 'cliente/cadastro.html', 'cliente/nova-senha.html'];
+for (const name of [...pages, '404.html', 'expedicao/index.html', ...paginasCliente]) {
   const html = fs.readFileSync(path.join(output, name), 'utf8');
   for (const match of html.matchAll(/<(?:script|img|link)\b[^>]*?\b(?:src|href)="([^"]+)"/g)) {
     const url = new URL(match[1], `https://parts-seals.com.br/${name}`);
@@ -36,5 +37,16 @@ for (const forbidden of ['netlify', 'src', 'tests', 'tools', '.git', '.env', 'as
 }
 const sitemap = fs.readFileSync(path.join(output, 'sitemap.xml'), 'utf8');
 assert(!sitemap.includes('/expedicao'), 'Área operacional fora do sitemap');
+assert(!sitemap.includes('/cliente'), 'Área do Cliente fora do sitemap');
+// Área do Cliente: só páginas e scripts do navegador, nenhum código ou chave do servidor.
+for (const arquivo of fs.readdirSync(path.join(output, 'cliente'), { recursive: true })) {
+  const caminho = path.join(output, 'cliente', String(arquivo));
+  if (fs.statSync(caminho).isDirectory()) continue;
+  assert.match(String(arquivo), /\.(html|css|js)$/, `Arquivo inesperado publicado em /cliente: ${arquivo}`);
+  const conteudo = fs.readFileSync(caminho, 'utf8');
+  assert(!/SERVICE_ROLE|SUPABASE_|supabase\.co|process\.env|require\(/.test(conteudo), `Código de servidor em /cliente/${arquivo}`);
+}
+const redirects = fs.readFileSync(path.join(output, '_redirects'), 'utf8');
+assert.match(redirects, /\/cliente\/api\/\*\s+\/\.netlify\/functions\/cliente-api\/:splat\s+200!/);
 assert.equal([...sitemap.matchAll(/<loc>/g)].length, pages.length);
 console.log('OK: recursos públicos, canonical, sitemap, escopo do app e isolamento dos arquivos do servidor.');

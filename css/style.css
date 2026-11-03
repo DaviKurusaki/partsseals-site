@@ -259,6 +259,16 @@ ul {
   background: linear-gradient(135deg, var(--red-hi), var(--red-2));
 }
 
+/* Entrada da Área do Cliente: contorno discreto, sem competir com o CTA. */
+.site-nav .nav-cliente {
+  border: 1px solid var(--line-strong);
+}
+
+.site-nav .nav-cliente:hover,
+.site-nav .nav-cliente:focus-visible {
+  border-color: var(--accent-light);
+}
+
 .site-nav svg,
 .btn svg,
 .floating-whatsapp svg,

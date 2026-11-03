@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Entrar | Área do Cliente | Parts Seals</title>
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/cliente/cliente.css">
+</head>
+<body class="cli-corpo">
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header class="cli-topo">
+    <div class="cli-topo__conteudo">
+      <a class="cli-marca" href="/" aria-label="Parts Seals — página inicial"><img src="/assets/logo-header-white.png" alt="Parts Seals Vedações Industriais" width="799" height="188"></a>
+      <span class="cli-topo__titulo">Área do Cliente</span>
+      <div class="cli-topo__acoes"><a class="btn btn-secondary" href="/cliente/cadastro">Criar acesso</a></div>
+    </div>
+  </header>
+
+  <main id="conteudo" class="cli-principal">
+    <div class="cli-estreito">
+      <section class="cli-cartao" data-entrar>
+        <h1>Entrar</h1>
+        <p class="cli-sub">Acompanhe seus pedidos, entregas, notas fiscais e rastreios.</p>
+        <p class="cli-aviso" data-aviso role="status" tabindex="-1" hidden></p>
+        <form class="cli-form" novalidate data-form-entrar>
+          <div class="cli-campo">
+            <label for="email">E-mail</label>
+            <input class="cli-input" id="email" name="email" type="email" autocomplete="username" inputmode="email" required>
+          </div>
+          <div class="cli-campo">
+            <label for="senha">Senha</label>
+            <input class="cli-input" id="senha" name="senha" type="password" autocomplete="current-password" required>
+          </div>
+          <div class="cli-acoes"><button class="btn btn-primary" type="submit" data-enviar>Entrar</button></div>
+        </form>
+        <p class="cli-rodape-form"><button class="cli-link" type="button" data-abrir-esqueci>Esqueci minha senha</button></p>
+        <p class="cli-rodape-form">Ainda não tem acesso? <a class="cli-link" href="/cliente/cadastro">Criar acesso</a></p>
+      </section>
+
+      <section class="cli-cartao" data-esqueci hidden>
+        <h1>Esqueci minha senha</h1>
+        <p class="cli-sub">Informe seu e-mail. Se ele estiver cadastrado, enviamos um link para criar uma nova senha.</p>
+        <p class="cli-aviso" data-aviso-esqueci role="status" tabindex="-1" hidden></p>
+        <form class="cli-form" novalidate data-form-esqueci>
+          <div class="cli-campo">
+            <label for="emailEsqueci">E-mail</label>
+            <input class="cli-input" id="emailEsqueci" name="email" type="email" autocomplete="email" inputmode="email" required>
+          </div>
+          <div class="cli-acoes"><button class="btn btn-primary" type="submit" data-enviar-esqueci>Enviar link</button></div>
+        </form>
+        <p class="cli-rodape-form"><button class="cli-link" type="button" data-voltar>Voltar para Entrar</button></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="cli-rodape">Parts Seals Vedações Industriais · <a href="/politica-de-privacidade.html">Política de Privacidade</a></footer>
+  <script src="/cliente/js/comum.js"></script>
+  <script src="/cliente/js/entrar.js"></script>
+</body>
+</html>

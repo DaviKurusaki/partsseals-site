@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#0b0d10">
+  <title>Nova senha | Área do Cliente | Parts Seals</title>
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="/cliente/cliente.css">
+</head>
+<body class="cli-corpo">
+  <a class="skip-link" href="#conteudo">Ir para o conteúdo</a>
+  <header class="cli-topo">
+    <div class="cli-topo__conteudo">
+      <a class="cli-marca" href="/" aria-label="Parts Seals — página inicial"><img src="/assets/logo-header-white.png" alt="Parts Seals Vedações Industriais" width="799" height="188"></a>
+      <span class="cli-topo__titulo">Área do Cliente</span>
+    </div>
+  </header>
+
+  <main id="conteudo" class="cli-principal">
+    <div class="cli-estreito">
+      <section class="cli-cartao">
+        <h1>Criar nova senha</h1>
+        <p class="cli-aviso" data-aviso role="status" tabindex="-1" hidden></p>
+        <form class="cli-form" novalidate data-form>
+          <div class="cli-campo">
+            <label for="senha">Nova senha</label>
+            <input class="cli-input" id="senha" name="senha" type="password" autocomplete="new-password" required minlength="8" maxlength="72" aria-describedby="senhaAjuda">
+            <small id="senhaAjuda">Pelo menos 8 caracteres.</small>
+          </div>
+          <div class="cli-campo">
+            <label for="confirmacao">Confirme a nova senha</label>
+            <input class="cli-input" id="confirmacao" name="confirmacao" type="password" autocomplete="new-password" required maxlength="72">
+          </div>
+          <div class="cli-acoes"><button class="btn btn-primary" type="submit" data-enviar>Salvar nova senha</button></div>
+        </form>
+        <p class="cli-rodape-form"><a class="cli-link" href="/cliente/entrar">Voltar para Entrar</a></p>
+      </section>
+    </div>
+  </main>
+
+  <footer class="cli-rodape">Parts Seals Vedações Industriais · <a href="/politica-de-privacidade.html">Política de Privacidade</a></footer>
+  <script src="/cliente/js/comum.js"></script>
+  <script src="/cliente/js/nova-senha.js"></script>
+</body>
+</html>
