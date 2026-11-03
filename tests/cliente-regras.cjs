@@ -31,10 +31,29 @@ teste('linha do tempo: quatro passos e DESPACHADO como etapa final para todos os
   assert.equal(R.passos({ etapa: 'desconhecida' })[0].estado, 'atual');
 });
 
-teste('resumo: produção, aguardando retirada e saídas unificadas em DESPACHADO', () => {
-  const r = R.resumo([{ etapa: 'recebido' }, { etapa: 'em_producao' }, { etapa: 'pronto' }, { etapa: 'em_rota' },
-    { etapa: 'aguardando_retirada' }, { etapa: 'com_transportadora' }, { etapa: 'entregue' }]);
-  assert.deepEqual(r, { producao: 3, retirada: 1, despachado: 3 });
+teste('resumo por pedido de compra: produção, retirada e DESPACHADO', () => {
+  const r = R.resumo(['recebido', 'em_producao', 'pronto', 'em_rota', 'aguardando_retirada', 'com_transportadora', 'entregue']
+    .map((etapa, i) => ({ etapa, pedido_cliente: 'OC-' + i, empresa_id: 1, pedido: String(30000 + i) })));
+  assert.deepEqual(r, { producao: 3, retirada: 1, despachado: 3, semOc: 0 });
+});
+
+teste('OC repetida em requisições conta uma vez e só é despachada após a última saída', () => {
+  const registros = [
+    { pedido: '30931', pedido_cliente: ' OC-900 ', empresa_id: 1, etapa: 'entregue', itens: Array(20).fill({ quantidade: 500 }) },
+    { pedido: '30932', pedido_cliente: 'oc-900', empresa_id: 1, etapa: 'em_producao', itens: [] },
+    { pedido: '30933', pedido_cliente: 'OC-901', empresa_id: 1, etapa: 'entregue' },
+    { pedido: '30934', pedido_cliente: 'OC-901', empresa_id: 1, etapa: 'aguardando_retirada' },
+    { pedido: '30935', pedido_cliente: 'OC-902', empresa_id: 1, etapa: 'com_transportadora' },
+    { pedido: '30935', pedido_cliente: 'OC-902', empresa_id: 1, etapa: 'com_transportadora' },
+    { pedido: '30931', pedido_cliente: 'OC-900', empresa_id: 2, etapa: 'entregue' },
+    { pedido: '30936', pedido_cliente: null, empresa_id: 1, etapa: 'pronto' },
+    { pedido: '30936', pedido_cliente: '', empresa_id: 1, etapa: 'pronto' },
+    { pedido: '30937', pedido_cliente: '   ', empresa_id: 1, etapa: 'entregue' },
+  ];
+  assert.deepEqual(R.resumo(registros), { producao: 1, retirada: 1, despachado: 2, semOc: 2 });
+  assert.deepEqual(R.resumo(R.filtrar(registros, { empresa: '2' })), { producao: 0, retirada: 0, despachado: 1, semOc: 0 });
+  registros[1].etapa = 'entregue';
+  assert.deepEqual(R.resumo(registros), { producao: 0, retirada: 1, despachado: 3, semOc: 2 });
 });
 
 teste('busca por nº do pedido ou OC e filtros em aberto/DESPACHADO', () => {

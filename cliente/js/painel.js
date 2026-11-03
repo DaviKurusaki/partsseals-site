@@ -164,7 +164,17 @@
     var lista = document.querySelector("[data-lista]");
     var visiveis = R.filtrar(estado.pedidos, { filtro: estado.filtro, busca: estado.busca, empresa: estado.empresa });
     if (!visiveis.length) {
-      lista.innerHTML = '<div class="cli-vazio">' + ICONES.caixa + "<p>" + (estado.pedidos.length ? "Nenhum pedido encontrado com esse filtro." : "Nenhum pedido nesse período.") + "</p></div>";
+      var daEmpresa = R.filtrar(estado.pedidos, { empresa: estado.empresa });
+      var periodo = { 90: "nos últimos 90 dias", 180: "nos últimos 6 meses", 365: "no último ano", 730: "nos últimos 2 anos" }[estado.dias];
+      var mensagem;
+      if (!daEmpresa.length) {
+        mensagem = "Nenhum pedido" + (estado.empresa ? " desta empresa" : "") + " " + periodo + ".";
+        if (estado.dias < 730) mensagem += " Amplie o período para consultar pedidos anteriores.";
+      } else if (estado.busca) mensagem = "Nenhum pedido encontrado para essa busca com os filtros atuais.";
+      else if (estado.filtro === "aberto") mensagem = "Nenhum pedido em aberto " + periodo + ". Selecione Todos ou DESPACHADO para consultar os que já saíram.";
+      else if (estado.filtro === "despachado") mensagem = "Nenhum pedido despachado " + periodo + ". Selecione Todos para consultar os pedidos em andamento.";
+      else mensagem = "Nenhum pedido encontrado com esse filtro.";
+      lista.innerHTML = '<div class="cli-vazio">' + ICONES.caixa + "<p>" + esc(mensagem) + "</p></div>";
       return;
     }
     lista.innerHTML = visiveis.map(cartaoPedido).join("");
@@ -173,9 +183,11 @@
   function desenharResumo() {
     var r = R.resumo(R.filtrar(estado.pedidos, { empresa: estado.empresa }));
     document.querySelector("[data-resumo]").innerHTML =
-      '<div class="cli-numero cli-numero--producao"><strong>' + r.producao + "</strong><span>Em produção</span></div>" +
-      '<div class="cli-numero cli-numero--retirada"><strong>' + r.retirada + "</strong><span>Aguardando retirada</span></div>" +
-      '<div class="cli-numero cli-numero--despachado"><strong>' + r.despachado + "</strong><span>DESPACHADO</span></div>";
+      '<div class="cli-numero cli-numero--producao"><strong>' + r.producao + "</strong><span>Pedidos em produção</span></div>" +
+      '<div class="cli-numero cli-numero--retirada"><strong>' + r.retirada + "</strong><span>Pedidos aguardando retirada</span></div>" +
+      '<div class="cli-numero cli-numero--despachado"><strong>' + r.despachado + "</strong><span>Pedidos DESPACHADOS</span></div>";
+    document.querySelector("[data-resumo-nota]").textContent = "Contagem por pedido de compra (OC), por empresa, no período selecionado." +
+      (r.semOc ? " " + r.semOc + (r.semOc === 1 ? " requisição sem OC informada fica fora dos totais." : " requisições sem OC informada ficam fora dos totais.") : "");
   }
 
   function carregarPedidos() {
@@ -222,6 +234,7 @@
       '<a class="cli-voltar" href="#inicio">' + ICONES.seta + 'Todas as ferramentas</a>' +
       '<div class="cli-ola"><div><h1>Status do meu pedido</h1><p>Acompanhe seus pedidos da produção ao despacho.</p></div></div>' +
       '<div class="cli-resumo" data-resumo aria-live="polite"></div>' +
+      '<p class="cli-resumo-nota" data-resumo-nota></p>' +
       '<div class="cli-ferramentas"><div class="cli-linha-ferr">' +
       '<label class="cli-oculto" for="busca">Buscar pedido ou OC</label>' +
       '<input class="cli-input" id="busca" type="search" placeholder="Buscar pelo nº do pedido ou da sua OC" data-busca>' +

@@ -84,7 +84,8 @@
 .cli-voltar:hover { color: var(--accent-light); }
 
 /* Resumo */
-.cli-resumo { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 18px; }
+.cli-resumo { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-bottom: 10px; }
+.cli-resumo-nota { margin-bottom: 18px; color: var(--muted); font-size: 0.82rem; line-height: 1.5; }
 .cli-numero { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 14px 12px; display: grid; gap: 2px; }
 .cli-numero strong { font-size: clamp(1.6rem, 7vw, 2.2rem); line-height: 1; }
 .cli-numero span { color: var(--muted); font-size: 0.85rem; font-weight: 600; }

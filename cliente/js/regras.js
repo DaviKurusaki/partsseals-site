@@ -34,8 +34,27 @@
   }
 
   function resumo(pedidos) {
-    var r = { producao: 0, retirada: 0, despachado: 0 };
-    (pedidos || []).forEach(function (p) { var g = GRUPO[etapaDoSite(p.etapa)]; if (g) r[g] += 1; });
+    var r = { producao: 0, retirada: 0, despachado: 0, semOc: 0 };
+    var porOc = new Map(), semOc = new Set();
+    var ordem = { producao: 0, retirada: 1, despachado: 2 };
+    (pedidos || []).forEach(function (p) {
+      var empresa = p.empresa_id == null ? ["nome", texto(p.empresa)] : ["id", texto(p.empresa_id)];
+      var oc = texto(p.pedido_cliente).replace(/\s+/g, " ").toUpperCase();
+      if (!oc) {
+        // Uma requisição sem OC não vira um pedido de compra inventado.
+        var numero = texto(p.pedido);
+        if (numero) semOc.add(JSON.stringify([empresa, numero]));
+        return;
+      }
+      var grupo = GRUPO[etapaDoSite(p.etapa)];
+      if (!grupo) return;
+      var chave = JSON.stringify([empresa, oc]);
+      var atual = porOc.get(chave);
+      // A OC só foi despachada quando todas as suas requisições já saíram.
+      if (atual === undefined || ordem[grupo] < ordem[atual]) porOc.set(chave, grupo);
+    });
+    porOc.forEach(function (grupo) { r[grupo] += 1; });
+    r.semOc = semOc.size;
     return r;
   }
 

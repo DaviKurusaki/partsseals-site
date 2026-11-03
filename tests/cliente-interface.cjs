@@ -36,9 +36,9 @@ async function testar() {
   const dadosPedidos = () => ({ ok: true, empresas: [
     { id: 1, nome: 'PARTS SEALS' }, { id: 2, nome: 'RPSEALS' }, { id: 3, nome: 'USINA ÁGUA & <TESTE>' }],
   pedidos: [
-    { pedido: '30931', empresa_id: 2, empresa: 'RPSEALS', etapa: 'com_transportadora', metodo_entrega: 'Cliente Retira',
+    { pedido: '30931', pedido_cliente: 'OC-777', empresa_id: 2, empresa: 'RPSEALS', etapa: 'com_transportadora', metodo_entrega: 'Cliente Retira',
       nfs: ['10727'], itens: [{ descricao: 'PEÇA', etapa: 'com_transportadora', quantidade: 1 }] },
-    { pedido: '30932', empresa_id: 1, empresa: 'PARTS SEALS', etapa: 'em_producao', itens: [] },
+    { pedido: '30932', pedido_cliente: 'OC-888', empresa_id: 1, empresa: 'PARTS SEALS', etapa: 'em_producao', itens: [] },
   ] });
   const alterarRota = async (w, hash) => {
     w.history.replaceState(null, '', '/cliente' + hash);
@@ -54,6 +54,9 @@ async function testar() {
   ok(d.querySelector('h1').textContent === 'Status do meu pedido' && d.querySelectorAll('.cli-pedido').length === 2,
     'ferramenta abre a consulta existente com as duas empresas');
   ok(d.querySelectorAll('[role=combobox]').length === 2 && !d.querySelector('select'), 'empresa e período usam os novos seletores');
+  ok(d.querySelector('.cli-numero--producao strong').textContent === '1' &&
+    d.querySelector('.cli-numero--despachado strong').textContent === '1' && d.querySelector('[data-resumo-nota]').textContent.includes('pedido de compra (OC)'),
+    'KPIs identificam pedidos de compra e mostram uma OC em cada situação');
   ok(d.querySelector('.cli-pedido').textContent.includes('DESPACHADO') && !d.querySelector('.cli-pedido').textContent.includes('Na transportadora'),
     'pedido 30931 continua com a saída unificada em DESPACHADO');
   let empresa = d.querySelector('[aria-controls=empresa-opcoes]');
@@ -75,6 +78,8 @@ async function testar() {
   empresa.click(); tecla(w, empresa, 'u'); tecla(w, empresa, 'Enter');
   ok(d.querySelector('#empresa-valor').textContent === 'USINA ÁGUA & <TESTE>' && !d.querySelector('#empresa-opcoes teste'),
     'digitação encontra opção e nomes especiais são tratados como texto');
+  ok(d.querySelector('[data-lista]').textContent.includes('nos últimos 90 dias') &&
+    d.querySelector('[data-lista]').textContent.includes('Amplie o período'), 'empresa sem pedidos mostra o período e orienta consultar o histórico');
   empresa.click(); d.body.dispatchEvent(new w.PointerEvent('pointerdown', { bubbles: true }));
   ok(d.querySelector('#empresa-opcoes').hidden, 'clique fora fecha o painel');
   empresa.click(); tecla(w, empresa, 'Tab');
@@ -98,6 +103,31 @@ async function testar() {
   await alterarRota(atrasado.w, '#inicio');
   resolver(dadosPedidos()); await aguardar();
   ok(atrasado.d.querySelector('.cli-hub') && !atrasado.d.querySelector('[data-lista]'), 'resposta atrasada não sobrescreve o hub');
+
+  const agrupado = await painel({ hash: '#pedidos', pedidos: () => ({ ...dadosPedidos(), pedidos: [
+    { pedido: '1', pedido_cliente: 'OC-1', empresa_id: 1, etapa: 'entregue', itens: Array(15).fill({ etapa: 'entregue' }) },
+    { pedido: '2', pedido_cliente: 'OC-1', empresa_id: 1, etapa: 'em_producao', itens: [] },
+    { pedido: '3', pedido_cliente: null, empresa_id: 1, etapa: 'pronto', itens: [] },
+  ] }) });
+  ok(agrupado.d.querySelector('.cli-numero--producao strong').textContent === '1' &&
+    agrupado.d.querySelector('.cli-numero--despachado strong').textContent === '0' &&
+    agrupado.d.querySelector('[data-resumo-nota]').textContent.includes('1 requisição sem OC'),
+    'quinze itens e duas requisições da mesma OC não multiplicam o KPI; ausência de OC fica indicada');
+
+  const historico = await painel({ hash: '#pedidos', pedidos: rota => ({ ok: true,
+    empresas: [{ id: 309, nome: 'USINA SERTÃOZINHO' }], pedidos: rota === 'pedidos?dias=365' ? [
+      { pedido: '25003', pedido_cliente: 'OC-MARCO', empresa_id: 309, etapa: 'entregue', data_prevista: '2026-03-03', itens: [] },
+    ] : [] }) });
+  ok(historico.d.querySelector('[data-lista]').textContent.includes('nos últimos 6 meses'), 'histórico fora dos seis meses deixa o período explícito');
+  const periodoHistorico = historico.d.querySelector('[aria-controls=periodo-opcoes]');
+  periodoHistorico.click(); tecla(historico.w, periodoHistorico, 'Home');
+  tecla(historico.w, periodoHistorico, 'ArrowDown'); tecla(historico.w, periodoHistorico, 'ArrowDown');
+  tecla(historico.w, periodoHistorico, 'Enter'); await aguardar();
+  ok(historico.d.querySelectorAll('.cli-pedido').length === 1 && historico.d.querySelector('.cli-numero--despachado strong').textContent === '1',
+    'último ano mostra o pedido antigo e conta sua OC despachada');
+  historico.d.querySelector('[data-filtro=aberto]').click();
+  ok(historico.d.querySelector('[data-lista]').textContent.includes('Todos ou DESPACHADO') &&
+    historico.d.querySelector('.cli-numero--despachado strong').textContent === '1', 'filtro em aberto explica por que o pedido antigo despachado não está na lista');
 
   for (const campanha of ['setembro-amarelo', 'outubro-rosa', 'novembro-azul', 'natal']) {
     const c = janela('https://parts-seals.com.br/cliente?campanha=' + campanha);
