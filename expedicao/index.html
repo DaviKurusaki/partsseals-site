@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="pt-BR">
+<html lang="pt-BR" data-campaign-operacional data-campaign-assets="/assets/campanhas/">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -15,6 +15,8 @@
 <link rel="icon" href="/expedicao/icone.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/expedicao/icone-180.png">
 <link rel="preload" href="/expedicao/logo.png" as="image">
+<link rel="stylesheet" href="/expedicao/campanhas.css">
+<script src="/js/campaign.js"></script>
 <style>
   /* ===========================================================================
      Página do motorista. Pensada pra uma mão só, no sol ou à noite, às vezes
@@ -25,6 +27,7 @@
      ========================================================================= */
   :root {
     --marca: #E0102A; --marca-2: #ff3b52; --marca-escura: #a80a1e;
+    --marca-rgb: 224, 16, 42; --sobre-marca: #fff;
     --fundo: #f3f2f5; --cartao: #ffffff; --cartao-2: #f6f5f8;
     --tinta: #17151c; --tinta-2: #4a4752; --suave: #757080; --linha: #e5e2ea;
     --ok: #12895a; --ok-fundo: #dff5ea; --ok-forte: #0b6e47;
@@ -32,7 +35,7 @@
     --erro: #b3122a; --erro-fundo: #fde6ea;
     --sombra-1: 0 1px 2px rgba(23, 21, 28, .06), 0 2px 8px rgba(23, 21, 28, .05);
     --sombra-2: 0 10px 30px -10px rgba(23, 21, 28, .25), 0 2px 6px rgba(23, 21, 28, .06);
-    --sombra-marca: 0 14px 30px -12px rgba(224, 16, 42, .65);
+    --sombra-marca: 0 14px 30px -12px rgba(var(--marca-rgb), .65);
     --raio: 20px; --raio-p: 14px;
     --fonte: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Roboto', sans-serif;
     --fonte-titulo: 'Bahnschrift', 'Segoe UI Variable Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
@@ -96,12 +99,12 @@
   .selo-marca { flex: none; }
   .usuario {
     display: inline-flex; align-items: center; gap: 8px; padding: 5px; border-radius: 999px;
-    background: rgba(255, 255, 255, .16); color: #fff; border: 1px solid rgba(255, 255, 255, .28);
+    background: rgba(255, 255, 255, .16); color: var(--sobre-marca); border: 1px solid rgba(255, 255, 255, .28);
     backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); min-width: 0; max-width: 60%;
   }
   .avatar { width: 30px; height: 30px; border-radius: 50%; background: #fff; color: var(--marca); display: grid; place-items: center; font-weight: 800; font-size: 13px; flex: none; }
   .usuario span { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .usuario button { border: 0; background: rgba(0, 0, 0, .22); color: #fff; border-radius: 999px; min-height: 44px; padding: 0 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; flex: none; }
+  .usuario button { border: 0; background: rgba(0, 0, 0, .22); color: var(--sobre-marca); border-radius: 999px; min-height: 44px; padding: 0 16px; font-size: 13.5px; font-weight: 700; cursor: pointer; flex: none; }
 
   /* --- entrada das telas ------------------------------------------------------ */
   .tela { display: flex; flex-direction: column; gap: 14px; }
@@ -112,7 +115,7 @@
   .tela > *:nth-child(n+6) { animation-delay: .25s; }
 
   /* --- início ----------------------------------------------------------------- */
-  .boas-vindas { color: #fff; padding: clamp(18px, 6vh, 40px) 4px 8px; }
+  .boas-vindas { color: var(--sobre-marca); padding: clamp(18px, 6vh, 40px) 4px 8px; }
   .boas-vindas small { display: block; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; opacity: .88; font-weight: 700; }
   .boas-vindas h1 { font-family: var(--fonte-titulo); font-size: clamp(26px, 8.4vw, 36px); line-height: 1.08; font-weight: 700; margin-top: 8px; letter-spacing: -.01em; text-wrap: balance; }
   .escolha {
@@ -130,12 +133,12 @@
   .escolha .txt span { display: block; font-size: 14px; color: var(--suave); margin-top: 2px; }
   .escolha .seta { width: 22px; height: 22px; color: var(--suave); flex: none; }
   .escolha.principal {
-    background: linear-gradient(135deg, var(--marca) 0%, var(--marca-escura) 100%); color: #fff;
+    background: linear-gradient(135deg, var(--marca) 0%, var(--marca-escura) 100%); color: var(--sobre-marca);
     border: 1.5px solid rgba(255, 255, 255, .45); box-shadow: var(--sombra-marca), inset 0 1px 0 rgba(255, 255, 255, .25);
     position: relative; overflow: hidden;
   }
-  .escolha.principal .ico { background: rgba(255, 255, 255, .18); color: #fff; }
-  .escolha.principal .txt span, .escolha.principal .seta { color: rgba(255, 255, 255, .88); }
+  .escolha.principal .ico { background: rgba(255, 255, 255, .18); color: var(--sobre-marca); }
+  .escolha.principal .txt span, .escolha.principal .seta { color: var(--sobre-marca); opacity: .88; }
   .escolha.principal::after {
     content: ''; position: absolute; inset: 0; pointer-events: none;
     background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, .22) 50%, transparent 70%);
@@ -156,7 +159,7 @@
 
   /* --- PIN -------------------------------------------------------------------- */
   .cartao-pin { background: var(--cartao); border-radius: 28px; padding: 26px clamp(14px, 4.5vw, 22px) 12px; box-shadow: var(--sombra-2); border: 1px solid var(--linha); margin-top: clamp(30px, 6vh, 48px); text-align: center; }
-  .cadeado { width: 64px; height: 64px; margin: -58px auto 10px; border-radius: 20px; display: grid; place-items: center; background: linear-gradient(135deg, var(--marca), var(--marca-escura)); color: #fff; box-shadow: var(--sombra-marca); }
+  .cadeado { width: 64px; height: 64px; margin: -58px auto 10px; border-radius: 20px; display: grid; place-items: center; background: linear-gradient(135deg, var(--marca), var(--marca-escura)); color: var(--sobre-marca); box-shadow: var(--sombra-marca); }
   .cadeado svg { width: 30px; height: 30px; }
   .cartao-pin h2 { font-family: var(--fonte-titulo); font-size: 24px; }
   .cartao-pin p { color: var(--suave); font-size: 15px; margin-top: 4px; }
@@ -176,14 +179,14 @@
   .tecla:active { transform: scale(.94); background: var(--linha); }
   .tecla.acao { background: transparent; border-color: transparent; color: var(--suave); }
   .tecla.acao svg { width: 26px; height: 26px; }
-  .tecla.entrar { background: var(--marca); border-color: var(--marca); color: #fff; box-shadow: var(--sombra-marca); }
+  .tecla.entrar { background: var(--marca); border-color: var(--marca); color: var(--sobre-marca); box-shadow: var(--sombra-marca); }
   .tecla.entrar:disabled { opacity: .4; box-shadow: none; cursor: default; }
   .tecla.entrar svg { width: 28px; height: 28px; }
   .voltar { margin-top: 10px; background: none; border: 0; color: var(--suave); font-weight: 600; padding: 12px; cursor: pointer; }
   .girando { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .35); border-top-color: #fff; animation: girar .7s linear infinite; }
 
   /* --- consulta ---------------------------------------------------------------- */
-  .resumo-topo { color: #fff; display: flex; align-items: center; gap: clamp(10px, 4vw, 16px); padding: clamp(14px, 3vh, 22px) 4px 6px; }
+  .resumo-topo { color: var(--sobre-marca); display: flex; align-items: center; gap: clamp(10px, 4vw, 16px); padding: clamp(14px, 3vh, 22px) 4px 6px; }
   .resumo-topo .txt { flex: 1; min-width: 0; }
   .resumo-topo small { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; opacity: .88; font-weight: 700; }
   .resumo-topo h1.nome-longo { font-size: clamp(18px, 5.2vw, 22px); }
@@ -216,7 +219,7 @@
   .btn:disabled { opacity: .55; cursor: default; }
   .btn:active { transform: scale(.97); }
   .btn svg { width: 20px; height: 20px; flex: none; }
-  .btn.forte { background: var(--marca); color: #fff; border-color: var(--marca); box-shadow: var(--sombra-marca); }
+  .btn.forte { background: var(--marca); color: var(--sobre-marca); border-color: var(--marca); box-shadow: var(--sombra-marca); }
   .btn.waze { background: #33ccff; color: #062a3a; border-color: #33ccff; }
   .sem-endereco { display: flex; gap: 12px; align-items: center; color: var(--tinta-2); }
   .sem-endereco svg { width: 26px; height: 26px; color: var(--suave); flex: none; }
@@ -291,7 +294,7 @@
     display: inline-flex; align-items: center; gap: 7px; min-height: 54px; padding: 0 16px; border-radius: var(--raio-p);
     border: 1px solid var(--linha); background: var(--cartao-2); color: var(--tinta); font-weight: 700; flex: 1;
   }
-  .carrinho-pill b { font-family: var(--fonte-titulo); font-size: 18px; background: var(--marca); color: #fff; border-radius: 999px; min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; }
+  .carrinho-pill b { font-family: var(--fonte-titulo); font-size: 18px; background: var(--marca); color: var(--sobre-marca); border-radius: 999px; min-width: 24px; height: 24px; display: inline-grid; place-items: center; padding: 0 6px; }
 
 
   /* --- barra de baixo (consulta) ---------------------------------------------------- */
@@ -367,7 +370,7 @@
       linear-gradient(#fff, #fff) bottom left / 46px 5px no-repeat, linear-gradient(#fff, #fff) bottom left / 5px 46px no-repeat,
       linear-gradient(#fff, #fff) bottom right / 46px 5px no-repeat, linear-gradient(#fff, #fff) bottom right / 5px 46px no-repeat;
   }
-  .leitor .linha-scan { position: absolute; left: 10%; right: 10%; height: 3px; top: 10%; border-radius: 3px; background: var(--marca-2); box-shadow: 0 0 18px 4px rgba(255, 59, 82, .7); animation: varrer 2s ease-in-out infinite alternate; }
+  .leitor .linha-scan { position: absolute; left: 10%; right: 10%; height: 3px; top: 10%; border-radius: 3px; background: var(--marca-2); box-shadow: 0 0 18px 4px rgba(var(--marca-rgb), .7); animation: varrer 2s ease-in-out infinite alternate; }
   @keyframes varrer { to { top: 88%; } }
   .leitor .mira.achou { box-shadow: 0 0 0 100vmax rgba(18, 137, 90, .6); }
   .leitor .mira.achou .linha-scan { display: none; }
@@ -476,7 +479,7 @@
 
   <div class="conteudo">
     <header class="topo">
-      <button class="selo-marca" id="btnLogo" type="button" aria-label="Início"><img src="/expedicao/logo.png" alt="Parts Seals" width="150" height="30"></button>
+      <button class="selo-marca" id="btnLogo" type="button" aria-label="Início"><img src="/expedicao/logo.png" data-campaign-logo alt="Parts Seals" width="150" height="30"></button>
       <div class="usuario" id="usuario" hidden>
         <div class="avatar" id="avatar" aria-hidden="true"></div>
         <span id="nomeUsuario"></span>

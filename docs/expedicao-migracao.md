@@ -5,6 +5,16 @@ portal operacional em `https://parts-seals.com.br/expedicao`. A API está neste
 repositório, em `netlify/functions/expedicao-api/`, com a regra de consulta
 incluída na própria função. A publicação não depende do repositório do Kuru.
 
+## Campanhas sazonais
+
+A Expedição usa o mesmo `js/campaign.js` e os mesmos assets do site:
+setembro amarelo, outubro rosa, novembro azul e Natal verde/dourado em
+dezembro. O vermelho volta nos demais meses. `expedicao/campanhas.css` é
+gerado das paletas de `css/style.css` pelo sincronizador do Kuru; o portal
+preserva claro/escuro, cores de estado e contraste do texto no amarelo.
+O atributo `data-campaign-operacional` aplica cores e logo sem exibir o
+selo flutuante sobre as ferramentas. Não exige alteração no banco.
+
 ## Despachar NFs e rastreio
 
 **Expedir > Despachar** reúne NFs do mesmo pacote e confirma a saída ao

@@ -41,6 +41,8 @@
   var CLOSE_LABEL = { pt: "Fechar aviso da campanha", en: "Close campaign notice", es: "Cerrar aviso de la campaña" };
 
   var root = document.documentElement;
+  var operacional = root.hasAttribute("data-campaign-operacional");
+  var assetsOperacional = root.getAttribute("data-campaign-assets") || "";
   var forced = (location.search.match(/[?&]campanha=([a-z-]+)/) || [])[1];
   var campaign = forced ? (COPY[forced] ? forced : null) : BY_MONTH[new Date().getMonth() + 1];
   if (!campaign) return;
@@ -60,6 +62,10 @@
     var images = node.tagName === "IMG" ? [node] : node.querySelectorAll("img");
     for (var i = 0; i < images.length; i++) {
       var src = images[i].getAttribute("src") || "";
+      if (operacional && assetsOperacional && images[i].hasAttribute("data-campaign-logo")) {
+        images[i].setAttribute("src", assetsOperacional + campaign + "/logo-header-white.png");
+        continue;
+      }
       if (LOGO_PATTERN.test(src)) {
         images[i].setAttribute("src", src.replace(LOGO_PATTERN, "assets/campanhas/" + campaign + "/$1"));
       }
@@ -68,7 +74,9 @@
 
   var svgIcon = document.querySelector('link[rel="icon"][type="image/svg+xml"]');
   if (svgIcon && !info.manterLogo) {
-    svgIcon.setAttribute("href", svgIcon.getAttribute("href").replace("assets/icons/favicon.svg", "assets/campanhas/" + campaign + "/favicon.svg"));
+    svgIcon.setAttribute("href", operacional && assetsOperacional
+      ? assetsOperacional + campaign + "/favicon.svg"
+      : svgIcon.getAttribute("href").replace("assets/icons/favicon.svg", "assets/campanhas/" + campaign + "/favicon.svg"));
   }
 
   // Troca a logo enquanto a página é montada, antes de aparecer em vermelho.
@@ -92,7 +100,7 @@
     recolorNode(document.body);
 
     // Na área autenticada a campanha pinta a interface sem cobrir ferramentas.
-    if (document.body.classList.contains("cli-corpo")) return;
+    if (operacional || document.body.classList.contains("cli-corpo")) return;
     if (wasDismissed()) return;
 
     var lang = (root.lang || "pt").toLowerCase().slice(0, 2);

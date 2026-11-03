@@ -1,0 +1,66 @@
+/* Gerado pelas paletas do site principal; atualizar com scripts/sincronizar-expedicao-site.cjs. */
+html[data-campaign="setembro-amarelo"] {
+  --red: #f5b800;
+  --red-2: #c98f00;
+  --red-3: #6b4b00;
+  --red-hi: #ffcb2e;
+  --accent-rgb: 245, 184, 0;
+  --accent-deep-rgb: 107, 75, 0;
+  --accent-light: #ffe390;
+  --accent-soft: #ffd65c;
+  --accent-bright: #ffc933;
+  --on-accent: #1a1400;
+}
+
+html[data-campaign="outubro-rosa"] {
+  --red: #e0457b;
+  --red-2: #a8235a;
+  --red-3: #5e1233;
+  --red-hi: #f0609a;
+  --accent-rgb: 224, 69, 123;
+  --accent-deep-rgb: 94, 18, 51;
+  --accent-light: #ffc2da;
+  --accent-soft: #ff9cc3;
+  --accent-bright: #ff7aae;
+}
+
+html[data-campaign="novembro-azul"] {
+  --red: #2b7de9;
+  --red-2: #1a56b0;
+  --red-3: #0d2f66;
+  --red-hi: #4b95f5;
+  --accent-rgb: 43, 125, 233;
+  --accent-deep-rgb: 13, 47, 102;
+  --accent-light: #b8d6ff;
+  --accent-soft: #8dbcff;
+  --accent-bright: #6aa8ff;
+}
+
+html[data-campaign="natal"] {
+  --red: #28845e;
+  --red-2: #1c6044;
+  --red-3: #103a29;
+  --red-hi: #349f72;
+  --accent-rgb: 40, 132, 94;
+  --accent-deep-rgb: 16, 58, 41;
+  --accent-light: #d8e9ba;
+  --accent-soft: #abd6b5;
+  --accent-bright: #76d4a2;
+}
+
+html[data-campaign] {
+  --marca: var(--red); --marca-2: var(--red-hi); --marca-escura: var(--red-2);
+  --marca-rgb: var(--accent-rgb); --sobre-marca: var(--on-accent, #fff);
+  --marca-contraste: var(--red-2);
+}
+@media (prefers-color-scheme: dark) {
+  html[data-campaign] { --marca-contraste: var(--red-hi); }
+}
+html[data-campaign] .escolha:not(.principal) .ico,
+html[data-campaign] .avatar,
+html[data-campaign] .nota svg,
+html[data-campaign] .titulo-cartao svg,
+html[data-campaign] .escaneado,
+html[data-campaign] .despacho-conta { color: var(--marca-contraste); }
+html[data-campaign]:not([data-campaign="natal"]) .selo-marca { background: #15171b; }
+html[data-campaign="natal"] .aneis circle { stroke: #e6c579; }
