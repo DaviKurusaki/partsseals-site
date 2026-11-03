@@ -120,11 +120,14 @@ async function testar() {
     { pedido: '28227', pedido_cliente: '6292', empresa_id: 1, etapa: 'pronto', data_pedido: '2026-06-23', itens: [] },
     { pedido: '28228', pedido_cliente: null, empresa_id: 1, etapa: 'pronto', itens: [] },
     { pedido: '28229', pedido_cliente: '006292', empresa_id: 1, etapa: 'pronto', itens: [] },
+    { pedido: '30914', pedido_cliente: '30914(P.I)', empresa_id: 1, etapa: 'recebido', itens: [] },
   ] }) });
   assert.deepEqual(Array.from(identificacao.d.querySelectorAll('.cli-pedido__num'), e => e.textContent),
-    ['Pedido 6292', 'Pedido sem número informado', 'Pedido 006292']);
+    ['Pedido 6292', 'Pedido sem número informado', 'Pedido 006292', 'Pedido 30914(P.I)']);
   ok(!/28227|28228|28229|Sua OC:/.test(identificacao.d.querySelector('[data-lista]').textContent),
     'caso do print mostra Pedido 6292; ausência não recorre ao número interno e zeros iniciais são preservados');
+  ok(identificacao.d.querySelectorAll('.cli-pedido__num')[3].textContent === 'Pedido 30914(P.I)',
+    'número preenchido da coluna PEDIDO mantém (P.I) mesmo quando contém o mesmo número da requisição');
 
   const historico = await painel({ hash: '#pedidos', pedidos: rota => ({ ok: true,
     empresas: [{ id: 309, nome: 'USINA SERTÃOZINHO' }], pedidos: rota === 'pedidos?dias=365' ? [

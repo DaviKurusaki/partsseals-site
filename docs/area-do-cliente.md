@@ -52,6 +52,16 @@ sem número informado**; não usa o número interno como substituto. Zeros
 iniciais são preservados. Datas, itens e acompanhamento mantêm os vínculos
 internos existentes.
 
+**Correção do banco (03/11/2026):** executar no Supabase o
+`sql/144_site_pedido_cliente_integral.sql` do Kuru, após o 143. A função antiga
+descartava o número quando coincidia com parte da requisição ou continha
+REP, mesmo com a coluna PEDIDO preenchida. O 144 preserva `30914(P.I)`,
+`30913 EST`, `30984(PV)`, `REP 30955` e números iguais à requisição. Esses
+valores também devem participar dos KPIs e da busca. Não remove sufixos,
+não altera cadastros e mantém a consulta otimizada. Os SQLs 141–143 do Kuru
+também foram corrigidos para instalações futuras. Para o banco já instalado,
+aplicar o 144; atualizar os arquivos do site sozinho não corrige essa função.
+
 Os KPIs contam a OC (`pedido_cliente` da API), uma vez por empresa e período.
 Várias requisições ou itens da mesma OC não multiplicam os totais. Se uma
 requisição ainda está em produção, a OC fica em produção; se todas passaram
