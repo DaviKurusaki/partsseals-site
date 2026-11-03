@@ -12,12 +12,12 @@
     aguardando_retirada: "retirada", despachado: "despachado" };
   var ROTULO_ETAPA = {
     recebido: "Pedido recebido", em_producao: "Em produção", pronto: "Pronto",
-    aguardando_retirada: "Aguardando retirada", em_rota: "DESPACHADO", com_transportadora: "DESPACHADO", entregue: "DESPACHADO", despachado: "DESPACHADO",
+    aguardando_retirada: "Aguardando retirada", em_rota: "Despachado", com_transportadora: "Despachado", entregue: "Despachado", despachado: "Despachado",
   };
 
   function texto(v) { return v === null || v === undefined ? "" : String(v).trim(); }
 
-  // O banco mantém os eventos detalhados; no site, toda saída é DESPACHADO.
+  // O banco mantém os eventos detalhados; no site, toda saída é Despachado.
   function etapaDoSite(etapa) {
     return ["em_rota", "com_transportadora", "entregue"].indexOf(etapa) >= 0 ? "despachado" : etapa;
   }
@@ -26,7 +26,7 @@
   function passos(pedido) {
     var atual = INDICE[etapaDoSite(pedido && pedido.etapa)];
     if (atual === undefined) atual = 0;
-    var nomes = ["Pedido recebido", "Em produção", "Pronto", "DESPACHADO"];
+    var nomes = ["Pedido recebido", "Em produção", "Pronto", "Despachado"];
     return nomes.map(function (nome, i) {
       var estado = i < atual ? "feito" : i === atual ? (atual === 3 ? "feito" : "atual") : "futuro";
       return { nome: nome, estado: estado, corrente: i === atual };

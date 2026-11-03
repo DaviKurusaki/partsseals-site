@@ -57,8 +57,8 @@ async function testar() {
   ok(d.querySelector('.cli-numero--producao strong').textContent === '1' &&
     d.querySelector('.cli-numero--despachado strong').textContent === '1' && d.querySelector('[data-resumo-nota]').textContent.includes('pedido de compra (OC)'),
     'KPIs identificam pedidos de compra e mostram uma OC em cada situação');
-  ok(d.querySelector('.cli-pedido').textContent.includes('DESPACHADO') && !d.querySelector('.cli-pedido').textContent.includes('Na transportadora'),
-    'pedido 30931 continua com a saída unificada em DESPACHADO');
+  ok(d.querySelector('.cli-pedido').textContent.includes('Despachado') && !d.querySelector('.cli-pedido').textContent.includes('Na transportadora'),
+    'pedido 30931 continua com a saída unificada em Despachado');
   ok(d.querySelector('.cli-pedido__num').textContent === 'Pedido OC-777' && !d.querySelector('[data-lista]').textContent.includes('30931'),
     'cartão mostra o número de compra do cliente e oculta a requisição interna');
   let empresa = d.querySelector('[aria-controls=empresa-opcoes]');
@@ -141,7 +141,7 @@ async function testar() {
   ok(historico.d.querySelectorAll('.cli-pedido').length === 1 && historico.d.querySelector('.cli-numero--despachado strong').textContent === '1',
     'último ano mostra o pedido antigo e conta sua OC despachada');
   historico.d.querySelector('[data-filtro=aberto]').click();
-  ok(historico.d.querySelector('[data-lista]').textContent.includes('Todos ou DESPACHADO') &&
+  ok(historico.d.querySelector('[data-lista]').textContent.includes('Todos ou Despachado') &&
     historico.d.querySelector('.cli-numero--despachado strong').textContent === '1', 'filtro em aberto explica por que o pedido antigo despachado não está na lista');
 
   for (const campanha of ['setembro-amarelo', 'outubro-rosa', 'novembro-azul', 'natal']) {

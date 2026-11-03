@@ -13,16 +13,16 @@ function teste(nome, fn) { try { fn(); ok += 1; console.log('  ✓', nome); } ca
 
 console.log('Área do Cliente — regras do painel');
 
-teste('linha do tempo: quatro passos e DESPACHADO como etapa final para todos os métodos', () => {
+teste('linha do tempo: quatro passos e Despachado como etapa final para todos os métodos', () => {
   const p = R.passos({ etapa: 'em_producao', metodo_entrega: 'Correio' });
   assert.deepEqual(p.map((x) => x.estado), ['feito', 'atual', 'futuro', 'futuro']);
-  assert.equal(p[3].nome, 'DESPACHADO');
+  assert.equal(p[3].nome, 'Despachado');
   assert.ok(p[1].corrente && !p[0].corrente);
   for (const etapa of ['com_transportadora', 'entregue', 'em_rota', 'despachado']) {
     for (const metodo of ['Cliente Retira', 'Correio', 'Transportadora', 'Azul Cargo', 'Entregamos', null]) {
       const e = R.passos({ etapa, metodo_entrega: metodo });
       assert.equal(e.length, 4);
-      assert.equal(e[3].nome, 'DESPACHADO');
+      assert.equal(e[3].nome, 'Despachado');
       assert.ok(e.every((x) => x.estado === 'feito')); assert.ok(e[3].corrente);
     }
   }
@@ -31,7 +31,7 @@ teste('linha do tempo: quatro passos e DESPACHADO como etapa final para todos os
   assert.equal(R.passos({ etapa: 'desconhecida' })[0].estado, 'atual');
 });
 
-teste('resumo por pedido de compra: produção, retirada e DESPACHADO', () => {
+teste('resumo por pedido de compra: produção, retirada e Despachado', () => {
   const r = R.resumo(['recebido', 'em_producao', 'pronto', 'em_rota', 'aguardando_retirada', 'com_transportadora', 'entregue']
     .map((etapa, i) => ({ etapa, pedido_cliente: 'OC-' + i, empresa_id: 1, pedido: String(30000 + i) })));
   assert.deepEqual(r, { producao: 3, retirada: 1, despachado: 3, semOc: 0 });
@@ -56,7 +56,7 @@ teste('OC repetida em requisições conta uma vez e só é despachada após a ú
   assert.deepEqual(R.resumo(registros), { producao: 0, retirada: 1, despachado: 3, semOc: 2 });
 });
 
-teste('busca pelo pedido do cliente sem usar o número interno e filtros em aberto/DESPACHADO', () => {
+teste('busca pelo pedido do cliente sem usar o número interno e filtros em aberto/Despachado', () => {
   const ps = [{ pedido: '30001', pedido_cliente: 'OC-778', etapa: 'entregue' }, { pedido: '30002', pedido_cliente: 'OC-1002', etapa: 'pronto' },
     { pedido: '30931', etapa: 'com_transportadora', metodo_entrega: 'Cliente Retira' }, { pedido: '30004', etapa: 'em_rota' },
     { pedido: '30005', etapa: 'aguardando_retirada' }];

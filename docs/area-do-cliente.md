@@ -35,8 +35,8 @@ Usa Happy DOM apenas no ambiente de teste, instalado fora do projeto;
 da publicação. Esta alteração não exige SQL novo.
 
 O acompanhamento mostra quatro passos: **Pedido recebido → Em produção →
-Pronto → DESPACHADO**. Os estados do banco `em_rota`, `com_transportadora`
-e `entregue` aparecem como DESPACHADO no site, inclusive nos itens, no resumo
+Pronto → Despachado**. Os estados do banco `em_rota`, `com_transportadora`
+e `entregue` aparecem como Despachado no site, inclusive nos itens, no resumo
 e no filtro. `aguardando_retirada` continua em aberto até existir saída.
 O método de entrega, as notas e o rastreio continuam disponíveis. Quando há
 registro de recebimento, sua data e a pessoa que recebeu são exibidas como
@@ -65,7 +65,7 @@ aplicar o 144; atualizar os arquivos do site sozinho não corrige essa função.
 Os KPIs contam a OC (`pedido_cliente` da API), uma vez por empresa e período.
 Várias requisições ou itens da mesma OC não multiplicam os totais. Se uma
 requisição ainda está em produção, a OC fica em produção; se todas passaram
-dessa fase, mas alguma aguarda retirada, fica aguardando retirada; DESPACHADO
+dessa fase, mas alguma aguarda retirada, fica aguardando retirada; Despachado
 exige que todas tenham saído. O mesmo número de OC em empresas diferentes
 continua sendo contado separadamente.
 
@@ -74,7 +74,7 @@ listagem, mas ficam fora dos KPIs, com a quantidade informada abaixo deles.
 
 Diagnóstico somente de leitura em 03/11/2026: a Usina Sertãozinho tem um
 registro com previsão de 03/03/2026, já despachado. Fica fora de Últimos 6
-meses e do filtro Em aberto. Último ano + Todos ou DESPACHADO mostra o
+meses e do filtro Em aberto. Último ano + Todos ou Despachado mostra o
 registro; cadastro, vínculo e nome usados nas ordens estão corretos. A tela
 vazia explica o período e os filtros, sem ampliar consultas automaticamente.
 
