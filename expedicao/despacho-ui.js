@@ -1,7 +1,7 @@
-/* Despacho por NF: fila de leituras para o rastreio nunca ultrapassar a NF. */
+/* Chegada por NF: fila de leituras para o rastreio nunca ultrapassar a NF. */
 (function () {
   'use strict';
-  window.criarTelaDespacho = function ({ api, sessao, mostrar, abrirLogin, ligado, aviso, esc }) {
+  window.criarTelaConferencia = function ({ api, sessao, mostrar, abrirLogin, ligado, aviso, esc }) {
     const $ = id => document.getElementById(id);
     const tela = $('telaDespachar');
     const { interpretarNf, rastreioCorreios } = window.DespachoCodigos;
@@ -23,11 +23,11 @@
       $('despachoCodigo').disabled = enviando;
       $('despachoResultado').textContent = ultimoResultado;
       tela.setAttribute('aria-busy', String(aguardando > 0));
-      $('despachoSituacao').textContent = enviando ? 'Gravando despacho e aviso do grupo…' : aguardando ? 'Conferindo a nota no Fiscal…' : '';
+      $('despachoSituacao').textContent = enviando ? 'Confirmando chegada e aviso do grupo…' : aguardando ? 'Conferindo a nota no Fiscal…' : '';
     }
     function abrir({ historico = true } = {}) {
       if (!sessao()) { abrirLogin(); return; }
-      if (!sessao().podeMarcar || !ligado()) { aviso('Despachar exige permissão para dar baixa e a expedição pelo celular ligada no Kuru.'); return; }
+      if (!sessao().podeMarcar || !ligado()) { aviso('Confirmar entrega exige permissão e a dupla conferência pelo celular ligada no Kuru.'); return; }
       mostrar('telaDespachar', { historico });
       history.replaceState({ tela: 'telaDespachar' }, '');
       desenhar();
@@ -40,7 +40,7 @@
       if (rastreio) {
         if (!notas.length) { $('despachoErro').textContent = 'Escaneie ao menos uma NF antes do rastreio.'; return; }
         enviando = true; desenhar();
-        const r = await api('despachar', { method: 'POST', body: JSON.stringify({ codigos: notas.map(n => n.codigo), rastreio }) });
+        const r = await api('confirmar-entrega', { method: 'POST', body: JSON.stringify({ codigos: notas.map(n => n.codigo), rastreio }) });
         if (!sessao()) { abrirLogin(); return; }
         if (sessao().sessao !== sessaoInicial) return;
         if (!r.ok) {
@@ -48,17 +48,17 @@
           if (r.sessaoExpirada) abrirLogin();
           return;
         }
-        ultimoResultado = r.itensDespachados
-          ? `Despachado: ${r.notasDespachadas} NFs · ${r.itensDespachados} itens · ${r.rastreio}. Aviso registrado na fila do grupo de Expedição.`
-          : `Despacho já confirmado com ${r.rastreio}. Nenhuma baixa ou mensagem duplicada.`;
+        ultimoResultado = r.itensEntregues
+          ? `ENTREGUE: ${r.notasEntregues} NFs · ${r.itensEntregues} itens · ${r.rastreio}. Chegada registrada; aviso de entrega na fila do grupo. A saída no Kuru foi preservada.`
+          : `Entrega já confirmada com ${r.rastreio}. Nenhuma entrega ou mensagem duplicada.`;
         notas = []; $('despachoCodigo').value = '';
-        aviso('Despacho confirmado');
+        aviso('Entrega confirmada');
         return;
       }
       const codigo = interpretarNf(valor);
       if (!codigo) { $('despachoErro').textContent = 'Código inválido. Use a chave de acesso de 44 dígitos da NF ou o rastreio dos Correios.'; return; }
       if (notas.length >= 100) { $('despachoErro').textContent = 'Esta leva já tem 100 notas. Bipe o rastreio para finalizar.'; return; }
-      const r = await api('despacho/nota', { method: 'POST', body: JSON.stringify({ codigo: codigo.codigo }) });
+      const r = await api('conferencia/nota', { method: 'POST', body: JSON.stringify({ codigo: codigo.codigo }) });
       if (!sessao()) { abrirLogin(); return; }
       if (sessao().sessao !== sessaoInicial) return;
       if (!r.ok) {
@@ -116,7 +116,7 @@
       if (aguardando || (tipo === 'rastreio' && !notas.length)) return;
       pararCamera(); const geracao = geracaoCamera;
       $('despachoLeitor').hidden = false;
-      $('despachoTextoCamera').textContent = tipo === 'nf' ? 'Enquadre todo o código de barras da chave de acesso da NF.' : 'Escaneie o rastreio para despachar as NFs da lista.';
+      $('despachoTextoCamera').textContent = tipo === 'nf' ? 'Enquadre todo o código de barras da chave de acesso da NF.' : 'Escaneie o rastreio da saída para confirmar a chegada ao cliente.';
       history.pushState({ despachoLeitor: true }, '');
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1920 }, height: { ideal: 1080 } }, audio: false });

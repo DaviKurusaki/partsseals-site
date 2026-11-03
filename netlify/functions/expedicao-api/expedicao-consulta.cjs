@@ -19,6 +19,8 @@
  * OP/Atrasados/BOT nunca veriam rastreio nenhum de uma NF só cadastrada
  * por lá. As três entram no MESMO array de eventos e são ordenadas juntas
  * por `quando` — a mais recente vence, não importa a origem.
+ * A quarta fonte, expedicao_entregas, comprova a chegada por dupla
+ * conferência e expõe sua própria confirmação, separada da saída.
  */
 
 /**
@@ -299,7 +301,7 @@ function eventosDoFiscalNotas(linhas, metodoEntrega) {
   }).filter(Boolean);
 }
 
-function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes = {}) {
+function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes = {}, entregas = []) {
   const filtradas = filtrarPorItem(expedicoes, fiscal, fiscalNotas, consulta);
   const eventos = [
     ...eventosDeExpedicao(filtradas.expedicoes, consulta.metodoEntrega),
@@ -308,10 +310,19 @@ function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes 
   ].sort(porQuando);
 
   const concluidos = eventos.filter((e) => e.concluida);
-  const atual = concluidos.at(-1) || eventos.at(-1) || null;
+  const saida = concluidos.at(-1) || eventos.at(-1) || null;
+  // Uma saída, inclusive uma baixa antiga chamada ENTREGA, não comprova a
+  // chegada. Só a dupla conferência alimenta este segundo controle.
+  const recebidas = filtrarPorItem([], [], entregas, consulta).fiscalNotas
+    .map(r => ({ origem: 'dupla_conferencia', tipo: 'entregue', rotulo: 'Entregue ao cliente', concluida: true,
+      quando: r.entregue_em, responsavel: r.motorista_nome, pedido: r.pedido, cliente: r.cliente,
+      nf: r.numero_nf, rastreio: r.rastreio, itens: [r.descricao], duplaConferencia: true })).sort(porQuando);
+  eventos.push(...recebidas); eventos.sort(porQuando);
+  const chegada = recebidas.at(-1) || null;
+  const atual = chegada || saida;
   return {
     eventos,
-    concluida: concluidos.length > 0,
+    concluida: concluidos.length > 0 || Boolean(chegada),
     // `tipo`/`responsavel`/`nf`/`rastreio` já eram calculados por evento (ver
     // `eventosDe*` acima) e sempre ficaram presos aqui dentro — a Expedição
     // pelo Celular (site-expedicao) precisa deles pra montar a frase completa
@@ -324,7 +335,28 @@ function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes 
     nf: atual?.nf || '',
     rastreio: atual?.rastreio || '',
     fontes,
+    saida: { concluida: concluidos.length > 0, tipo: saida?.tipo || null, quando: saida?.quando || null,
+      nf: saida?.nf || '', rastreio: saida?.rastreio || '', responsavel: saida?.responsavel || '' },
+    entregaConfirmada: Boolean(chegada),
+    entrega: chegada,
   };
+}
+
+async function lerFonteEntregas(numerosOp, pedidos, cacheMs) {
+  try {
+    const linhas = new Map();
+    for (const [coluna, valores] of [['numero_op',numerosOp],['pedido',pedidos]]) {
+      if (!valores.length) continue;
+      for (let offset=0;;offset+=500) {
+        const pagina = await db.selecionar('expedicao_entregas', {
+          filtros: [{ coluna, operador:'em', valor:valores }], ordem:[{coluna:'id'}], limite:500, offset, cacheMs,
+        });
+        for (const l of pagina.linhas) linhas.set(l.id,l);
+        if (pagina.linhas.length<500) break;
+      }
+    }
+    return {ok:true,linhas:[...linhas.values()],erro:null};
+  } catch (err) { return {ok:false,linhas:[],erro:err?.message||'Controle de chegada indisponível.'}; }
 }
 
 async function consultar(consulta = {}) {
@@ -347,19 +379,21 @@ async function consultar(consulta = {}) {
   const { numerosOp, pedidos } = valoresRaw(consulta);
   const cacheMs = consulta.cacheMs ?? 30000;
 
-  const [expedicoes, fiscal, fiscalNotas] = await Promise.all([
+  const [expedicoes, fiscal, fiscalNotas, entregas] = await Promise.all([
     lerFonte('expedicao_baixas', requisicoes,
       ['requisicao', 'pedido', 'cliente', 'acao', 'responsavel', 'baixado_por', 'evento_em', 'itens'], cacheMs),
     lerFonte('fiscal_pedidos', requisicoes,
       ['requisicao', 'produto', 'pedido', 'cliente', 'status', 'nf', 'rastreio', 'baixado_por', 'evento_em'], cacheMs),
     lerFonteFiscalNotas(numerosOp, pedidos, cacheMs),
+    lerFonteEntregas(numerosOp, pedidos, cacheMs),
   ]);
   const fontes = {
     expedicoes: { ok: expedicoes.ok, erro: expedicoes.erro },
     fiscal: { ok: fiscal.ok, erro: fiscal.erro },
     fiscalNotas: { ok: fiscalNotas.ok, erro: fiscalNotas.erro },
+    entregas: { ok: entregas.ok, erro: entregas.erro },
   };
-  const resultado = montarResultado(expedicoes.linhas, fiscal.linhas, fiscalNotas.linhas, consulta, fontes);
+  const resultado = montarResultado(expedicoes.linhas, fiscal.linhas, fiscalNotas.linhas, consulta, fontes, entregas.linhas);
 
   // A Busca por requisição lê as fontes uma vez, mas recebe um resultado
   // independente para cada linha. A posição é preservada para também suportar
@@ -368,7 +402,7 @@ async function consultar(consulta = {}) {
     resultado.porItem = consulta.itens.map((item) => montarResultado(
       expedicoes.linhas, fiscal.linhas, fiscalNotas.linhas,
       { ...item, metodoEntrega: item.metodoEntrega || consulta.metodoEntrega },
-      fontes,
+      fontes, entregas.linhas,
     ));
   }
   return resultado;

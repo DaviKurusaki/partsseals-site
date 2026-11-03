@@ -1,154 +1,92 @@
-# Expedição no site principal
+# Expedição: saída no Kuru, chegada pelo site
 
-O projeto publica o site institucional em `https://parts-seals.com.br/` e o
-portal operacional em `https://parts-seals.com.br/expedicao`. A API está neste
-repositório, em `netlify/functions/expedicao-api/`, com a regra de consulta
-incluída na própria função. A publicação não depende do repositório do Kuru.
+Há dois controles independentes:
 
-## Campanhas sazonais
+1. **Saída da fábrica:** Acabamento > Expedição e Acabamento > Despachar,
+   no Kuru Nuvem, continuam com o funcionamento existente.
+2. **Chegada ao cliente:** o motorista abre
+   https://parts-seals.com.br/expedicao e faz a Dupla conferência, lendo as
+   NFs e o mesmo rastreio registrado na saída pelo Kuru.
 
-A Expedição usa o mesmo `js/campaign.js` e os mesmos assets do site:
-setembro amarelo, outubro rosa, novembro azul e Natal verde/dourado em
-dezembro. O vermelho volta nos demais meses. `expedicao/campanhas.css` é
-gerado das paletas de `css/style.css` pelo sincronizador do Kuru; o portal
-preserva claro/escuro, cores de estado e contraste do texto no amarelo.
-O atributo `data-campaign-operacional` aplica cores e logo sem exibir o
-selo flutuante sobre as ferramentas. Não exige alteração no banco.
+O site não despacha, não cria baixas de expedição e não altera o status,
+rastreio ou data do Fiscal. Entrega, coleta e criação de rotas de saída
+foram retiradas do portal. As rotas HTTP antigas recusam a operação com
+410, inclusive para páginas antigas que ainda estejam abertas.
 
-## Despachar NFs e rastreio
+## Ativar a dupla conferência
 
-**Expedir > Despachar** reúne NFs do mesmo pacote e confirma a saída ao
-escanear o rastreio dos Correios. Aceita câmera (Code128/Code39, com ZXing
-local para navegadores sem BarcodeDetector), leitor físico, digitação e
-colagem. Exige PIN, permissão para marcar expedição e os dois interruptores
-do celular ligados. As NFs precisam estar cadastradas no Fiscal.
+1. Execute `sql/150_expedicao_dupla_conferencia.sql` no Supabase. Pode
+   repetir sem apagar dados; usa as tabelas de Fiscal/Expedição/avisos já
+   existentes. Não precisa do SQL 149: ele foi substituído após o usuário
+   esclarecer que o site deve confirmar a chegada, e não a saída. Se 149
+   já foi aplicado, 150 revoga a RPC antiga sem apagar registros.
+2. Atualize/reabra o Kuru para usar o controle e o processador novos. Evite
+   encerramento forçado quando houver WhatsApp conectado.
+3. Mantenha as permissões Expedição pelo celular e Confirmar entrega ao
+   cliente, com os interruptores de consulta e de dupla conferência ligados
+   em PCP > Tabula > Etiquetas > Expedição. Os IDs/chaves anteriores são
+   reaproveitados, sem precisar conceder novamente as permissões.
+4. Deixe a estação dos jobs aberta, com o remetente do WhatsApp conectado
+   e o grupo de Expedição configurado para enviar os avisos de chegada.
 
-Antes de usar, execute `sql/149_expedicao_despachar.sql` do Kuru Nuvem no
-Supabase, disponível no app em Configurações > Banco. A migração repetível
-atualiza Fiscal, baixa, auditoria e aviso na mesma transação e impede que
-uma confirmação repetida duplique a baixa ou a mensagem. Sem ela, a tela
-informa como ativar a gravação e mantém as notas para nova tentativa.
+## Como o motorista confere
 
-O aviso entra na fila `despacho_correios` já processada pelo Kuru: mantenha
-a estação dos jobs aberta, remetente conectado e grupo de Expedição
-configurado. O portal confirma o enfileiramento, e o Kuru realiza o envio.
-Não é necessário configurar nenhuma chave adicional na Netlify.
+Entre com o PIN, escaneie as NFs do pacote e depois o rastreio da saída.
+Uma NF não cadastrada, cancelada ou sem saída com aquele rastreio é recusada.
+Só os itens já saídos com o rastreio conferido são marcados como entregues;
+itens ainda FATURADO e itens enviados com outro código ficam fora.
+Repetir a conferência não duplica a entrega nem a mensagem e preserva quem
+confirmou primeiro. Falha ao gravar a chegada, auditoria ou aviso desfaz a
+transação inteira; a lista permanece para tentar novamente.
 
-## Configuração na Netlify
+O registro fica em `expedicao_entregas`, separado das tabelas de saída.
+Ele guarda NF, pedido, OP/item, cliente, rastreio, data da saída e data/nome
+do motorista na chegada. Não converte despachos ou rotas antigos em entregas.
+O aviso ao grupo tem o título **Entrega confirmada ao cliente**, com fila
+própria e o mesmo envio com espaçamento do Kuru.
 
-No projeto que já atende o domínio `parts-seals.com.br`, copie do projeto
-antigo de expedição as variáveis abaixo. Os valores ficam somente na Netlify,
-nunca no código, em um commit ou no HTML público:
+No site, **Entregas confirmadas** mostra o histórico, e **Consultar etiqueta**
+permite ler o QR sem fazer nenhuma baixa. No Kuru, veja **Acabamento >
+Entregas ao cliente**, com pesquisa e paginação. A consulta de expedição
+passa a distinguir saída de chegada confirmada, por item.
 
-- `SUPABASE_URL`
-- `SUPABASE_ANON_KEY` (a chave anon; não usar service_role)
-- `KURU_SEGREDO_SESSAO`
-- `TABELA_ORDENS`, se houver um valor personalizado no projeto antigo
+## Câmera e campanhas
 
-Configure os valores para Functions/Runtime e para o contexto Production.
-Se testar a prévia, habilite também o contexto Deploy Previews. Use o mesmo
-banco do Kuru para preservar os códigos das etiquetas. Não crie tokens novos
-para as etiquetas existentes.
+Code128/Code39 usam o leitor nativo ou ZXing 0.23.0 local, com licença em
+`site-expedicao/vendor/zxing-LICENSE`. O QR de consulta usa jsQR local.
+Também é possível usar leitor físico, digitação ou colagem. Fechar/ocultar
+o leitor encerra a câmera. Não há consulta a CDN durante a leitura.
 
-O `netlify.toml` define a base `.`, o comando `node tools/build_site.cjs`, o
-diretório público `dist` e o diretório de funções `netlify/functions`.
-O build copia somente páginas e recursos públicos. Arquivos de conexão,
-código do servidor, testes e PDFs-fonte não entram no diretório publicado.
+O portal acompanha o calendário do site: setembro amarelo, outubro rosa,
+novembro azul e Natal verde/dourado, preservando claro/escuro e cores de
+estado. Usa o mesmo calendário/assets do institucional; o sincronizador
+extrai as paletas do CSS principal. Não há selo flutuante sobre os controles.
 
-## Verificação antes da troca dos QR Codes
+## Verificação isolada
 
-1. Publique este projeto e abra `/expedicao` no celular.
-2. Confira se `/expedicao/api/estado` retorna JSON, com a configuração dos
-   interruptores do Kuru, sem uma mensagem de variáveis ausentes.
-3. Entre com um PIN que já tem permissão. Confira a consulta de uma etiqueta
-   existente, câmera, entrega e coleta. Uma baixa real deve ser feita somente
-   em um pedido que precisa ser expedido.
-4. No Kuru, altere `SITE_EXPEDICAO` em `src/main/etiquetasAuto.js` para
-   `https://parts-seals.com.br/expedicao`. As etiquetas novas passarão a usar
-   `/expedicao/e/CODIGO`. Faça essa troca somente depois de conferir o portal.
-5. O projeto antigo `parts-seals-expedicao.netlify.app` passa a servir somente
-   o redirecionador gerado por `node tools/build_legacy_redirect.cjs`:
+`node scripts/test-expedicao-dupla-conferencia.cjs` verifica API e SQL em
+PostgreSQL isolado, inclusive a preservação integral da saída.
+`node scripts/test-dupla-conferencia-whatsapp.cjs` verifica o processador
+sem enviar mensagens reais.
+Em Electron isolado, rode `scripts/test-expedicao-dupla-conferencia-visual.cjs`,
+`scripts/test-entregas-cliente-visual.cjs` e `scripts/test-expedicao-campanhas.cjs`.
+Os testes do portal aceitam `../partsseals-site/expedicao` como argumento.
+As configurações de produção não são usadas nesses testes.
 
-   ```text
-   /api/*  https://parts-seals-links.netlify.app/.netlify/functions/expedicao-api/:splat  200!
-   /*      https://parts-seals.com.br/expedicao/:splat      301!
-   ```
+## Publicação e histórico
 
-   O proxy da API preserva autenticação, corpo e método das chamadas de abas
-   antigas. Um redirecionamento da API entre domínios perderia o cabeçalho de
-   autenticação. As páginas e etiquetas usam o redirecionamento permanente.
-   Para republicar esse redirecionador, execute dentro de `dist-legado/`:
+`node scripts/sincronizar-expedicao-site.cjs` mantém o portal ativo
+autossuficiente no projeto vizinho `partsseals-site`, cuja Netlify publica
+o domínio principal. O site antigo de expedição continua redirecionando as
+etiquetas antigas; não substituir esse redirecionador pela cópia autônoma.
+Arquivos e registros das rotas anteriores permanecem como histórico; eles
+não fazem parte do novo fluxo de confirmação de chegada.
 
-   ```text
-   npx netlify-cli deploy --prod --no-build --dir public --functions functions --site 4f24d4ba-68ee-4fa1-af56-932fcf926894
-   ```
+## Build deste projeto
 
-   Os builds automáticos do projeto antigo ficam parados na Netlify, para
-   que mudanças no Kuru não substituam o redirecionador. O projeto principal
-   continua vinculado ao `partsseals-site` com os builds ativos.
-
-O endereço antigo deve permanecer como redirecionador: as etiquetas já
-impressas usam esse domínio. Depois da troca, a página, a API e as futuras
-atualizações ficam no `partsseals-site`. O leitor novo aceita tanto os links
-antigos quanto os links de `/expedicao/e/`. Links `/e/CODIGO` no domínio
-principal também são encaminhados para a expedição.
-
-A migração foi publicada em 9 de outubro de 2026. A API de estado respondeu
-com configuração válida; consultas sem PIN retornaram 401. As suítes locais
-usam dados simulados: nenhuma entrega ou coleta real foi registrada na
-verificação. Reinicie o Kuru atualizado para gerar novos QR Codes com o
-endereço oficial.
-
-## Buscas e páginas públicas
-
-As páginas institucionais têm canonical e links de idioma no domínio oficial,
-e estão listadas em `/sitemap.xml`, indicado por `/robots.txt`. Depois de
-publicar, o sitemap pode ser enviado ao Google Search Console.
-
-A expedição conserva `noindex, nofollow` e fica fora do sitemap: é um portal
-operacional com PIN e dados de pedidos. Esses controles não são aplicados ao
-site institucional. A presença da expedição no mesmo domínio não garante
-melhoria de posição nas buscas; o conteúdo público é o que pode ser indexado.
-
-## Testes locais, sem banco real
-
-A leitura das etiquetas na entrega foi corrigida em 13 de outubro de 2026:
-etiqueta de OP consulta e adiciona apenas o item lido; etiqueta de Pedido
-Fechado consulta toda a requisição e adiciona os itens ainda pendentes.
-A interface aplica o escopo da etiqueta tanto na entrega quanto no balcão,
-sem duplicar itens já adicionados e preservando o bloqueio de outro cliente
-na coleta. Uma OP que não existe retorna 404, sem trazer o restante do pedido.
-
-```text
-node tools/build_site.cjs
-node tests/site-build.cjs
-node tests/expedicao-api.cjs
-```
-
-A suíte de API usa dados simulados e confere autenticação, permissões, bloqueio
-de PIN, consulta, entrega, coleta parcial, cliente incorreto e auditoria.
-
-## Avisos de WhatsApp e endereços do ARGUS
-
-Ao confirmar uma entrega ou coleta, a função prepara um aviso `expedicao`
-na fila existente `pcp_avisos_whatsapp`. O Kuru do remetente configurado
-produz a mesma imagem e legenda da Expedição do Acabamento e envia ao mesmo
-grupo. Continua dependente do interruptor de avisos e do Kuru conectado ao
-WhatsApp; não há sessão de WhatsApp na Netlify.
-
-O snapshot do aviso fica no primeiro item de `expedicao_baixas`, junto com a
-baixa. A função tenta enfileirar imediatamente; o Kuru 0.2.704 ou superior
-retoma avisos pendentes em caso de falha. O ID da fila é o negativo do ID da
-baixa. A chave primária impede duplicações; nunca fazer upsert ou mesclar
-outros eventos nesses registros. `expedicao-aviso.cjs` é autossuficiente aqui
-e sua cópia em `src/shared/` do Kuru deve permanecer idêntica.
-
-O status Parcial/Finalizado considera todas as OPs do pedido, inclusive
-itens futuros e saídas anteriores. O aviso lista apenas os itens desta
-baixa, com dados relidos pelo servidor e nome do retirante na coleta.
-
-Os endereços continuam sendo lidos de `clientes_enderecos`. No Kuru,
-Tabula > Etiquetas > Expedição oferece Importar do ARGUS. A conexão com o
-Firebird permanece cifrada no computador, fora deste site. A importação
-preserva endereços manuais, não altera o ARGUS e ignora correspondências
-ambíguas. Não exige nova migração SQL; usa as tabelas existentes.
+O portal fica em /expedicao e a função em netlify/functions/expedicao-api.
+O build node tools/build_site.cjs reúne os arquivos públicos em dist e a
+Netlify empacota a função à parte. As variáveis SUPABASE_URL,
+SUPABASE_ANON_KEY e KURU_SEGREDO_SESSAO continuam apenas no servidor.
+TABELA_ORDENS é opcional. As campanhas usam /js/campaign.js e os assets do
+próprio institucional. Os códigos de QR anteriores continuam válidos.

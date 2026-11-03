@@ -1,76 +1,15 @@
 'use strict';
 /**
- * Função da Netlify da expedição pelo celular (v0.2.687).
+ * Portal de dupla conferência da CHEGADA ao cliente.
+ * Saída e despacho continuam no Acabamento do Kuru Nuvem.
+ * NF + rastreio já registrado na saída geram somente expedicao_entregas
+ * e seu aviso de entrega. As rotas antigas de saída respondem 410.
  *
- *   GET  /api/estado            o interruptor está ligado? (sem login)
- *   POST /api/login   {pin}     confere o PIN e devolve uma sessão até a meia-noite
- *   GET  /api/consulta?t=CODIGO pedido/OP do QR — exige a sessão
- *
- * Variáveis de ambiente (Netlify > Site configuration > Environment variables):
- *   SUPABASE_URL           https://xxxx.supabase.co
- *   SUPABASE_ANON_KEY      a chave anon do projeto (nunca a service_role)
- *   KURU_SEGREDO_SESSAO    uma senha longa qualquer, só da Netlify
- *   TABELA_ORDENS          opcional, padrão banco_ordens_itens
- *
- * Decisões que não são óbvias:
- *  - **A expedição é lida pela MESMA regra do Kuru**, com a cópia
- *    autossuficiente em `expedicao-consulta.cjs` neste diretório. O esbuild
- *    da Netlify embute o arquivo no pacote da função.
- *  - **A sessão não fica em banco nenhum**: é um texto assinado (HMAC) com
- *    id, nome e validade. Sem o segredo, ninguém fabrica uma. Ela vale até a
- *    meia-noite de Brasília; permissão tirada no meio do dia só vale no dia
- *    seguinte.
- *  - **A trava de PIN mora no banco** (`expedicao_celular_tentativas`): a
- *    função não guarda memória entre uma chamada e outra. Mesmo espaçamento
- *    do login do Kuru e do site do BOT.
- *  - **Quem entra**: administrador ou quem tem a permissão
- *    `expedicao-celular`. O PIN mestre não funciona aqui — ele só existe
- *    dentro do app, e não deve sair dele.
- *  - **Interruptor desligado** = a página só mostra o site da Parts, e
- *    login/consulta recusam, mesmo com sessão válida.
- *  - **v0.2.696**: cada item devolve `tipo`/`responsavel`/`grupoEntrega`
- *    (rótulo padronizado do método de entrega — Transportadora/Correio/
- *    Azul Cargo/Cliente Retira/Entregamos/Demais, nunca o texto cru digitado
- *    pelo PCP), e a resposta ganhou `nf`/`rastreio` do PEDIDO inteiro — os
- *    três já existiam calculados em `expedicao-consulta.cjs` e só não
- *    chegavam até aqui.
- *  - **v0.2.697 — "Marcar Expedição" escreve de verdade**
- *    (`POST /api/marcar`): o motorista escaneia, confere o carrinho e
- *    confirma; a função grava em `expedicao_baixas`, exatamente como
- *    Acabamento > Expedição > Dar baixa já faz (mesmas colunas, mesmo
- *    `origem: 'app'`) — só que direto via REST, sem passar pelo processo
- *    principal do Electron. Decisões tiradas com o usuário (6 perguntas):
- *    - **Ação (ENTREGA/COLETA) era automática pelo `grupoEntrega` já
- *      cadastrado no Kuru** — revertido na v0.2.721 (ver `montarGruposDeBaixa`
- *      mais abaixo): o cadastro é só o padrão do cliente, não necessariamente
- *      o que aconteceu com ESTE pedido; agora é o `modo` escolhido ao abrir
- *      "Expedir" que decide. "Retirado" vs "Coletado" continua decidido na
- *      LEITURA, como sempre (`eventosDeExpedicao`, `expedicao-consulta.cjs`).
- *    - **`responsavel`/`baixado_por` são sempre o nome de quem está
- *      logado** (`sessao.nome`) — rápido, sem campo pra digitar.
- *    - **Interruptor PRÓPRIO** (`pcp_ajustes`, `sistema`/
- *      `expedicao_celular_baixa`, `ligadoBaixa()`) — a CONSULTA (em
- *      produção) nunca depende dele; só a escrita.
- *    - **Permissão PRÓPRIA** (`expedicao-celular-marcar`, `permissoes-
- *      extras.js`) — quem só tem `expedicao-celular` consulta mas não
- *      marca nada. A sessão HMAC passou a carregar `podeMarcar` (calculado
- *      uma vez, no login) porque não há como reconsultar `app_permissions`
- *      a cada escrita sem o PIN de novo.
- *    - **O espelho em `BaixasExpedicao.json` (no W) fica de fora** —
- *      decisão do usuário: a função não alcança o W, e o Supabase já é a
- *      fonte que a Listagem/Status da OP/Atrasados leem. Um job separado
- *      pode preencher o espelho depois, sem travar esta entrega.
- *    - **Confere "já despachado?" de novo no servidor**, nunca confia só
- *      no carrinho do celular (que pode estar desatualizado) — reusa
- *      `expedicao.consultar()` com os itens pedidos antes de gravar
- *      qualquer coisa, e pula em silêncio quem já tiver baixa.
- *    Auditoria best-effort em `audit_log` (RLS já libera INSERT pra
- *    `anon` nessa tabela, mesmo padrão do resto do projeto) — uma falha
- *    aqui nunca desfaz a baixa, que já foi gravada com sucesso antes.
+ * Netlify: SUPABASE_URL, SUPABASE_ANON_KEY e KURU_SEGREDO_SESSAO.
+ * O PIN e as permissões são validados aqui; a chave fica só no servidor.
+ * SQL 150 grava chegada/auditoria/aviso atomicamente, sem alterar a saída.
  */
-
 const crypto = require('node:crypto');
-const { criarRotasApi } = require('./expedicao-rota-api.cjs');
 const { criarExpedicao } = require('./expedicao-consulta.cjs');
 const { anexarAviso, criarFilaExpedicaoCelular } = require('./expedicao-aviso.cjs');
 const { interpretarNf, rastreioCorreios } = require('./despacho-codigos.js');
@@ -533,10 +472,13 @@ async function rotaConsulta(evento) {
       metodoEntrega: metodo,
       grupoEntrega: grupoEntrega(metodo),
       despachado: Boolean(exp.concluida),
+      entregaConfirmada: Boolean(exp.entregaConfirmada),
+      entregueEm: exp.entrega?.quando || null,
+      motoristaEntrega: exp.entrega?.responsavel || '',
       tipo: exp.concluida ? (exp.tipo || null) : null,
       situacao: exp.concluida ? exp.rotulo : 'Ainda não despachado',
       responsavel: exp.concluida ? texto(exp.responsavel) : '',
-      despachoEm: exp.concluida ? exp.quando : null,
+      despachoEm: exp.saida?.quando || (exp.concluida ? exp.quando : null),
     };
   });
 
@@ -561,117 +503,6 @@ async function rotaConsulta(evento) {
   });
 }
 
-/**
- * POST /api/marcar  { itens: [{numeroOp, codItem}, ...] }
- *
- * Grava a baixa de expedição de verdade, direto em `expedicao_baixas` —
- * mesmas colunas e mesmos valores que Acabamento > Expedição > Dar baixa já
- * grava (ver cabeçalho do arquivo). O cliente manda só `numeroOp`/`codItem`
- * por item (nunca cliente/pedido/método — o servidor relê tudo fresco do
- * Banco de Ordens, nunca confia em dado que passou pela rede e pode estar
- * velho ou adulterado).
- */
-async function rotaMarcar(evento) {
-  const sessao = lerSessao(evento);
-  if (!sessao) return erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true });
-  if (!(await ligado())) return erro(403, 'A expedição pelo celular está desligada no Kuru.', { desligado: true });
-  if (!(await ligadoBaixa())) {
-    return erro(403, 'Marcar expedição pelo celular ainda está desligado no Kuru. Peça pra um administrador ligar em PCP > Tabula > Etiquetas > Expedição.');
-  }
-  if (!sessao.podeMarcar) {
-    return erro(403, 'Seu usuário pode consultar, mas não tem a permissão "Expedição pelo celular · Marcar expedição". Peça pra um administrador liberar em Configurações › Usuários e permissões.');
-  }
-
-  let corpo = {};
-  try { corpo = JSON.parse(evento.body || '{}'); } catch { /* corpo inválido */ }
-  const modo = corpo.modo || 'entrega';
-  if (!['entrega', 'balcao'].includes(modo)) return erro(400, 'Método de expedição inválido. Escolha Entrega ou Coleta no balcão.');
-  const retirante = texto(corpo.retirante);
-  const clienteColeta = texto(corpo.cliente);
-  if (modo === 'balcao' && (!retirante || !clienteColeta || retirante.length > 160 || clienteColeta.length > 160)) {
-    return erro(400, 'Preencha o nome de quem está retirando e o nome do cliente (até 160 caracteres).');
-  }
-  const pedidos = Array.isArray(corpo.itens) ? corpo.itens : [];
-  if (!pedidos.length) return erro(400, 'Nenhum item pra marcar.');
-  if (pedidos.length > LIMITE_CARRINHO) return erro(400, `No máximo ${LIMITE_CARRINHO} itens de cada vez.`);
-
-  const pares = [];
-  const vistos = new Set();
-  for (const it of pedidos) {
-    const numeroOp = texto(it?.numeroOp);
-    const codItem = texto(it?.codItem);
-    if (!numeroOp || !codItem) continue;
-    const chave = `${numeroOp}||${codItem}`;
-    if (vistos.has(chave)) continue;
-    vistos.add(chave);
-    pares.push({ numeroOp, codItem });
-  }
-  if (!pares.length) return erro(400, 'Nenhum item válido pra marcar.');
-
-  const numerosOp = [...new Set(pares.map((p) => p.numeroOp))];
-  const colunas = ['numero_op', 'cod_item', 'descricao', 'qntd', 'pedido', 'cliente', 'data_entrega'];
-  const { linhas } = await db.selecionar(TABELA_ORDENS, {
-    colunas, filtros: [{ coluna: 'numero_op', operador: 'em', valor: numerosOp }], limite: LIMITE_CARRINHO + 50,
-  });
-  const porChave = new Map(linhas.map((l) => [`${texto(l.numero_op)}||${texto(l.cod_item)}`, l]));
-
-  const encontradas = [];
-  const naoEncontrados = [];
-  for (const p of pares) {
-    const linha = porChave.get(`${p.numeroOp}||${p.codItem}`);
-    if (linha) encontradas.push(linha); else naoEncontrados.push(p.numeroOp);
-  }
-  if (!encontradas.length) return responder(200, { ok: true, gravados: 0, grupos: 0, jaDespachados: [], naoEncontrados });
-  if (modo === 'balcao' && encontradas.some(l => chaveCliente(l.cliente) !== chaveCliente(clienteColeta))) {
-    return erro(400, 'Há uma etiqueta de outro cliente. Confira o nome do cliente e as etiquetas antes de finalizar a coleta.');
-  }
-
-  // Confere "já despachado?" DE NOVO aqui, nunca confiando só no carrinho do
-  // celular — ele pode estar com um pedido aberto desde minutos atrás, e
-  // outra pessoa (ou outro celular) já pode ter marcado o mesmo item.
-  const metodos = await metodosDeEntrega(encontradas);
-  const metodoDe = (l) => chavesDeEntrega(l, dataIso(l.data_entrega)).map((c) => metodos.get(c)).find(Boolean) || '';
-  const resultadoExpedicao = await expedicao.consultar({
-    numeroOp: encontradas[0].numero_op, pedido: encontradas[0].pedido,
-    itens: encontradas.map((l) => ({ numeroOp: l.numero_op, pedido: l.pedido, codigoItem: l.cod_item, descricao: l.descricao })),
-  });
-
-  const pendentes = [];
-  const jaDespachados = [];
-  encontradas.forEach((l, i) => {
-    const exp = resultadoExpedicao.porItem?.[i] || {};
-    if (exp.concluida) jaDespachados.push(texto(l.numero_op));
-    else pendentes.push({ ...l, metodo_entrega: metodoDe(l) });
-  });
-  if (!pendentes.length) return responder(200, { ok: true, gravados: 0, grupos: 0, jaDespachados, naoEncontrados });
-
-  const grupos = montarGruposDeBaixa(pendentes, modo === 'balcao' ? retirante : sessao.nome,
-    { modo, baixadoPor: sessao.nome });
-  const avisosLigados = await prepararAvisosWhatsapp(grupos, pendentes);
-  const criadas = await db.inserir('expedicao_baixas', grupos);
-  let avisosEnfileirados = 0;
-  for (const baixa of criadas) {
-    try { if (await filaExpedicaoCelular.enfileirar(baixa)) avisosEnfileirados++; }
-    catch (err) { console.warn('[expedicao-whatsapp] aviso salvo com a baixa; o Kuru retomará:', err.codigo || 'rede'); }
-  }
-
-  // Auditoria best-effort — a baixa já está gravada; uma falha aqui nunca a
-  // desfaz, só deixa de registrar quem fez (RLS já libera INSERT pra anon
-  // em audit_log, mesmo padrão do resto do projeto).
-  if (criadas.length) {
-    db.inserir('audit_log', criadas.map((g) => ({
-      usuario_id: sessao.id, usuario_nome: sessao.nome, modulo: 'expedicao-celular', acao: 'criar',
-      tabela: 'expedicao_baixas', registro_id: String(g.id), depois: g, origem: 'site-expedicao',
-    })), { retornar: false }).catch((err) => console.error('[expedicao] auditoria falhou', err));
-  }
-
-  return responder(200, {
-    ok: true, gravados: pendentes.length, grupos: criadas.length, jaDespachados, naoEncontrados,
-    modo, responsavel: grupos[0]?.responsavel, eventoEm: grupos[0]?.evento_em,
-    whatsapp: { habilitado: avisosLigados, enfileirados: avisosEnfileirados },
-  });
-}
-
 async function rotaClientes(evento) {
   if (!lerSessao(evento)) return erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true });
   if (!(await ligado())) return erro(403, 'A expedição pelo celular está desligada no Kuru.', { desligado: true });
@@ -689,15 +520,15 @@ async function rotaClientes(evento) {
   return erro(503, 'Não foi possível carregar todo o cadastro. Tente novamente.');
 }
 
-async function acessoDespacho(evento) {
+async function acessoConferencia(evento) {
   const sessao = lerSessao(evento);
   if (!sessao) return { resposta: erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true }) };
-  if (!sessao.podeMarcar) return { resposta: erro(403, 'Seu usuário precisa da permissão para dar baixa na Expedição pelo celular.') };
-  if (!(await ligado()) || !(await ligadoBaixa())) return { resposta: erro(403, 'A expedição e a baixa pelo celular precisam estar ligadas no Kuru.') };
+  if (!sessao.podeMarcar) return { resposta: erro(403, 'Seu usuário precisa da permissão para confirmar a entrega pelo celular.') };
+  if (!(await ligado()) || !(await ligadoBaixa())) return { resposta: erro(403, 'A consulta e a confirmação pelo celular precisam estar ligadas no Kuru.') };
   return { sessao };
 }
 
-async function notaDoDespacho(codigo) {
+async function notaDaConferencia(codigo) {
   const nfLida = interpretarNf(codigo);
   if (!nfLida) throw new ErroBanco('Código de NF inválido. Escaneie novamente a chave de acesso de 44 dígitos ou informe o número da nota.', 'DESPACHO');
   const { linhas } = await db.selecionar('fiscal_notas', {
@@ -706,31 +537,33 @@ async function notaDoDespacho(codigo) {
   const correspondentes = linhas.filter(n => /^\d+$/.test(texto(n.numero_nf)) && Number(n.numero_nf) === Number(nfLida.numero));
   if (correspondentes.length !== 1) throw new ErroBanco(correspondentes.length
     ? `Há mais de um cadastro da NF ${nfLida.numero}. Confira os números no Fiscal.`
-    : `NF ${nfLida.numero} não cadastrada. Cadastre em Fiscal > NF antes de despachar.`, 'DESPACHO');
+    : `NF ${nfLida.numero} não cadastrada. Confira o cadastro no Fiscal do Kuru.`, 'DESPACHO');
   const nf = correspondentes[0];
   if (nf.cancelada || nf.sem_nf) throw new ErroBanco(`NF ${nf.numero_nf} cancelada ou sem número fiscal. Confira no Fiscal.`, 'DESPACHO');
   const itens = [];
   for (let offset = 0; ; offset += 500) {
     const pagina = await db.selecionar('fiscal_notas_itens', {
-      filtros: [{ coluna: 'nf_id', operador: 'igual', valor: nf.id }, { coluna: 'status', operador: 'igual', valor: 'FATURADO' }],
+      filtros: [{ coluna: 'nf_id', operador: 'igual', valor: nf.id }],
       ordem: [{ coluna: 'id' }], limite: 500, offset,
     });
     itens.push(...pagina.linhas);
     if (pagina.linhas.length < 500) break;
   }
+  const saidos = itens.filter(i => ['DESPACHADO','COLETADO'].includes(i.status) && rastreioCorreios(i.rastreio));
+  if (!saidos.length) throw new ErroBanco(`NF ${nf.numero_nf} sem saída registrada com rastreio. Confira no Acabamento do Kuru; o site só confirma a chegada ao cliente.`, 'DESPACHO');
   return { id: nf.id, numero: nf.numero_nf, cliente: nf.cliente, codigo: nfLida.codigo,
-    quantidade: itens.length, pedidos: [...new Set(itens.map(i => texto(i.pedido) || texto(i.numero_op).split('/')[0]))] };
+    quantidade: saidos.length, rastreios: [...new Set(saidos.map(i => rastreioCorreios(i.rastreio)))],
+    pedidos: [...new Set(saidos.map(i => texto(i.pedido) || texto(i.numero_op).split('/')[0]))] };
 }
 
-async function rotaDespacho(evento, consultar) {
-  const acesso = await acessoDespacho(evento);
+async function rotaConferencia(evento, consultar) {
+  const acesso = await acessoConferencia(evento);
   if (acesso.resposta) return acesso.resposta;
   let dados;
   try { dados = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Dados inválidos. Escaneie novamente.'); }
   try {
     if (consultar) {
-      const nota = await notaDoDespacho(dados.codigo);
-      if (!nota.quantidade) return erro(409, `NF ${nota.numero} já despachada ou coletada, sem itens pendentes.`);
+      const nota = await notaDaConferencia(dados.codigo);
       return responder(200, { ok: true, nota });
     }
     const rastreio = rastreioCorreios(dados.rastreio);
@@ -738,22 +571,36 @@ async function rotaDespacho(evento, consultar) {
       return erro(400, 'Bipe de 1 a 100 notas e um rastreio dos Correios (duas letras, nove números e duas letras).');
     }
     const notas = [];
-    for (const codigo of dados.codigos) notas.push(await notaDoDespacho(codigo));
+    for (const codigo of dados.codigos) notas.push(await notaDaConferencia(codigo));
     if (new Set(notas.map(n => String(n.id))).size !== notas.length) return erro(400, 'Há notas repetidas na lista. Remova a duplicada.');
-    const resultado = await db.rpc('expedicao_despachar', {
+    const resultado = await db.rpc('expedicao_confirmar_entrega', {
       p_nfs: notas.map(n => n.id), p_rastreio: rastreio, p_usuario_id: acesso.sessao.id, p_usuario_nome: acesso.sessao.nome,
     });
     return responder(200, resultado);
   } catch (err) {
-    if (err.codigo === 'PGRST202' || err.codigo === '42883') return erro(503, 'Para ativar Despachar, execute sql/149_expedicao_despachar.sql no Supabase (disponível em Configurações > Banco do Kuru).');
+    if (err.codigo === 'PGRST202' || err.codigo === '42883') return erro(503, 'Para ativar a dupla conferência, execute sql/150_expedicao_dupla_conferencia.sql no Supabase (disponível em Configurações > Banco do Kuru).');
     if (err.codigo === 'DESPACHO' || err.codigo === 'P0001') return erro(409, err.message);
     throw err;
   }
 }
 
-const rotasApi = criarRotasApi({ db, lerSessao, ligado, ligadoBaixa, erro, responder, texto, chaveCliente,
-  metodosDeEntrega, chavesDeEntrega, dataIso, grupoEntrega, expedicao, montarGruposDeBaixa,
-  TABELA_ORDENS, LIMITE_CARRINHO, prepararAvisosWhatsapp, filaExpedicaoCelular });
+async function rotaEntregas(evento) {
+  const sessao = lerSessao(evento);
+  if (!sessao) return erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true });
+  if (!(await ligado())) return erro(403, 'A consulta pelo celular está desligada no Kuru.');
+  const parametros = evento.queryStringParameters || {};
+  const offset = Math.max(0, Math.min(1000000, Number(parametros.offset) || 0));
+  try {
+    const r = await db.selecionar('expedicao_entregas', {
+      ordem: [{ coluna: 'entregue_em', desc: true }, { coluna: 'id', desc: true }], limite: 100, offset,
+    });
+    return responder(200, { ok: true, entregas: r.linhas, mais: r.linhas.length === 100 });
+  } catch (err) {
+    if (['PGRST205','42P01'].includes(err.codigo)) return erro(503, 'Ative o controle executando sql/150_expedicao_dupla_conferencia.sql no Supabase.');
+    throw err;
+  }
+}
+
 
 exports.handler = async (evento) => {
   if (!SUPABASE_URL || !SUPABASE_KEY || !SEGREDO) {
@@ -767,16 +614,12 @@ exports.handler = async (evento) => {
     }
     if (rota === 'login' && evento.httpMethod === 'POST') return await rotaLogin(evento);
     if (rota === 'consulta' && evento.httpMethod === 'GET') return await rotaConsulta(evento);
-    if (penultima === 'despacho' && rota === 'nota' && evento.httpMethod === 'POST') return await rotaDespacho(evento, true);
-    if (rota === 'despachar' && evento.httpMethod === 'POST') return await rotaDespacho(evento, false);
-    if (rota === 'marcar' && evento.httpMethod === 'POST') {
-      let corpo; try { corpo = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Dados inválidos.'); }
-      return corpo.modo === 'balcao' ? await rotaMarcar(evento) : await rotasApi.criar(evento);
-    }
-    if (rota === 'rotas' && evento.httpMethod === 'POST') return await rotasApi.criar(evento);
-    if (penultima === 'rotas') {
-      if (rota === 'atual' && evento.httpMethod === 'GET') return await rotasApi.atual(evento);
-      if (evento.httpMethod === 'POST' && ['posicao', 'entregar', 'corrigir', 'reordenar', 'ciencia', 'cancelar'].includes(rota)) return await rotasApi[rota](evento);
+    if (penultima === 'conferencia' && rota === 'nota' && evento.httpMethod === 'POST') return await rotaConferencia(evento, true);
+    if (rota === 'confirmar-entrega' && evento.httpMethod === 'POST') return await rotaConferencia(evento, false);
+    if (rota === 'entregas' && evento.httpMethod === 'GET') return await rotaEntregas(evento);
+    // Inclui navegadores que ainda estejam com a versão antiga em cache.
+    if (['marcar','despachar','rotas'].includes(rota) || ['rotas','despacho'].includes(penultima)) {
+      return erro(410, 'A saída é registrada no Acabamento do Kuru Nuvem. Atualize o site e use Dupla conferência somente na chegada ao cliente.');
     }
     if (rota === 'clientes' && evento.httpMethod === 'GET') return await rotaClientes(evento);
     return erro(404, 'Caminho desconhecido.');
