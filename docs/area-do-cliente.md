@@ -45,6 +45,13 @@ de apresentação e não exige SQL novo.
 
 ### KPIs por pedido de compra (OC)
 
+Os cartões mostram o número do cliente (`pedido_cliente`) como título:
+`Pedido 6292`, sem exibir a requisição interna `28227`. A busca usa somente
+o número do cliente. Quando ele não está informado, o título é **Pedido
+sem número informado**; não usa o número interno como substituto. Zeros
+iniciais são preservados. Datas, itens e acompanhamento mantêm os vínculos
+internos existentes.
+
 Os KPIs contam a OC (`pedido_cliente` da API), uma vez por empresa e período.
 Várias requisições ou itens da mesma OC não multiplicam os totais. Se uma
 requisição ainda está em produção, a OC fica em produção; se todas passaram

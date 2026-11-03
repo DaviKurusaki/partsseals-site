@@ -60,7 +60,7 @@
 
   function semAcento(v) { return texto(v).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase(); }
 
-  /** filtro: "todos" | "aberto" | "despachado"; busca: nº do pedido ou OC;
+  /** filtro: "todos" | "aberto" | "despachado"; busca: pedido de compra do cliente;
    *  empresa: id da empresa ("" ou ausente = todas). */
   function filtrar(pedidos, opcoes) {
     var busca = semAcento(opcoes && opcoes.busca);
@@ -72,7 +72,7 @@
       if (filtro === "aberto" && despachado) return false;
       if (filtro === "despachado" && !despachado) return false;
       if (!busca) return true;
-      return semAcento(p.pedido).indexOf(busca) >= 0 || semAcento(p.pedido_cliente).indexOf(busca) >= 0;
+      return semAcento(p.pedido_cliente).indexOf(busca) >= 0;
     });
   }
 

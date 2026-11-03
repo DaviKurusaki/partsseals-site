@@ -56,12 +56,13 @@ teste('OC repetida em requisições conta uma vez e só é despachada após a ú
   assert.deepEqual(R.resumo(registros), { producao: 0, retirada: 1, despachado: 3, semOc: 2 });
 });
 
-teste('busca por nº do pedido ou OC e filtros em aberto/DESPACHADO', () => {
-  const ps = [{ pedido: '30001', pedido_cliente: 'OC-778', etapa: 'entregue' }, { pedido: '30002', pedido_cliente: null, etapa: 'pronto' },
+teste('busca pelo pedido do cliente sem usar o número interno e filtros em aberto/DESPACHADO', () => {
+  const ps = [{ pedido: '30001', pedido_cliente: 'OC-778', etapa: 'entregue' }, { pedido: '30002', pedido_cliente: 'OC-1002', etapa: 'pronto' },
     { pedido: '30931', etapa: 'com_transportadora', metodo_entrega: 'Cliente Retira' }, { pedido: '30004', etapa: 'em_rota' },
     { pedido: '30005', etapa: 'aguardando_retirada' }];
   assert.deepEqual(R.filtrar(ps, { busca: 'oc-77' }).map((p) => p.pedido), ['30001']);
-  assert.deepEqual(R.filtrar(ps, { busca: '30002' }).map((p) => p.pedido), ['30002']);
+  assert.deepEqual(R.filtrar(ps, { busca: '1002' }).map((p) => p.pedido), ['30002']);
+  assert.deepEqual(R.filtrar(ps, { busca: '30002' }), []);
   assert.deepEqual(R.filtrar(ps, { filtro: 'aberto' }).map((p) => p.pedido), ['30002', '30005']);
   assert.deepEqual(R.filtrar(ps, { filtro: 'despachado' }).map((p) => p.pedido), ['30001', '30931', '30004']);
   const varias = [{ pedido: '1', empresa_id: 7, etapa: 'entregue' }, { pedido: '2', empresa_id: 9, etapa: 'em_producao' }];

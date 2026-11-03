@@ -139,7 +139,8 @@
       ? '<div class="cli-prazo cli-prazo--despachado"><span>Situação</span><strong>DESPACHADO</strong></div>'
       : (p.data_prevista ? '<div class="cli-prazo"><span>Previsão</span><strong>' + esc(R.dataBr(p.data_prevista)) + "</strong></div>" : "");
     var meta = [];
-    if (p.pedido_cliente) meta.push("Sua OC: " + esc(p.pedido_cliente));
+    var numeroCliente = p.pedido_cliente == null ? "" : String(p.pedido_cliente).trim();
+    var tituloPedido = numeroCliente ? "Pedido " + numeroCliente : "Pedido sem número informado";
     if (p.data_pedido) meta.push("Pedido em " + esc(R.dataBr(p.data_pedido)));
     var linhaRecebimento = "";
     if (despachado && p.entregue_em) {
@@ -150,7 +151,7 @@
     var idTitulo = "ped-" + esc(p.empresa_id == null ? "" : p.empresa_id) + "-" + esc(p.pedido);
     var empresa = variasEmpresas() && p.empresa ? '<span class="cli-empresa">' + esc(p.empresa) + "</span>" : "";
     return '<article class="cli-pedido" aria-labelledby="' + idTitulo + '">' +
-      '<div class="cli-pedido__topo"><div>' + empresa + '<h2 class="cli-pedido__num" id="' + idTitulo + '">Pedido ' + esc(p.pedido) + "</h2>" +
+      '<div class="cli-pedido__topo"><div>' + empresa + '<h2 class="cli-pedido__num" id="' + idTitulo + '">' + esc(tituloPedido) + "</h2>" +
       (meta.length ? '<p class="cli-pedido__meta">' + meta.join(" · ") + "</p>" : "") +
       (progresso ? '<span class="cli-parcial">' + progresso.despachados + " de " + progresso.total + " itens despachados</span>" : "") +
       "</div>" + prazo + "</div>" + linhaRecebimento + linhaDoTempo(p) + blocoDetalhes(p) + blocoItens(p) + "</article>";
@@ -236,8 +237,8 @@
       '<div class="cli-resumo" data-resumo aria-live="polite"></div>' +
       '<p class="cli-resumo-nota" data-resumo-nota></p>' +
       '<div class="cli-ferramentas"><div class="cli-linha-ferr">' +
-      '<label class="cli-oculto" for="busca">Buscar pedido ou OC</label>' +
-      '<input class="cli-input" id="busca" type="search" placeholder="Buscar pelo nº do pedido ou da sua OC" data-busca>' +
+      '<label class="cli-oculto" for="busca">Buscar pelo número do pedido do cliente</label>' +
+      '<input class="cli-input" id="busca" type="search" placeholder="Buscar pelo número do seu pedido" data-busca>' +
       '<div class="cli-filtros" role="group" aria-label="Filtrar pedidos">' +
       '<button class="cli-chip" type="button" data-filtro="todos" aria-pressed="true">Todos</button>' +
       '<button class="cli-chip" type="button" data-filtro="aberto" aria-pressed="false">Em aberto</button>' +

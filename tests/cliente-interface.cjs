@@ -59,6 +59,8 @@ async function testar() {
     'KPIs identificam pedidos de compra e mostram uma OC em cada situação');
   ok(d.querySelector('.cli-pedido').textContent.includes('DESPACHADO') && !d.querySelector('.cli-pedido').textContent.includes('Na transportadora'),
     'pedido 30931 continua com a saída unificada em DESPACHADO');
+  ok(d.querySelector('.cli-pedido__num').textContent === 'Pedido OC-777' && !d.querySelector('[data-lista]').textContent.includes('30931'),
+    'cartão mostra o número de compra do cliente e oculta a requisição interna');
   let empresa = d.querySelector('[aria-controls=empresa-opcoes]');
   empresa.click();
   ok(empresa.getAttribute('aria-expanded') === 'true' && !d.querySelector('#empresa-opcoes').hidden, 'seletor abre com aria e opções visíveis');
@@ -113,6 +115,16 @@ async function testar() {
     agrupado.d.querySelector('.cli-numero--despachado strong').textContent === '0' &&
     agrupado.d.querySelector('[data-resumo-nota]').textContent.includes('1 requisição sem OC'),
     'quinze itens e duas requisições da mesma OC não multiplicam o KPI; ausência de OC fica indicada');
+
+  const identificacao = await painel({ hash: '#pedidos', pedidos: () => ({ ...dadosPedidos(), pedidos: [
+    { pedido: '28227', pedido_cliente: '6292', empresa_id: 1, etapa: 'pronto', data_pedido: '2026-06-23', itens: [] },
+    { pedido: '28228', pedido_cliente: null, empresa_id: 1, etapa: 'pronto', itens: [] },
+    { pedido: '28229', pedido_cliente: '006292', empresa_id: 1, etapa: 'pronto', itens: [] },
+  ] }) });
+  assert.deepEqual(Array.from(identificacao.d.querySelectorAll('.cli-pedido__num'), e => e.textContent),
+    ['Pedido 6292', 'Pedido sem número informado', 'Pedido 006292']);
+  ok(!/28227|28228|28229|Sua OC:/.test(identificacao.d.querySelector('[data-lista]').textContent),
+    'caso do print mostra Pedido 6292; ausência não recorre ao número interno e zeros iniciais são preservados');
 
   const historico = await painel({ hash: '#pedidos', pedidos: rota => ({ ok: true,
     empresas: [{ id: 309, nome: 'USINA SERTÃOZINHO' }], pedidos: rota === 'pedidos?dias=365' ? [
