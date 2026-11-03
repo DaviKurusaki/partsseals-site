@@ -73,6 +73,7 @@ const crypto = require('node:crypto');
 const { criarRotasApi } = require('./expedicao-rota-api.cjs');
 const { criarExpedicao } = require('./expedicao-consulta.cjs');
 const { anexarAviso, criarFilaExpedicaoCelular } = require('./expedicao-aviso.cjs');
+const { interpretarNf, rastreioCorreios } = require('./despacho-codigos.js');
 
 const SUPABASE_URL = String(process.env.SUPABASE_URL || '').replace(/\/+$/, '');
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_KEY || '';
@@ -140,7 +141,12 @@ const db = {
    *  `id`), porque `registrarBaixa` precisa do `id` pra auditoria e o
    *  carrinho precisa saber quantos grupos viraram linha. Aceita um
    *  objeto só ou um array (bulk insert, uma chamada só). */
-  async inserir(tabela, registro) {
+  async inserir(tabela, registro, { retornar = true } = {}) {
+    // audit_log libera INSERT mas não SELECT: pedir RETURNING ali dá 42501.
+    if (!retornar) {
+      await chamarBanco(encodeURIComponent(tabela), { metodo: 'POST', corpo: registro, prefer: 'return=minimal' });
+      return [];
+    }
     const resultado = await chamarBanco(encodeURIComponent(tabela), { metodo: 'POST', corpo: registro, prefer: 'return=representation' });
     return Array.isArray(resultado) ? resultado : (resultado ? [resultado] : []);
   },
@@ -656,7 +662,7 @@ async function rotaMarcar(evento) {
     db.inserir('audit_log', criadas.map((g) => ({
       usuario_id: sessao.id, usuario_nome: sessao.nome, modulo: 'expedicao-celular', acao: 'criar',
       tabela: 'expedicao_baixas', registro_id: String(g.id), depois: g, origem: 'site-expedicao',
-    }))).catch((err) => console.error('[expedicao] auditoria falhou', err));
+    })), { retornar: false }).catch((err) => console.error('[expedicao] auditoria falhou', err));
   }
 
   return responder(200, {
@@ -683,6 +689,68 @@ async function rotaClientes(evento) {
   return erro(503, 'Não foi possível carregar todo o cadastro. Tente novamente.');
 }
 
+async function acessoDespacho(evento) {
+  const sessao = lerSessao(evento);
+  if (!sessao) return { resposta: erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true }) };
+  if (!sessao.podeMarcar) return { resposta: erro(403, 'Seu usuário precisa da permissão para dar baixa na Expedição pelo celular.') };
+  if (!(await ligado()) || !(await ligadoBaixa())) return { resposta: erro(403, 'A expedição e a baixa pelo celular precisam estar ligadas no Kuru.') };
+  return { sessao };
+}
+
+async function notaDoDespacho(codigo) {
+  const nfLida = interpretarNf(codigo);
+  if (!nfLida) throw new ErroBanco('Código de NF inválido. Escaneie novamente a chave de acesso de 44 dígitos ou informe o número da nota.', 'DESPACHO');
+  const { linhas } = await db.selecionar('fiscal_notas', {
+    filtros: [{ coluna: 'numero_nf', operador: 'em', valor: Array.from({ length: 10 - nfLida.numero.length }, (_, i) => nfLida.numero.padStart(nfLida.numero.length + i, '0')) }], limite: 10,
+  });
+  const correspondentes = linhas.filter(n => /^\d+$/.test(texto(n.numero_nf)) && Number(n.numero_nf) === Number(nfLida.numero));
+  if (correspondentes.length !== 1) throw new ErroBanco(correspondentes.length
+    ? `Há mais de um cadastro da NF ${nfLida.numero}. Confira os números no Fiscal.`
+    : `NF ${nfLida.numero} não cadastrada. Cadastre em Fiscal > NF antes de despachar.`, 'DESPACHO');
+  const nf = correspondentes[0];
+  if (nf.cancelada || nf.sem_nf) throw new ErroBanco(`NF ${nf.numero_nf} cancelada ou sem número fiscal. Confira no Fiscal.`, 'DESPACHO');
+  const itens = [];
+  for (let offset = 0; ; offset += 500) {
+    const pagina = await db.selecionar('fiscal_notas_itens', {
+      filtros: [{ coluna: 'nf_id', operador: 'igual', valor: nf.id }, { coluna: 'status', operador: 'igual', valor: 'FATURADO' }],
+      ordem: [{ coluna: 'id' }], limite: 500, offset,
+    });
+    itens.push(...pagina.linhas);
+    if (pagina.linhas.length < 500) break;
+  }
+  return { id: nf.id, numero: nf.numero_nf, cliente: nf.cliente, codigo: nfLida.codigo,
+    quantidade: itens.length, pedidos: [...new Set(itens.map(i => texto(i.pedido) || texto(i.numero_op).split('/')[0]))] };
+}
+
+async function rotaDespacho(evento, consultar) {
+  const acesso = await acessoDespacho(evento);
+  if (acesso.resposta) return acesso.resposta;
+  let dados;
+  try { dados = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Dados inválidos. Escaneie novamente.'); }
+  try {
+    if (consultar) {
+      const nota = await notaDoDespacho(dados.codigo);
+      if (!nota.quantidade) return erro(409, `NF ${nota.numero} já despachada ou coletada, sem itens pendentes.`);
+      return responder(200, { ok: true, nota });
+    }
+    const rastreio = rastreioCorreios(dados.rastreio);
+    if (!rastreio || !Array.isArray(dados.codigos) || !dados.codigos.length || dados.codigos.length > 100) {
+      return erro(400, 'Bipe de 1 a 100 notas e um rastreio dos Correios (duas letras, nove números e duas letras).');
+    }
+    const notas = [];
+    for (const codigo of dados.codigos) notas.push(await notaDoDespacho(codigo));
+    if (new Set(notas.map(n => String(n.id))).size !== notas.length) return erro(400, 'Há notas repetidas na lista. Remova a duplicada.');
+    const resultado = await db.rpc('expedicao_despachar', {
+      p_nfs: notas.map(n => n.id), p_rastreio: rastreio, p_usuario_id: acesso.sessao.id, p_usuario_nome: acesso.sessao.nome,
+    });
+    return responder(200, resultado);
+  } catch (err) {
+    if (err.codigo === 'PGRST202' || err.codigo === '42883') return erro(503, 'Para ativar Despachar, execute sql/149_expedicao_despachar.sql no Supabase (disponível em Configurações > Banco do Kuru).');
+    if (err.codigo === 'DESPACHO' || err.codigo === 'P0001') return erro(409, err.message);
+    throw err;
+  }
+}
+
 const rotasApi = criarRotasApi({ db, lerSessao, ligado, ligadoBaixa, erro, responder, texto, chaveCliente,
   metodosDeEntrega, chavesDeEntrega, dataIso, grupoEntrega, expedicao, montarGruposDeBaixa,
   TABELA_ORDENS, LIMITE_CARRINHO, prepararAvisosWhatsapp, filaExpedicaoCelular });
@@ -699,6 +767,8 @@ exports.handler = async (evento) => {
     }
     if (rota === 'login' && evento.httpMethod === 'POST') return await rotaLogin(evento);
     if (rota === 'consulta' && evento.httpMethod === 'GET') return await rotaConsulta(evento);
+    if (penultima === 'despacho' && rota === 'nota' && evento.httpMethod === 'POST') return await rotaDespacho(evento, true);
+    if (rota === 'despachar' && evento.httpMethod === 'POST') return await rotaDespacho(evento, false);
     if (rota === 'marcar' && evento.httpMethod === 'POST') {
       let corpo; try { corpo = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Dados inválidos.'); }
       return corpo.modo === 'balcao' ? await rotaMarcar(evento) : await rotasApi.criar(evento);

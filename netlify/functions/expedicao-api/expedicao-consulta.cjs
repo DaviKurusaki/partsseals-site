@@ -52,8 +52,27 @@ const numeroBase = (v) => texto(v).match(/\d{3,}/)?.[0] || '';
  * exigindo o codigo do item pra confirmar a peca certa -- a chave extra so
  * amplia o que e candidato a checar, nunca decide sozinha.
  */
+/**
+ * "REP 35821"/"REP 24819"/"30558(REP.)" — convenção do usuário pra anotar no
+ * PEDIDO que esta OP é uma reposição de uma peça com problema, citando o
+ * número da ordem ORIGINAL que está sendo reposta. Achado com dados reais
+ * (18/10/2026): `numeroBase` extraía esses dígitos como se fossem o pedido
+ * do CLIENTE — e como a reposição tem o MESMO `cod_item` da original, ela
+ * virava "candidata" a casar com a baixa/NF JÁ EXPEDIDA da ordem antiga,
+ * mesmo sem ter saído de verdade (confirmado nas OPs 29112/1, 29428/1,
+ * 29691/1, 29851/1, 30196/1: todas com CNC/Acabamento próprios registrados,
+ * mas `requisicoesConcluidas` as devolvia como já expedidas, citando a data
+ * do despacho da ordem ORIGINAL referenciada, nunca uma baixa própria).
+ * "REP" sempre aparece como token isolado nos ~177 casos reais levantados
+ * (nunca colado em "REPARO"/"REPRESENTANTE"), por isso soltar a fronteira de
+ * palavra (`\bREP\b`) é seguro; "REPASSE"/"REPOSICAO" (sem dígito nenhum)
+ * já ficam inofensivos antes disso, mas também batem o mesmo filtro.
+ */
+const PEDIDO_REPOSICAO = /\bREP\b/i;
+
 function chavesRequisicao(numeroOp, pedido) {
-  return [...new Set([numeroBase(numeroOp), numeroBase(pedido)].filter(Boolean))];
+  const baseDoPedido = PEDIDO_REPOSICAO.test(texto(pedido)) ? '' : numeroBase(pedido);
+  return [...new Set([numeroBase(numeroOp), baseDoPedido].filter(Boolean))];
 }
 
 /** Valores CRUS de numero_op/pedido (não a base numérica de `chavesRequisicao`)

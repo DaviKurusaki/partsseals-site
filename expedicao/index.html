@@ -428,7 +428,7 @@
   .entrega-dialogo::backdrop { background:rgba(0,0,0,.65); }
   .entrega-dialogo h2 { margin:0 0 12px; font-size:24px; }
   .entrega-dialogo p { white-space:pre-line; overflow-wrap:anywhere; margin-bottom:16px; }
-  .entrega-dialogo textarea { width:100%; box-sizing:border-box; border-radius:10px; padding:12px; font:inherit; margin-top:8px; color:var(--tinta); background:var(--cartao-2); border:1px solid var(--linha); }
+  .entrega-dialogo textarea, .entrega-dialogo input[type="text"] { width:100%; box-sizing:border-box; border-radius:10px; padding:12px; font:inherit; margin-top:8px; color:var(--tinta); background:var(--cartao-2); border:1px solid var(--linha); }
   .opcao-cerca { display:block; padding:14px 0; }
   .entrega-cliente { margin:16px 0; padding:16px 0; border-top:1px solid var(--linha); }
   .entrega-cliente p, .parada-rota p { overflow-wrap:anywhere; line-height:1.5; margin:8px 0 12px; }
@@ -443,6 +443,25 @@
   .ordem-linha { display:flex; gap:8px; align-items:center; margin:10px 0; }
   .ordem-linha span { flex:1; overflow-wrap:anywhere; }
   .ordem-linha .btn { padding:10px; min-width:44px; }
+  .despacho-bloco { display:flex; flex-direction:column; gap:14px; padding:20px; }
+  .despacho-bloco h2 { font-family:var(--fonte-titulo); font-size:22px; }
+  .despacho-bloco p { color:var(--tinta-2); }
+  .despacho-bloco .formulario { display:flex; flex-direction:column; gap:10px; }
+  .despacho-bloco .formulario input { width:100%; min-height:52px; padding:12px; border:1px solid var(--linha); border-radius:12px; color:var(--tinta); background:var(--cartao-2); font:inherit; }
+  .despacho-bloco .formulario label, .despacho-bloco .formulario .btn { margin:0; }
+  .despacho-bloco p:empty { display:none; }
+  .despacho-nota { display:flex; gap:12px; align-items:center; padding:14px 0; border-bottom:1px solid var(--linha); }
+  .despacho-nota > div { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; overflow-wrap:anywhere; }
+  .despacho-nota small, .despacho-vazio { color:var(--suave); }
+  .despacho-nota .btn { flex:none; min-width:44px; font-size:24px; }
+  .despacho-conta { font-weight:700; color:var(--marca); }
+  .despacho-clientes { background:var(--aviso-fundo); color:var(--aviso); border-radius:12px; padding:12px; }
+  .despacho-bloco .despacho-erro { color:var(--erro); overflow-wrap:anywhere; }
+  .despacho-resultado { color:var(--ok-forte); overflow-wrap:anywhere; font-weight:700; }
+  .despacho-resultado:empty { display:none; }
+  .despacho-camera .mira { width:90vw; max-width:680px; height:150px; border-radius:12px; }
+  .despacho-camera .texto { top:calc(45% + 110px); font-size:16px; }
+  .despacho-camera video { object-fit:contain; }
 </style>
 </head>
 <body>
@@ -505,6 +524,11 @@
             <span class="txt"><strong>Coleta no balcão</strong><span>Identificar quem retira e conferir as etiquetas</span></span>
             <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>
           </button>
+          <button class="escolha" id="btnDespachar" type="button">
+            <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 4v16M7 4v16M10 4v16M15 4v16M18 4v16M21 4v16"/></svg></span>
+            <span class="txt"><strong>Despachar</strong><span>Escanear NFs e rastreio · avisar o grupo</span></span>
+            <svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M9 6l6 6-6 6"/></svg>
+          </button>
         </div>
         <button class="btn" id="btnRetomarEntrega" type="button">Ver minha rota de entrega</button>
         <button class="escolha" id="btnEscanearInicio" type="button" hidden>
@@ -553,6 +577,33 @@
           <button class="btn forte" type="submit">Continuar para escanear</button>
           <button class="btn" type="button" id="btnVoltarBalcao">Voltar ao início</button>
         </form>
+      </section>
+      <section class="tela" id="telaDespachar" hidden>
+        <div class="boas-vindas" data-hero><small>Expedição · Correios</small><h1>Despachar</h1></div>
+        <p class="cartao despacho-resultado" id="despachoResultado" role="status"></p>
+        <div class="cartao despacho-bloco">
+          <h2>1. Escaneie as notas fiscais</h2>
+          <p>Adicione as NFs do mesmo pacote. Depois, escaneie o rastreio para despachar todas de uma vez.</p>
+          <button class="btn forte" id="despachoCameraNf" type="button">Escanear código de barras da NF</button>
+          <form class="formulario" id="despachoForm">
+            <label for="despachoCodigo">NF ou rastreio · leitor, digitação ou colagem</label>
+            <input id="despachoCodigo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="100" placeholder="Chave de acesso, número da NF ou rastreio">
+            <button class="btn" id="despachoLer" type="submit">Ler código</button>
+          </form>
+          <p id="despachoSituacao" role="status"></p>
+          <p class="despacho-erro" id="despachoErro" role="alert"></p>
+          <span class="despacho-conta" id="despachoConta"></span>
+          <div id="despachoLista"></div>
+          <div class="despacho-clientes" id="despachoClientes" hidden>Há clientes diferentes nesta leva. Confira se todas as NFs pertencem ao mesmo pacote antes de escanear o rastreio.</div>
+          <button class="btn" id="despachoLimpar" type="button">Limpar lista</button>
+        </div>
+        <div class="cartao despacho-bloco">
+          <h2>2. Escaneie o rastreio e despache</h2>
+          <p>O rastreio confirma a saída das NFs da lista, atualiza o Fiscal e registra o aviso para o grupo de Expedição.</p>
+          <button class="btn forte" id="despachoCameraRastreio" type="button" disabled>Escanear rastreio e despachar</button>
+          <p>Para enviar ao grupo, mantenha o Kuru aberto e o WhatsApp do remetente conectado.</p>
+        </div>
+        <button class="btn" id="despachoVoltar" type="button">Voltar ao início</button>
       </section>
       <!-- consulta -->
       <section class="tela" id="telaConsulta" hidden aria-live="polite"></section>
@@ -623,7 +674,16 @@
   .banner-rota.atraso { background: var(--erro-fundo); color: var(--erro); }
   .banner-rota svg { width: 22px; height: 22px; flex: none; }
 </style>
+<div class="leitor despacho-camera" id="despachoLeitor" hidden role="dialog" aria-modal="true" aria-label="Escanear código de barras">
+  <video id="despachoVideo" playsinline muted></video>
+  <div class="mira"><div class="linha-scan"></div></div>
+  <div class="texto" id="despachoTextoCamera"></div>
+  <button class="btn fechar" id="despachoFecharCamera" type="button">Voltar ao despacho</button>
+</div>
 <script src="/expedicao/vendor/jsQR.js"></script>
+<script src="/expedicao/vendor/zxing.js"></script>
+<script src="/expedicao/despacho-codigos.js"></script>
+<script src="/expedicao/despacho-ui.js"></script>
 <script src="/expedicao/rota-ui.js"></script>
 <script>
 (() => {
@@ -631,7 +691,8 @@
   const CHAVE_SESSAO = 'kuru-expedicao-sessao';
   const PIN_MAX = 8;
   const $ = (id) => document.getElementById(id);
-  const telas = ['telaCarregando', 'telaInicio', 'telaLogin', 'telaBalcao', 'telaConsulta', 'telaRota'];
+  const telas = ['telaCarregando', 'telaInicio', 'telaLogin', 'telaBalcao', 'telaConsulta', 'telaRota', 'telaDespachar'];
+  let telaDespacho = null, destinoDespacho = false;
   const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const vibrar = (p) => { try { navigator.vibrate?.(p); } catch { /* sem suporte */ } };
 
@@ -665,8 +726,9 @@
     try { const s = JSON.parse(localStorage.getItem(CHAVE_SESSAO) || 'null'); return s && s.expira > Date.now() ? s : null; } catch { return null; }
   }
   const sessao = () => (sessaoEmMemoria && sessaoEmMemoria.expira > Date.now() ? sessaoEmMemoria : lerSessao());
-  function gravarSessao(s) { sessaoEmMemoria = s; try { localStorage.setItem(CHAVE_SESSAO, JSON.stringify(s)); } catch { /* aba anônima */ } }
+  function gravarSessao(s) { telaDespacho?.limpar(); sessaoEmMemoria = s; try { localStorage.setItem(CHAVE_SESSAO, JSON.stringify(s)); } catch { /* aba anônima */ } }
   function apagarSessao() {
+    telaDespacho?.limpar(); destinoDespacho = false;
     sessaoEmMemoria = null;
     try { localStorage.removeItem(CHAVE_SESSAO); } catch { /* nada */ }
     // O carrinho é de QUEM está logado (vira `responsavel`/`baixado_por` na
@@ -1024,7 +1086,7 @@
     document.body.classList.toggle('com-barra', comBarra);
     // Botão voltar do Android: cada tela além do início vira um passo no
     // histórico, e voltar leva ao início em vez de sair do site.
-    if (historico && id !== telaAtual && (id === 'telaLogin' || id === 'telaConsulta' || id === 'telaBalcao' || id === 'telaRota')) {
+    if (historico && id !== telaAtual && (id === 'telaLogin' || id === 'telaConsulta' || id === 'telaBalcao' || id === 'telaRota' || id === 'telaDespachar')) {
       history.pushState({ tela: id }, '');
     }
     telaAtual = id;
@@ -1065,6 +1127,7 @@
   window.addEventListener('resize', () => requestAnimationFrame(ajustarFaixa));
   if (document.fonts?.ready) document.fonts.ready.then(ajustarFaixa);
   window.addEventListener('popstate', () => {
+    if (telaAtual === 'telaDespachar' && (!$('despachoLeitor').hidden || history.state?.tela === 'telaDespachar')) return;
     if (!$('leitor').hidden) { fecharLeitor(); const callback = aoFecharLeitor; aoFecharLeitor = null; callback?.(); return; }
     if (!$('sobreposicao').hidden) {
       if (exigeCienciaCliente) {
@@ -1079,7 +1142,7 @@
       callback?.();
       return;
     }
-    if (telaAtual === 'telaLogin' || telaAtual === 'telaConsulta' || telaAtual === 'telaBalcao' || telaAtual === 'telaRota') mostrarInicio({ historico: false });
+    if (telaAtual === 'telaLogin' || telaAtual === 'telaConsulta' || telaAtual === 'telaBalcao' || telaAtual === 'telaRota' || telaAtual === 'telaDespachar') mostrarInicio({ historico: false });
   });
 
   let tempoAviso;
@@ -1142,6 +1205,7 @@
   const saudacao = () => { const h = new Date().getHours(); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'; };
 
   function mostrarInicio({ historico = true } = {}) {
+    destinoDespacho = false;
     const s = sessao();
     const comRota = Boolean(telaEntrega.atual && telaEntrega.atual.status === 'em_andamento');
     $('btnContinuarRota').hidden = !(ligado && s && comRota);
@@ -1229,6 +1293,7 @@
     }
     vibrar(20);
     gravarSessao({ sessao: r.sessao, nome: r.nome, expira: r.expira, podeMarcar: Boolean(r.podeMarcar) });
+    if (destinoDespacho) { telaDespacho.abrir({ historico: false }); return; }
     if (await retomarRotaSeHouver()) return;
     // O PIN ocupa o lugar dele no histórico: voltar do pedido leva ao início.
     if (contexto.modo === 'balcao') abrirBalcao({ historico: false });
@@ -1792,13 +1857,17 @@
   $('btnContinuarRota').addEventListener('click', () => { if (telaEntrega.atual) telaEntrega.abrir(telaEntrega.atual); });
   $('btnRetomarEntrega').addEventListener('click', async () => { if (!sessao()) { abrirLogin(); return; } if (!await retomarRotaSeHouver()) aviso('Você não tem uma rota em andamento.'); });
   $('btnEntrega').addEventListener('click', () => {
+    destinoDespacho = false;
     $('expedirEscolhas').hidden = true;
     $('btnExpedir').setAttribute('aria-expanded', 'false');
     escolherModo('entrega');
   });
   $('btnColetaBalcao').addEventListener('click', () => {
+    destinoDespacho = false;
     escolherModo('balcao');
   });
+  $('btnDespachar').addEventListener('click', () => { destinoDespacho = true; telaDespacho.abrir(); });
+  $('despachoVoltar').addEventListener('click', () => mostrarInicio({ historico: false }));
   $('formBalcao').addEventListener('submit', ev => {
     ev.preventDefault();
     if ($('clienteBalcao').disabled) { $('erroBalcao').textContent = 'Aguarde o cadastro de clientes carregar.'; return; }
@@ -1857,6 +1926,7 @@
 
   montarTeclado();
   desenharPontos();
+  telaDespacho = window.criarTelaDespacho({ api, sessao, mostrar, abrirLogin, ligado: () => ligado && ligadoBaixa, aviso, esc });
   iniciar({ primeiraVez: true });
 })();
 </script>

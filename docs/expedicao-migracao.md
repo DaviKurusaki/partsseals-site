@@ -5,6 +5,25 @@ portal operacional em `https://parts-seals.com.br/expedicao`. A API está neste
 repositório, em `netlify/functions/expedicao-api/`, com a regra de consulta
 incluída na própria função. A publicação não depende do repositório do Kuru.
 
+## Despachar NFs e rastreio
+
+**Expedir > Despachar** reúne NFs do mesmo pacote e confirma a saída ao
+escanear o rastreio dos Correios. Aceita câmera (Code128/Code39, com ZXing
+local para navegadores sem BarcodeDetector), leitor físico, digitação e
+colagem. Exige PIN, permissão para marcar expedição e os dois interruptores
+do celular ligados. As NFs precisam estar cadastradas no Fiscal.
+
+Antes de usar, execute `sql/149_expedicao_despachar.sql` do Kuru Nuvem no
+Supabase, disponível no app em Configurações > Banco. A migração repetível
+atualiza Fiscal, baixa, auditoria e aviso na mesma transação e impede que
+uma confirmação repetida duplique a baixa ou a mensagem. Sem ela, a tela
+informa como ativar a gravação e mantém as notas para nova tentativa.
+
+O aviso entra na fila `despacho_correios` já processada pelo Kuru: mantenha
+a estação dos jobs aberta, remetente conectado e grupo de Expedição
+configurado. O portal confirma o enfileiramento, e o Kuru realiza o envio.
+Não é necessário configurar nenhuma chave adicional na Netlify.
+
 ## Configuração na Netlify
 
 No projeto que já atende o domínio `parts-seals.com.br`, copie do projeto

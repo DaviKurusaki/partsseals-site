@@ -125,7 +125,7 @@ function criarRotasApi(c) {
       rota = await respostaRota(await rotaDoUsuario(criado.rota_id, s.id));
     } else baixas = await db.inserir('expedicao_baixas', grupos);
     const enfileirados = await depoisDasBaixas(baixas);
-    if (baixas.length) await db.inserir('audit_log', baixas.map(b => ({ usuario_id: s.id, usuario_nome: s.nome, modulo: 'expedicao-celular', acao: 'criar', tabela: 'expedicao_baixas', registro_id: String(b.id), depois: b, origem: 'site-expedicao' }))).catch(() => {});
+    if (baixas.length) await db.inserir('audit_log', baixas.map(b => ({ usuario_id: s.id, usuario_nome: s.nome, modulo: 'expedicao-celular', acao: 'criar', tabela: 'expedicao_baixas', registro_id: String(b.id), depois: b, origem: 'site-expedicao' })), { retornar: false }).catch(() => {});
     return responder(200, { ok: true, gravados: baixas.length ? pendentes.length : 0, grupos: baixas.length, jaDespachados, naoEncontrados, rota, modo: 'entrega', whatsapp: { habilitado: avisosLigados, enfileirados } });
   }
   async function atual(e) {
