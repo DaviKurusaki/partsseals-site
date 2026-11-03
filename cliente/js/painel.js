@@ -28,6 +28,8 @@
   var ICONE_METODO = { Transportadora: "caminhao", Entregamos: "caminhao", Correio: "carta", "Azul Cargo": "aviao", "Cliente Retira": "loja" };
 
   var estado = { pedidos: [], empresas: [], empresa: "", dias: 180, filtro: "todos", busca: "", nome: "" };
+  var cadastro = null, telaAtual = "", consulta = 0, esperaBusca;
+  var seletorEmpresas = null, seletorPeriodo = null;
 
   // Mais de uma empresa liberada: cada pedido diz de qual é e aparece o filtro.
   function variasEmpresas() { return estado.empresas.length > 1; }
@@ -35,6 +37,10 @@
   function irParaEntrar() { location.replace("/cliente/entrar"); }
 
   function mostrar(html) {
+    consulta += 1;
+    clearTimeout(esperaBusca);
+    if (seletorEmpresas) { seletorEmpresas.destruir(); seletorEmpresas = null; }
+    if (seletorPeriodo) { seletorPeriodo.destruir(); seletorPeriodo = null; }
     tela.innerHTML = html;
     principal.setAttribute("aria-busy", "false");
   }
@@ -57,6 +63,26 @@
 
   function telaSemAcesso() {
     telaEstado("alerta", "Acesso indisponível", "No momento não é possível mostrar seus pedidos por aqui. Fale com a Parts Seals pelos contatos abaixo.", contatos());
+  }
+
+  function telaHub() {
+    telaAtual = "hub";
+    document.title = "Área do Cliente | Parts Seals";
+    mostrar('<section class="cli-boas-vindas"><span class="cli-sobrescrito">Sua área na Parts Seals</span>' +
+      '<h1>Olá, ' + esc(estado.nome || "cliente") + '</h1><p>O que você quer acompanhar hoje?</p></section>' +
+      '<nav class="cli-hub" aria-label="Ferramentas da Área do Cliente">' +
+      '<a class="cli-ferramenta" href="#pedidos"><span class="cli-ferramenta__icone">' + ICONES.caixa + '</span>' +
+      '<span class="cli-ferramenta__texto"><strong>Status do meu pedido</strong>' +
+      '<span>Acompanhe a produção, o despacho e as notas fiscais dos seus pedidos.</span>' +
+      '<span class="cli-ferramenta__abrir">Consultar meus pedidos ' + ICONES.seta + '</span></span></a></nav>');
+  }
+
+  function navegar() {
+    if (!cadastro || cadastro.status !== "aprovado") return;
+    if (location.hash === "#pedidos") telaPedidos();
+    else telaHub();
+    var titulo = tela.querySelector("h1");
+    if (titulo) { titulo.tabIndex = -1; titulo.focus({ preventScroll: true }); }
   }
 
   // --- pedidos ------------------------------------------------------------------
@@ -153,10 +179,13 @@
   }
 
   function carregarPedidos() {
+    if (telaAtual !== "pedidos") return;
+    var chamada = ++consulta;
     var lista = document.querySelector("[data-lista]");
     lista.setAttribute("aria-busy", "true");
     lista.innerHTML = esqueleto();
     C.api("GET", "pedidos?dias=" + estado.dias).then(function (r) {
+      if (chamada !== consulta || telaAtual !== "pedidos") return;
       if (r.status === 401) { irParaEntrar(); return; }
       if (!r.dados || !r.dados.ok) throw new Error("falha");
       estado.pedidos = r.dados.pedidos || [];
@@ -166,31 +195,32 @@
       desenharResumo();
       desenharLista();
     }).catch(function () {
+      if (chamada !== consulta || telaAtual !== "pedidos") return;
       lista.innerHTML = '<div class="cli-vazio">' + ICONES.alerta + "<p>Não conseguimos carregar seus pedidos agora.</p>" +
         '<button class="btn btn-secondary" type="button" data-tentar>Tentar de novo</button></div>';
-    }).then(function () { lista.setAttribute("aria-busy", "false"); });
+    }).then(function () { if (chamada === consulta) lista.setAttribute("aria-busy", "false"); });
   }
 
   function desenharEmpresas() {
     var caixa = document.querySelector("[data-empresas]");
+    if (seletorEmpresas) { seletorEmpresas.destruir(); seletorEmpresas = null; }
     if (!variasEmpresas()) { caixa.hidden = true; caixa.innerHTML = ""; return; }
     caixa.hidden = false;
-    caixa.innerHTML = '<label class="cli-oculto" for="empresa">Empresa</label>' +
-      '<select class="cli-input" id="empresa" data-empresa><option value="">Todas as empresas</option>' +
-      estado.empresas.map(function (e) {
-        var id = String(e.id);
-        return '<option value="' + esc(id) + '"' + (id === estado.empresa ? " selected" : "") + ">" + esc(e.nome) + "</option>";
-      }).join("") + "</select>";
-    caixa.querySelector("[data-empresa]").addEventListener("change", function (ev) {
-      estado.empresa = ev.target.value;
-      desenharResumo();
-      desenharLista();
+    seletorEmpresas = window.PSSeletor.montar(caixa, {
+      id: "empresa", rotulo: "Empresa", valor: estado.empresa,
+      opcoes: [{ valor: "", nome: "Todas as empresas" }].concat(estado.empresas.map(function (e) {
+        return { valor: e.id, nome: e.nome };
+      })),
+      aoMudar: function (valor) { estado.empresa = valor; desenharResumo(); desenharLista(); },
     });
   }
 
-  function telaPedidos(primeiroNome) {
+  function telaPedidos() {
+    telaAtual = "pedidos";
+    document.title = "Status do meu pedido | Parts Seals";
     mostrar(
-      '<div class="cli-ola"><h1>Olá, ' + esc(primeiroNome || "cliente") + "</h1><p>Meus pedidos</p></div>" +
+      '<a class="cli-voltar" href="#inicio">' + ICONES.seta + 'Todas as ferramentas</a>' +
+      '<div class="cli-ola"><div><h1>Status do meu pedido</h1><p>Acompanhe seus pedidos da produção ao despacho.</p></div></div>' +
       '<div class="cli-resumo" data-resumo aria-live="polite"></div>' +
       '<div class="cli-ferramentas"><div class="cli-linha-ferr">' +
       '<label class="cli-oculto" for="busca">Buscar pedido ou OC</label>' +
@@ -200,44 +230,54 @@
       '<button class="cli-chip" type="button" data-filtro="aberto" aria-pressed="false">Em aberto</button>' +
       '<button class="cli-chip" type="button" data-filtro="despachado" aria-pressed="false">DESPACHADO</button></div>' +
       '<div class="cli-empresas" data-empresas hidden></div>' +
-      '<label class="cli-oculto" for="periodo">Período</label>' +
-      '<select class="cli-input" id="periodo" data-periodo><option value="90">Últimos 90 dias</option><option value="180" selected>Últimos 6 meses</option>' +
-      '<option value="365">Último ano</option><option value="730">Últimos 2 anos</option></select></div></div>' +
+      '<div data-periodo></div></div></div>' +
       '<div class="cli-lista" data-lista aria-live="polite"></div>');
     desenharResumo();
     var busca = document.querySelector("[data-busca]");
-    var espera;
-    busca.addEventListener("input", function () { clearTimeout(espera); espera = setTimeout(function () { estado.busca = busca.value; desenharLista(); }, 150); });
+    busca.value = estado.busca;
+    busca.addEventListener("input", function () {
+      clearTimeout(esperaBusca);
+      esperaBusca = setTimeout(function () { estado.busca = busca.value; desenharLista(); }, 150);
+    });
     document.querySelectorAll("[data-filtro]").forEach(function (b) {
+      b.setAttribute("aria-pressed", String(b.dataset.filtro === estado.filtro));
       b.addEventListener("click", function () {
         estado.filtro = b.dataset.filtro;
         document.querySelectorAll("[data-filtro]").forEach(function (x) { x.setAttribute("aria-pressed", String(x === b)); });
         desenharLista();
       });
     });
-    document.querySelector("[data-periodo]").addEventListener("change", function (ev) { estado.dias = Number(ev.target.value); carregarPedidos(); });
-    tela.addEventListener("click", function (ev) {
-      var copiar = ev.target.closest("[data-copiar]");
-      if (copiar && navigator.clipboard) {
-        navigator.clipboard.writeText(copiar.dataset.copiar).then(function () {
-          copiar.textContent = "Copiado!";
-          setTimeout(function () { copiar.textContent = "Copiar"; }, 1600);
-        }).catch(function () {});
-      }
-      if (ev.target.closest("[data-tentar]")) carregarPedidos();
+    seletorPeriodo = window.PSSeletor.montar(document.querySelector("[data-periodo]"), {
+      id: "periodo", rotulo: "Período", valor: estado.dias,
+      opcoes: [{ valor: 90, nome: "Últimos 90 dias" }, { valor: 180, nome: "Últimos 6 meses" },
+        { valor: 365, nome: "Último ano" }, { valor: 730, nome: "Últimos 2 anos" }],
+      aoMudar: function (valor) { estado.dias = Number(valor); carregarPedidos(); },
     });
+    desenharEmpresas();
     carregarPedidos();
   }
+
+  tela.addEventListener("click", function (ev) {
+    var copiar = ev.target.closest("[data-copiar]");
+    if (copiar && navigator.clipboard) {
+      navigator.clipboard.writeText(copiar.dataset.copiar).then(function () {
+        copiar.textContent = "Copiado!";
+        setTimeout(function () { copiar.textContent = "Copiar"; }, 1600);
+      }).catch(function () {});
+    }
+    if (ev.target.closest("[data-tentar]")) carregarPedidos();
+  });
 
   function iniciar() {
     C.api("GET", "eu").then(function (r) {
       if (r.status === 401) { irParaEntrar(); return; }
       if (!r.dados || !r.dados.ok) throw new Error("falha");
       botaoSair.hidden = false;
-      var cad = r.dados.cadastro;
-      if (!cad) { telaSemAcesso(); return; }
-      if (cad.status === "aprovado") telaPedidos(cad.primeiroNome);
-      else if (cad.status === "pendente") telaPendente(cad.primeiroNome);
+      cadastro = r.dados.cadastro;
+      if (!cadastro) { telaSemAcesso(); return; }
+      estado.nome = cadastro.primeiroNome;
+      if (cadastro.status === "aprovado") navegar();
+      else if (cadastro.status === "pendente") telaPendente(cadastro.primeiroNome);
       else telaSemAcesso();
     }).catch(function () {
       mostrar('<div class="cli-vazio">' + ICONES.alerta + "<p>" + esc(C.FALHA_REDE) + '</p><button class="btn btn-secondary" type="button" data-recarregar>Tentar de novo</button></div>');
@@ -250,5 +290,6 @@
     C.api("POST", "sair").catch(function () {}).then(function () { location.replace("/cliente/entrar"); });
   });
 
+  window.addEventListener("hashchange", navegar);
   iniciar();
 })();

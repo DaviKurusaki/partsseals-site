@@ -10,6 +10,30 @@ tabela nem função: só chama as quatro funções abaixo.
 
 ## Como funciona
 
+A entrada `/cliente` é um hub de ferramentas, disponível após a validação
+do cadastro aprovado. A primeira ferramenta é **Status do meu pedido**,
+que abre a consulta em `/cliente#pedidos`. O link **Todas as ferramentas**
+retorna ao hub; empresa, período, busca e filtro são preservados durante
+a navegação da sessão. Perfis em análise ou sem acesso mantêm suas telas
+próprias e não consultam pedidos pelo hub.
+
+Os seletores de empresa e período têm painel escuro, opção selecionada
+identificada e suporte a setas, Home/End, Enter, Escape, Tab e digitação.
+As opções usam apenas as empresas devolvidas pela API.
+
+Todas as páginas da Área do Cliente carregam `js/campaign.js`, o mesmo do
+site principal. Setembro Amarelo, Outubro Rosa, Novembro Azul e Natal
+(dezembro) mudam automaticamente os destaques, botões e seletores; as
+campanhas de conscientização também usam suas logos. Natal combina verde
+com a logo vermelha original. A prévia aceita `?campanha=outubro-rosa`,
+`novembro-azul`, `setembro-amarelo`, `natal` ou `nenhuma`. O selo flutuante
+fica no site principal para não cobrir os formulários ou ferramentas.
+
+Teste de interface sem rede e sem conta real: `tests/cliente-interface.cjs`.
+Usa Happy DOM apenas no ambiente de teste, instalado fora do projeto;
+`PS_HAPPY_DOM` aponta para o `lib/index.js` desse pacote. Não é dependência
+da publicação. Esta alteração não exige SQL novo.
+
 O acompanhamento mostra quatro passos: **Pedido recebido → Em produção →
 Pronto → DESPACHADO**. Os estados do banco `em_rota`, `com_transportadora`
 e `entregue` aparecem como DESPACHADO no site, inclusive nos itens, no resumo

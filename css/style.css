@@ -2347,6 +2347,20 @@ html[data-campaign="novembro-azul"] {
   --accent-bright: #6aa8ff;
 }
 
+html[data-campaign="natal"] {
+  --red: #28845e;
+  --red-2: #1c6044;
+  --red-3: #103a29;
+  --red-hi: #349f72;
+  --accent-rgb: 40, 132, 94;
+  --accent-deep-rgb: 16, 58, 41;
+  --accent-light: #d8e9ba;
+  --accent-soft: #abd6b5;
+  --accent-bright: #76d4a2;
+}
+
+html[data-campaign="natal"] .campaign-badge__ribbon { fill: #e6c579; }
+
 .campaign-badge {
   position: fixed;
   left: 18px;
