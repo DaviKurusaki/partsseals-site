@@ -1,9 +1,16 @@
 # Expedição: saída no Kuru, chegada pelo site
 
 A entrada pública mostra somente **Sou cliente** (site da Parts Seals) e
-**Interno**. Interno abre Consultar etiqueta, Entregas confirmadas e Despache;
+**Interno**. Interno abre Marcar Entrega, Entregas confirmadas e Despache;
 o PIN e o controle de chegada permanecem como descrito abaixo. A explicação
 da dupla conferência fica fora da entrada pública.
+
+**Marcar Entrega** substitui Consultar etiqueta: ao escanear o QR dentro
+da ferramenta, grava a chegada do item/pedido que já saiu do Kuru. Usa
+POST /expedicao/api/marcar-entrega-etiqueta, com sessão e permissão. QR de
+OP não marca outras OPs; Pedido Fechado deixa itens sem saída de fora.
+Execute SQL 151 do Kuru após 150; os dois métodos usam o mesmo histórico e
+fila de aviso. Abrir links e GET /consulta continuam somente leitura.
 
 Há dois controles independentes:
 

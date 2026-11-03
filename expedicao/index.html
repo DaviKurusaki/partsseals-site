@@ -479,7 +479,7 @@
 </section>
 <section class="tela" id="telaInterno" hidden>
   <div class="boas-vindas" data-hero><small>Parts Seals</small><h1>Interno</h1></div>
-  <button class="escolha" id="btnConsulta" type="button"><span class="txt"><strong>Consultar etiqueta</strong><span>Consultar um pedido ou OP</span></span></button>
+  <button class="escolha" id="btnConsulta" type="button"><span class="txt"><strong>Marcar Entrega</strong><span>Escanear a etiqueta na chegada ao cliente</span></span></button>
   <button class="escolha" id="btnHistorico" type="button"><span class="txt"><strong>Entregas confirmadas</strong><span>Ver o histórico de entregas</span></span></button>
   <button class="escolha principal" id="btnExpedir" type="button"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4v16M7 4v16M11 4v16M16 4v16M21 4v16"/></svg></span><span class="txt"><strong>Despache</strong><span>Ler notas fiscais e rastreio</span></span></button>
   <button class="btn" id="internoVoltar" type="button">Voltar ao início</button>
@@ -496,12 +496,12 @@
   <button class="btn" id="despachoVoltar" type="button">Voltar ao Interno</button>
 </section>
 <section class="tela" id="telaHistorico" hidden><div class="boas-vindas" data-hero><small>Controle de chegada</small><h1>Entregas confirmadas</h1></div><p class="cartao" id="historicoErro" role="status"></p><div class="tela" id="historicoLista"></div><button class="btn" id="historicoMais" type="button" hidden>Carregar mais entregas</button><button class="btn" id="historicoVoltar" type="button">Voltar ao Interno</button></section>
-<section class="tela" id="telaConsulta" hidden><div class="boas-vindas" data-hero><small>Somente consulta</small><h1>Saída e chegada</h1></div><form class="cartao despacho-bloco formulario" id="consultaForm"><label for="consultaCodigo">Código ou link do QR da etiqueta</label><input id="consultaCodigo" autocomplete="off" placeholder="Código da etiqueta"><button class="btn forte" type="submit">Consultar etiqueta</button><button class="btn" id="consultaCamera" type="button">Escanear QR da etiqueta</button><p id="consultaErro" role="alert"></p></form><div class="tela" id="consultaResultado"></div><button class="btn" id="consultaVoltar" type="button">Voltar ao Interno</button></section>
+<section class="tela" id="telaConsulta" hidden><div class="boas-vindas" data-hero><small>Interno</small><h1>Marcar Entrega</h1></div><p class="cartao despacho-resultado" id="consultaMarcacao" role="status"></p><form class="cartao despacho-bloco formulario" id="consultaForm"><p>Escaneie a etiqueta para registrar a chegada ao cliente.</p><button class="btn forte" id="consultaCamera" type="button">Escanear etiqueta e marcar entrega</button><label for="consultaCodigo">Código ou link do QR da etiqueta</label><input id="consultaCodigo" autocomplete="off" placeholder="Use o leitor ou cole o código da etiqueta"><button class="btn" type="submit">Marcar Entrega</button><p class="despacho-erro" id="consultaErro" role="alert"></p></form><div class="tela" id="consultaResultado"></div><button class="btn" id="consultaVoltar" type="button">Voltar ao Interno</button></section>
 </main>
 <footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Expedição · Kuru Nuvem</footer>
 </div></div>
 <div class="aviso" id="aviso" role="status"></div>
 <div class="leitor despacho-camera" id="despachoLeitor" hidden role="dialog" aria-modal="true" aria-label="Conferir código de barras"><video id="despachoVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="despachoTextoCamera"></div><button class="btn fechar" id="despachoFecharCamera" type="button">Voltar à conferência</button></div>
-<div class="leitor" id="qrLeitor" hidden role="dialog" aria-modal="true" aria-label="Consultar QR da etiqueta"><video id="qrVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="qrTexto"></div><button class="btn fechar" id="qrFechar" type="button">Voltar à consulta</button></div>
+<div class="leitor" id="qrLeitor" hidden role="dialog" aria-modal="true" aria-label="Escanear etiqueta e marcar entrega"><video id="qrVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="qrTexto"></div><button class="btn fechar" id="qrFechar" type="button">Voltar a Marcar Entrega</button></div>
 <script src="/expedicao/vendor/jsQR.js"></script><script src="/expedicao/vendor/zxing.js"></script><script src="/expedicao/despacho-codigos.js"></script><script src="/expedicao/despacho-ui.js"></script><script src="/expedicao/entrega-site.js"></script>
 </body></html>

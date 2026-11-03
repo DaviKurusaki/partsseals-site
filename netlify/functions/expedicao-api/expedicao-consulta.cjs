@@ -244,6 +244,7 @@ function eventosDeExpedicao(linhas, metodoEntrega) {
       responsavel: texto(r.responsavel || r.baixado_por),
       pedido: texto(r.pedido), cliente: texto(r.cliente),
       nf: '', rastreio: '', itens: Array.isArray(r.itens) ? r.itens : [],
+      prova: { tabela: 'expedicao_baixas', id: r.id, dados: r },
     };
   });
 }
@@ -273,6 +274,7 @@ function eventosDoFiscal(linhas, metodoEntrega) {
       quando: r.evento_em || null,
       responsavel: texto(r.baixado_por), pedido: texto(r.pedido), cliente: texto(r.cliente),
       nf: texto(r.nf), rastreio: texto(r.rastreio), linhas: r.linhas, itens: r.produtos,
+      prova: { tabela: 'fiscal_pedidos', id: r.id, dados: Object.fromEntries(Object.entries(r).filter(([k]) => !['linhas','produtos'].includes(k))) },
     };
   });
 }
@@ -297,6 +299,7 @@ function eventosDoFiscalNotas(linhas, metodoEntrega) {
       quando: r.data_despache || r.atualizado_em || null,
       responsavel: '', pedido: texto(r.pedido), cliente: texto(r.cliente),
       nf: texto(r.nf), rastreio: texto(r.rastreio), itens: [texto(r.descricao)],
+      prova: { tabela: 'fiscal_notas_itens', id: r.id, dados: Object.fromEntries(Object.entries(r).filter(([k]) => !['nf','cliente'].includes(k))) },
     };
   }).filter(Boolean);
 }
@@ -320,6 +323,9 @@ function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes 
   eventos.push(...recebidas); eventos.sort(porQuando);
   const chegada = recebidas.at(-1) || null;
   const atual = chegada || saida;
+  const documentos = [...eventos].reverse();
+  const nfAtual = texto(atual?.nf) || texto(documentos.find(e => texto(e.nf))?.nf);
+  const rastreioAtual = texto(atual?.rastreio) || texto(documentos.find(e => (!nfAtual || texto(e.nf) === nfAtual) && texto(e.rastreio))?.rastreio);
   return {
     eventos,
     concluida: concluidos.length > 0 || Boolean(chegada),
@@ -332,11 +338,11 @@ function montarResultado(expedicoes, fiscal, fiscalNotas, consulta = {}, fontes 
     rotulo: atual?.rotulo || 'Aguardando expedição',
     quando: atual?.quando || null,
     responsavel: atual?.responsavel || '',
-    nf: atual?.nf || '',
-    rastreio: atual?.rastreio || '',
+    nf: nfAtual,
+    rastreio: rastreioAtual,
     fontes,
     saida: { concluida: concluidos.length > 0, tipo: saida?.tipo || null, quando: saida?.quando || null,
-      nf: saida?.nf || '', rastreio: saida?.rastreio || '', responsavel: saida?.responsavel || '' },
+      nf: saida?.nf || '', rastreio: saida?.rastreio || '', responsavel: saida?.responsavel || '', prova: saida?.prova || null },
     entregaConfirmada: Boolean(chegada),
     entrega: chegada,
   };
@@ -381,9 +387,9 @@ async function consultar(consulta = {}) {
 
   const [expedicoes, fiscal, fiscalNotas, entregas] = await Promise.all([
     lerFonte('expedicao_baixas', requisicoes,
-      ['requisicao', 'pedido', 'cliente', 'acao', 'responsavel', 'baixado_por', 'evento_em', 'itens'], cacheMs),
+      ['id', 'requisicao', 'pedido', 'cliente', 'acao', 'responsavel', 'baixado_por', 'evento_em', 'itens'], cacheMs),
     lerFonte('fiscal_pedidos', requisicoes,
-      ['requisicao', 'produto', 'pedido', 'cliente', 'status', 'nf', 'rastreio', 'baixado_por', 'evento_em'], cacheMs),
+      ['id', 'requisicao', 'produto', 'pedido', 'cliente', 'status', 'nf', 'rastreio', 'baixado_por', 'evento_em'], cacheMs),
     lerFonteFiscalNotas(numerosOp, pedidos, cacheMs),
     lerFonteEntregas(numerosOp, pedidos, cacheMs),
   ]);

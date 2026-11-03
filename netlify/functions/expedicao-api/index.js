@@ -406,7 +406,7 @@ async function prepararAvisosWhatsapp(grupos, pendentes) {
   return true;
 }
 
-async function rotaConsulta(evento) {
+async function rotaConsulta(evento, paraMarcar = false) {
   const sessao = lerSessao(evento);
   if (!sessao) return erro(401, 'Entre com o seu PIN.', { sessaoExpirada: true });
   if (!(await ligado())) return erro(403, 'A expedição pelo celular está desligada no Kuru.', { desligado: true });
@@ -425,16 +425,18 @@ async function rotaConsulta(evento) {
   if (alvo.tipo === 'op') {
     // Etiqueta de item consulta somente a OP exata, inclusive na entrega.
     consultas.push(db.selecionar(TABELA_ORDENS, {
-      colunas, filtros: [{ coluna: 'numero_op', operador: 'igual', valor: alvo.chave }], limite: 20,
+      colunas, filtros: [{ coluna: 'numero_op', operador: 'igual', valor: alvo.chave }], limite: paraMarcar ? LIMITE_OPS+1 : 20,
     }));
   } else if (requisicao) {
     // Somente a etiqueta de Pedido Fechado consulta toda a requisição.
     consultas.push(db.selecionar(TABELA_ORDENS, {
-      colunas, filtros: [{ coluna: 'numero_op', operador: 'comeca', valor: `${requisicao}/` }], limite: LIMITE_OPS,
+      colunas, filtros: [{ coluna: 'numero_op', operador: 'comeca', valor: `${requisicao}/` }], limite: paraMarcar ? LIMITE_OPS+1 : LIMITE_OPS,
     }));
   }
   const vistos = new Set();
-  const linhas = (await Promise.all(consultas)).flatMap((r) => r.linhas).filter((l) => {
+  const linhasBrutas = (await Promise.all(consultas)).flatMap((r) => r.linhas);
+  if (paraMarcar && linhasBrutas.length > LIMITE_OPS) return erro(409, 'Esta etiqueta reúne mais de 200 itens. Use as etiquetas de OP para marcar as entregas sem deixar itens de fora.');
+  const linhas = linhasBrutas.filter((l) => {
     const k = `${texto(l.numero_op)}||${texto(l.cod_item)}||${texto(l.descricao)}`;
     if (vistos.has(k)) return false;
     vistos.add(k);
@@ -448,6 +450,7 @@ async function rotaConsulta(evento) {
 
   const [resultadoExpedicao, enderecos] = await Promise.all([
     expedicao.consultar({
+      cacheMs: paraMarcar ? 0 : 30000,
       numeroOp: linhas[0].numero_op, pedido: linhas[0].pedido,
       itens: linhas.map((l) => ({
         numeroOp: l.numero_op, pedido: l.pedido, codigoItem: l.cod_item, descricao: l.descricao, metodoEntrega: metodoDe(l),
@@ -473,6 +476,7 @@ async function rotaConsulta(evento) {
       grupoEntrega: grupoEntrega(metodo),
       despachado: Boolean(exp.concluida),
       entregaConfirmada: Boolean(exp.entregaConfirmada),
+      ...(paraMarcar ? { provaSaida: exp.saida?.concluida ? exp.saida : null } : {}),
       entregueEm: exp.entrega?.quando || null,
       motoristaEntrega: exp.entrega?.responsavel || '',
       tipo: exp.concluida ? (exp.tipo || null) : null,
@@ -501,6 +505,35 @@ async function rotaConsulta(evento) {
     resumo: { total: itens.length, despachados: itens.filter((i) => i.despachado).length },
     operador: sessao.nome,
   });
+}
+
+async function rotaMarcarEtiqueta(evento) {
+  const acesso = await acessoConferencia(evento);
+  if (acesso.resposta) return acesso.resposta;
+  let dados;
+  try { dados = JSON.parse(evento.body || '{}'); } catch { return erro(400, 'Código de etiqueta inválido.'); }
+  const token = texto(dados?.token).toUpperCase();
+  if (!/^[A-Z0-9]{6,20}$/.test(token)) return erro(400, 'Escaneie o QR de uma etiqueta da Parts Seals.');
+  const consulta = await rotaConsulta({ ...evento, queryStringParameters: {t:token} }, true);
+  if (consulta.statusCode !== 200) return consulta;
+  const resultado = JSON.parse(consulta.body);
+  const itens = resultado.itens.filter(i => i.provaSaida?.concluida);
+  if (!itens.length) return erro(409, 'Esta etiqueta ainda não tem saída registrada no Kuru. Confira a expedição no Acabamento antes de marcar a chegada.');
+  if (itens.some(i => !/^\d+$/.test(String(i.provaSaida.prova?.id || '')))) return erro(409, 'Não foi possível conferir o registro da saída. Atualize a página e tente novamente.');
+  try {
+    const chegada = await db.rpc('expedicao_marcar_entrega_etiqueta', {
+      p_token: token, p_usuario_id: acesso.sessao.id, p_usuario_nome: acesso.sessao.nome,
+      p_tabela_ordens: TABELA_ORDENS,
+      p_itens: itens.map(i => ({numero_op:i.numeroOp,cod_item:i.codItem,saida_em:i.provaSaida.quando,
+        prova:i.provaSaida.prova})),
+    });
+    return responder(200, {...chegada, cliente:resultado.cliente, tipo:resultado.tipo,
+      semSaida:resultado.itens.length-itens.length});
+  } catch (err) {
+    if (['PGRST202','42883'].includes(err.codigo)) return erro(503, 'Para ativar Marcar Entrega, execute sql/151_expedicao_marcar_entrega_etiqueta.sql no Supabase.');
+    if (err.codigo === 'P0001') return erro(409, err.message);
+    throw err;
+  }
 }
 
 async function rotaClientes(evento) {
@@ -614,6 +647,7 @@ exports.handler = async (evento) => {
     }
     if (rota === 'login' && evento.httpMethod === 'POST') return await rotaLogin(evento);
     if (rota === 'consulta' && evento.httpMethod === 'GET') return await rotaConsulta(evento);
+    if (rota === 'marcar-entrega-etiqueta' && evento.httpMethod === 'POST') return await rotaMarcarEtiqueta(evento);
     if (penultima === 'conferencia' && rota === 'nota' && evento.httpMethod === 'POST') return await rotaConferencia(evento, true);
     if (rota === 'confirmar-entrega' && evento.httpMethod === 'POST') return await rotaConferencia(evento, false);
     if (rota === 'entregas' && evento.httpMethod === 'GET') return await rotaEntregas(evento);

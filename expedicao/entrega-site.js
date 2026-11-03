@@ -7,6 +7,7 @@
   let memoria = null, destino = 'conferencia', ligado = false, confirmarLigado = false;
   let pin = '', entrando = false, telaAtual = 'telaInicio', controlador;
   let historico = [], pagina = 0, token = '', camera = null, leitorGeracao = 0;
+  let filaEtiquetas=Promise.resolve(), leiturasPendentes=0, geracaoEtiquetas=0;
   const data = valor => valor ? new Date(valor).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',dateStyle:'short',timeStyle:'short'}) : 'Não confirmada';
   function sessao() {
     if (memoria?.expira > Date.now()) return memoria;
@@ -42,11 +43,11 @@
     if(pin.length<3||entrando)return;entrando=true;$('erroLogin').textContent='Conferindo PIN…';
     const r=await api('login',{method:'POST',body:JSON.stringify({pin})});entrando=false;
     if(!r.ok){pin='';desenharPin();$('erroLogin').textContent=r.erro;return;}
-    controlador.limpar();memoria={sessao:r.sessao,nome:r.nome,expira:r.expira,podeMarcar:Boolean(r.podeMarcar)};
+    controlador.limpar();limparMarcacao();memoria={sessao:r.sessao,nome:r.nome,expira:r.expira,podeMarcar:Boolean(r.podeMarcar)};
     try{localStorage.setItem(chaveSessao,JSON.stringify(memoria));}catch{}
     abrirDestino();
   }
-  function abrirDestino(){if(!sessao()){abrirLogin();return;}if(destino==='conferencia')controlador.abrir();else if(destino==='historico')abrirHistorico();else abrirConsulta();}
+  function abrirDestino(){if(!sessao()){abrirLogin();return;}if(destino==='conferencia')controlador.abrir();else if(destino==='historico')abrirHistorico();else if(!sessao().podeMarcar||!confirmarLigado){aviso('Marcar Entrega exige permissão para confirmar a chegada e o controle ligado no Kuru.');interno({historico:false});}else abrirConsulta();}
   async function abrirHistorico(mais=false){
     mostrar('telaHistorico');if(!mais){historico=[];pagina=0;}$('historicoErro').textContent='Carregando…';
     const r=await api('entregas?offset='+pagina);
@@ -54,7 +55,7 @@
     historico.push(...r.entregas);pagina+=r.entregas.length;$('historicoErro').textContent='';$('historicoMais').hidden=!r.mais;
     const grupos=new Map();
     for(const item of historico){const k=[item.conferencia_id,item.nf_id,item.rastreio].join('|');if(!grupos.has(k))grupos.set(k,{...item,itens:[]});grupos.get(k).itens.push(item);}
-    $('historicoLista').innerHTML=[...grupos.values()].map(g=>`<article class="cartao despacho-bloco"><strong>ENTREGUE · NF ${esc(g.numero_nf)}</strong><span>${esc(g.cliente)}</span><span>Rastreio ${esc(g.rastreio)}</span><span>${g.itens.length} itens · ${esc(g.motorista_nome)}</span><small>${esc(data(g.entregue_em))}</small><p>Saída no Kuru: ${esc(g.data_saida||'data não informada')}</p></article>`).join('')||'<div class="cartao">Nenhuma chegada conferida ainda. Os despachos antigos não viram entregas automaticamente.</div>';
+    $('historicoLista').innerHTML=[...grupos.values()].map(g=>`<article class="cartao despacho-bloco"><strong>ENTREGUE · ${g.numero_nf?'NF '+esc(g.numero_nf):g.etiqueta_tipo==='pedido'?'Pedido '+esc(g.pedido):'OP '+esc(g.numero_op)}</strong><span>${esc(g.cliente)}</span>${g.rastreio?`<span>Rastreio ${esc(g.rastreio)}</span>`:''}<span>${g.itens.length} itens · ${esc(g.motorista_nome)}</span><small>${esc(data(g.entregue_em))}</small><p>Saída no Kuru: ${esc(g.data_saida||'data não informada')}</p></article>`).join('')||'<div class="cartao">Nenhuma chegada conferida ainda. Os despachos antigos não viram entregas automaticamente.</div>';
   }
   function extrairToken(valor){
     valor=String(valor||'').trim();if(/^[A-Za-z0-9]{6,20}$/.test(valor))return valor;
@@ -63,15 +64,43 @@
   }
   async function abrirConsulta(){
     mostrar('telaConsulta');$('consultaErro').textContent='';
-    if(!token)return;$('consultaErro').textContent='Consultando…';
-    const r=await api('consulta?t='+encodeURIComponent(token));
+    if(token){$('consultaCodigo').value=token;await carregarEtiqueta(token);}
+  }
+  async function carregarEtiqueta(codigo){
+    const identidade=sessao()?.sessao;
+    const r=await api('consulta?t='+encodeURIComponent(codigo));
+    if(sessao()?.sessao!==identidade)return;
     if(!r.ok){$('consultaErro').textContent=r.erro;if(r.sessaoExpirada)abrirLogin();return;}
     $('consultaErro').textContent='';
     $('consultaResultado').innerHTML=`<div class="cartao despacho-bloco"><h2>${esc(r.cliente)}</h2><p>Pedido ${esc(r.pedido)} · NF ${esc(r.nf||'não informada')}</p><p>Rastreio ${esc(r.rastreio||'não informado')}</p></div>`+r.itens.map(i=>`<article class="cartao despacho-bloco"><strong>${esc(i.numeroOp)} · ${esc(i.descricao)}</strong><span>Saída da fábrica: ${i.despachado?'registrada no Kuru':'ainda não registrada'}</span><span>Chegada ao cliente: <b>${i.entregaConfirmada?'ENTREGUE':'aguardando dupla conferência'}</b></span>${i.entregaConfirmada?`<small>${esc(data(i.entregueEm))} · ${esc(i.motoristaEntrega)}</small>`:''}</article>`).join('');
   }
+  function limparMarcacao(){geracaoEtiquetas++;leiturasPendentes=0;$('consultaCodigo').value='';$('consultaMarcacao').textContent='';$('consultaErro').textContent='';$('consultaCamera').disabled=false;}
+  function marcarEtiqueta(codigo){
+    if(!sessao()){destino='consulta';abrirLogin();return;}
+    const geracao=geracaoEtiquetas,identidade=sessao().sessao;
+    leiturasPendentes++;$('consultaCamera').disabled=true;
+    const executar=async()=>{
+      if(geracao!==geracaoEtiquetas)return;
+      try{
+        if(sessao()?.sessao!==identidade){if(!sessao())abrirLogin();return;}
+        $('consultaMarcacao').textContent='';$('consultaResultado').innerHTML='';
+        $('consultaErro').textContent='Marcando chegada ao cliente…';
+        const r=await api('marcar-entrega-etiqueta',{method:'POST',body:JSON.stringify({token:codigo})});
+        if(geracao!==geracaoEtiquetas||sessao()?.sessao!==identidade)return;
+        if(!r.ok){$('consultaErro').textContent=r.erro;$('consultaCodigo').value=codigo;if(r.sessaoExpirada)abrirLogin();return;}
+        token=codigo;$('consultaErro').textContent='';
+        $('consultaMarcacao').textContent=r.itensEntregues
+          ? `ENTREGUE · ${r.itensEntregues} ${r.itensEntregues===1?'item marcado':'itens marcados'} na chegada ao cliente.${r.semSaida?` ${r.semSaida} itens ainda sem saída ficaram de fora.`:''} Aviso registrado para o grupo de Expedição.`
+          : r.semSaida ? `Os itens com saída desta etiqueta já estão entregues. ${r.semSaida} itens ainda sem saída ficaram de fora.` : 'Esta etiqueta já está marcada como entregue. A primeira confirmação foi preservada.';
+        aviso(r.itensEntregues?'Entrega marcada':'Entrega já confirmada');
+        await carregarEtiqueta(codigo);
+      }finally{if(geracao===geracaoEtiquetas){leiturasPendentes--;$('consultaCamera').disabled=leiturasPendentes>0;}}
+    };
+    filaEtiquetas=filaEtiquetas.then(executar,executar);return filaEtiquetas;
+  }
   function pararQr(){leitorGeracao++;if(camera)camera.getTracks().forEach(t=>t.stop());camera=null;$('qrVideo').srcObject=null;$('qrLeitor').hidden=true;}
   async function lerQr(){
-    pararQr();const geracao=leitorGeracao;$('qrLeitor').hidden=false;$('qrTexto').textContent='Aponte para o QR da etiqueta para consultar.';history.pushState({qr:true},'');
+    pararQr();const geracao=leitorGeracao;$('qrLeitor').hidden=false;$('qrTexto').textContent='Aponte para o QR da etiqueta para marcar a entrega.';history.pushState({qr:true},'');
     try{
       const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}},audio:false});
       if(geracao!==leitorGeracao||document.hidden){stream.getTracks().forEach(t=>t.stop());return;}
@@ -84,7 +113,7 @@
           const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(video,0,0,canvas.width,canvas.height);
           const imagem=ctx.getImageData(0,0,canvas.width,canvas.height);const qr=window.jsQR(imagem.data,imagem.width,imagem.height);
           const lido=qr&&extrairToken(qr.data);
-          if(lido){pararQr();history.back();token=lido;abrirConsulta();return;}
+          if(lido){pararQr();history.back();marcarEtiqueta(lido);return;}
         }
         setTimeout(quadro,200);
       }quadro();
@@ -96,9 +125,9 @@
   $('btnConsulta').onclick=()=>{destino='consulta';abrirDestino();};
   $('despachoVoltar').onclick=$('historicoVoltar').onclick=$('consultaVoltar').onclick=()=>interno({historico:false});$('btnLogo').onclick=inicio;
   $('btnVoltar').onclick=()=>interno({historico:false});$('historicoMais').onclick=()=>abrirHistorico(true);
-  $('consultaForm').onsubmit=ev=>{ev.preventDefault();const lido=extrairToken($('consultaCodigo').value);if(!lido){$('consultaErro').textContent='Informe o código ou o link do QR da etiqueta.';return;}token=lido;abrirConsulta();};
+  $('consultaForm').onsubmit=ev=>{ev.preventDefault();const lido=extrairToken($('consultaCodigo').value);if(!lido){$('consultaErro').textContent='Informe o código ou o link do QR da etiqueta.';return;}$('consultaCodigo').value='';marcarEtiqueta(lido);};
   $('consultaCamera').onclick=lerQr;$('qrFechar').onclick=()=>{pararQr();history.back();};
-  $('btnSair').onclick=()=>{controlador.limpar();memoria=null;try{localStorage.removeItem(chaveSessao);}catch{}$('consultaResultado').innerHTML='';$('historicoLista').innerHTML='';historico=[];inicio();};
+  $('btnSair').onclick=()=>{controlador.limpar();limparMarcacao();memoria=null;token='';try{localStorage.removeItem(chaveSessao);}catch{}$('consultaResultado').innerHTML='';$('historicoLista').innerHTML='';historico=[];inicio();};
   $('teclado').innerHTML=['1','2','3','4','5','6','7','8','9','apagar','0','entrar'].map(t=>`<button type="button" class="tecla ${t==='entrar'?'entrar':''}" data-t="${t}" aria-label="${t==='apagar'?'Apagar último dígito':t==='entrar'?'Entrar':t}">${t==='apagar'?'⌫':t==='entrar'?'→':t}</button>`).join('');
   $('teclado').onclick=ev=>{const b=ev.target.closest('[data-t]');if(b)tecla(b.dataset.t);};
   document.addEventListener('keydown',ev=>{if($('telaLogin').hidden||ev.ctrlKey||ev.metaKey||ev.altKey)return;if(/^\d$/.test(ev.key)){ev.preventDefault();tecla(ev.key);}else if(ev.key==='Backspace'){ev.preventDefault();tecla('apagar');}else if(ev.key==='Enter'){ev.preventDefault();tecla('entrar');}});
