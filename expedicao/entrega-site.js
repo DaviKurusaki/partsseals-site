@@ -35,6 +35,13 @@
     telaAtual=id;window.scrollTo({top:0});requestAnimationFrame(ajustarFaixa);
   }
   function inicio(){pararQr();mostrar('telaInicio',{historico:false});history.replaceState({tela:'telaInicio'},'');$('saudacao').textContent='Bem-vindo';}
+  function bloqueioInterno(texto){$('internoBloqueioTexto').textContent=texto||'';$('internoBloqueio').hidden=!texto;}
+  function semPermissao(ferramenta){
+    const s=sessao();if(s&&s.podeMarcar&&ligado&&confirmarLigado)return false;
+    bloqueioInterno(!ligado||!confirmarLigado?ferramenta+' está desligado no Kuru (Tabula > Etiquetas > Expedição).'
+      :ferramenta+': o usuário '+s.nome+' não tem a permissão para confirmar entrega pelo celular. Se ela acabou de ser liberada no Kuru, toque em Entrar com outro PIN.');
+    interno({historico:false});return true;
+  }
   function interno({historico=true}={}){pararQr();mostrar('telaInterno',{historico});if(!historico)history.replaceState({tela:'telaInterno'},'');}
   function abrirLogin(){pin='';$('erroLogin').textContent='';desenharPin();mostrar('telaLogin');}
   function desenharPin(){ $('pontos').innerHTML=Array.from({length:Math.max(4,pin.length)},(_,i)=>`<i class="${i<pin.length?'cheio':''}"></i>`).join('');$('pinLeitor').textContent=pin.length+' dígitos'; }
@@ -47,7 +54,7 @@
     try{localStorage.setItem(chaveSessao,JSON.stringify(memoria));}catch{}
     abrirDestino();
   }
-  function abrirDestino(){if(!sessao()){abrirLogin();return;}if(destino==='conferencia')controlador.abrir();else if(destino==='historico')abrirHistorico();else if(!sessao().podeMarcar||!confirmarLigado){aviso('Marcar Entrega exige permissão para confirmar a chegada e o controle ligado no Kuru.');interno({historico:false});}else abrirConsulta();}
+  function abrirDestino(){if(!sessao()){abrirLogin();return;}bloqueioInterno('');if(destino==='conferencia'){if(!semPermissao('Marcar Despache Correio'))controlador.abrir();}else if(destino==='historico')abrirHistorico();else if(!semPermissao('Marcar Entrega'))abrirConsulta();}
   async function abrirHistorico(mais=false){
     mostrar('telaHistorico');if(!mais){historico=[];pagina=0;}$('historicoErro').textContent='Carregando…';
     const r=await api('entregas?offset='+pagina);
@@ -120,14 +127,15 @@
     }catch{if(geracao===leitorGeracao){if(camera)camera.getTracks().forEach(t=>t.stop());camera=null;$('qrVideo').srcObject=null;$('qrTexto').textContent='Libere a câmera ou volte para digitar ou colar o código da etiqueta.';}}
   }
   $('btnExpedir').onclick=()=>{destino='conferencia';abrirDestino();};
-  $('btnInterno').onclick=()=>interno();$('internoVoltar').onclick=inicio;
+  $('btnInterno').onclick=()=>{bloqueioInterno('');interno();};$('internoVoltar').onclick=inicio;
   $('btnHistorico').onclick=()=>{destino='historico';abrirDestino();};
   $('btnConsulta').onclick=()=>{destino='consulta';abrirDestino();};
   $('despachoVoltar').onclick=$('historicoVoltar').onclick=$('consultaVoltar').onclick=()=>interno({historico:false});$('btnLogo').onclick=inicio;
   $('btnVoltar').onclick=()=>interno({historico:false});$('historicoMais').onclick=()=>abrirHistorico(true);
   $('consultaForm').onsubmit=ev=>{ev.preventDefault();const lido=extrairToken($('consultaCodigo').value);if(!lido){$('consultaErro').textContent='Informe o código ou o link do QR da etiqueta.';return;}$('consultaCodigo').value='';marcarEtiqueta(lido);};
   $('consultaCamera').onclick=lerQr;$('qrFechar').onclick=()=>{pararQr();history.back();};
-  $('btnSair').onclick=()=>{controlador.limpar();limparMarcacao();memoria=null;token='';try{localStorage.removeItem(chaveSessao);}catch{}$('consultaResultado').innerHTML='';$('historicoLista').innerHTML='';historico=[];inicio();};
+  $('internoReentrar').onclick=()=>{$('btnSair').onclick();abrirLogin();};
+  $('btnSair').onclick=()=>{bloqueioInterno('');controlador.limpar();limparMarcacao();memoria=null;token='';try{localStorage.removeItem(chaveSessao);}catch{}$('consultaResultado').innerHTML='';$('historicoLista').innerHTML='';historico=[];inicio();};
   $('teclado').innerHTML=['1','2','3','4','5','6','7','8','9','apagar','0','entrar'].map(t=>`<button type="button" class="tecla ${t==='entrar'?'entrar':''}" data-t="${t}" aria-label="${t==='apagar'?'Apagar último dígito':t==='entrar'?'Entrar':t}">${t==='apagar'?'⌫':t==='entrar'?'→':t}</button>`).join('');
   $('teclado').onclick=ev=>{const b=ev.target.closest('[data-t]');if(b)tecla(b.dataset.t);};
   document.addEventListener('keydown',ev=>{if($('telaLogin').hidden||ev.ctrlKey||ev.metaKey||ev.altKey)return;if(/^\d$/.test(ev.key)){ev.preventDefault();tecla(ev.key);}else if(ev.key==='Backspace'){ev.preventDefault();tecla('apagar');}else if(ev.key==='Enter'){ev.preventDefault();tecla('entrar');}});

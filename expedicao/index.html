@@ -396,6 +396,9 @@
     transition: transform .35s cubic-bezier(.2, .8, .2, 1), opacity .25s ease, visibility 0s linear .35s;
   }
   .aviso-flutuante.ver { transform: translate(-50%, 0); opacity: 1; visibility: visible; transition-delay: 0s; }
+  .interno-bloqueio { border: 1.5px solid var(--erro); background: var(--erro-fundo); color: var(--tinta); display: flex; flex-direction: column; gap: 10px; }
+  .interno-bloqueio[hidden] { display: none; }
+  .interno-bloqueio p { font-weight: 600; }
   .offline { display: none; align-items: center; justify-content: center; gap: 8px; background: var(--aviso-fundo); color: var(--aviso); font-weight: 700; font-size: 13.5px; padding: 8px 12px; border-radius: 12px; margin-top: 12px; position: relative; z-index: 1; }
   body.sem-rede .offline { display: flex; }
   .offline svg { width: 16px; height: 16px; }
@@ -479,14 +482,15 @@
 </section>
 <section class="tela" id="telaInterno" hidden>
   <div class="boas-vindas" data-hero><small>Parts Seals</small><h1>Interno</h1></div>
+  <div class="cartao interno-bloqueio" id="internoBloqueio" role="alert" hidden><p id="internoBloqueioTexto"></p><button class="btn" id="internoReentrar" type="button">Entrar com outro PIN</button></div>
   <button class="escolha" id="btnConsulta" type="button"><span class="txt"><strong>Marcar Entrega</strong><span>Escanear a etiqueta na chegada ao cliente</span></span></button>
   <button class="escolha" id="btnHistorico" type="button"><span class="txt"><strong>Entregas confirmadas</strong><span>Ver o histórico de entregas</span></span></button>
-  <button class="escolha principal" id="btnExpedir" type="button"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4v16M7 4v16M11 4v16M16 4v16M21 4v16"/></svg></span><span class="txt"><strong>Despache</strong><span>Ler notas fiscais e rastreio</span></span></button>
+  <button class="escolha principal" id="btnExpedir" type="button"><span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 4v16M7 4v16M11 4v16M16 4v16M21 4v16"/></svg></span><span class="txt"><strong>Marcar Despache Correio</strong><span>Ler notas fiscais e rastreio</span></span></button>
   <button class="btn" id="internoVoltar" type="button">Voltar ao início</button>
 </section>
 <section class="tela" id="telaLogin" hidden><div class="cartao-pin"><div class="cadeado" data-hero>PIN</div><h2>Digite seu PIN</h2><p>O mesmo PIN do Kuru Nuvem</p><div class="pontos" id="pontos"></div><span class="so-leitor" id="pinLeitor" aria-live="polite"></span><p id="erroLogin" role="alert"></p><div class="teclado" id="teclado"></div><button class="voltar" id="btnVoltar" type="button">Voltar</button></div></section>
 <section class="tela" id="telaDespachar" hidden>
-  <div class="boas-vindas" data-hero><small>Interno</small><h1>Despache</h1></div>
+  <div class="boas-vindas" data-hero><small>Interno</small><h1>Marcar Despache Correio</h1></div>
   <p class="cartao despacho-resultado" id="despachoResultado" role="status"></p>
   <div class="cartao despacho-bloco"><h2>1. Confira as notas recebidas</h2><p>No cliente, escaneie as NFs do pacote. Elas precisam ter saída registrada no Kuru Nuvem.</p><button class="btn forte" id="despachoCameraNf" type="button">Escanear código de barras da NF</button>
     <form class="formulario" id="despachoForm"><label for="despachoCodigo">NF ou rastreio · leitor, digitação ou colagem</label><input id="despachoCodigo" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="100" placeholder="Chave da NF ou rastreio da saída"><button class="btn" id="despachoLer" type="submit">Conferir código</button></form>
@@ -500,7 +504,7 @@
 </main>
 <footer class="rodape">Parts Seals · <b>Vedações Industriais</b><br>Expedição · Kuru Nuvem</footer>
 </div></div>
-<div class="aviso" id="aviso" role="status"></div>
+<div class="aviso-flutuante" id="aviso" role="status" aria-live="polite"></div>
 <div class="leitor despacho-camera" id="despachoLeitor" hidden role="dialog" aria-modal="true" aria-label="Conferir código de barras"><video id="despachoVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="despachoTextoCamera"></div><button class="btn fechar" id="despachoFecharCamera" type="button">Voltar à conferência</button></div>
 <div class="leitor" id="qrLeitor" hidden role="dialog" aria-modal="true" aria-label="Escanear etiqueta e marcar entrega"><video id="qrVideo" playsinline muted></video><div class="mira"><div class="linha-scan"></div></div><div class="texto" id="qrTexto"></div><button class="btn fechar" id="qrFechar" type="button">Voltar a Marcar Entrega</button></div>
 <script src="/expedicao/vendor/jsQR.js"></script><script src="/expedicao/vendor/zxing.js"></script><script src="/expedicao/despacho-codigos.js"></script><script src="/expedicao/despacho-ui.js"></script><script src="/expedicao/entrega-site.js"></script>
