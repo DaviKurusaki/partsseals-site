@@ -38,6 +38,10 @@ teste('busca por nº do pedido ou OC e filtros em aberto/entregues', () => {
   assert.deepEqual(R.filtrar(ps, { busca: '30002' }).map((p) => p.pedido), ['30002']);
   assert.deepEqual(R.filtrar(ps, { filtro: 'aberto' }).map((p) => p.pedido), ['30002']);
   assert.deepEqual(R.filtrar(ps, { filtro: 'entregue' }).map((p) => p.pedido), ['30001']);
+  const varias = [{ pedido: '1', empresa_id: 7, etapa: 'entregue' }, { pedido: '2', empresa_id: 9, etapa: 'em_producao' }];
+  assert.deepEqual(R.filtrar(varias, { empresa: '9' }).map((p) => p.pedido), ['2']);
+  assert.deepEqual(R.filtrar(varias, { empresa: '' }).map((p) => p.pedido), ['1', '2']);
+  assert.deepEqual(R.filtrar(varias, { empresa: '7', filtro: 'aberto' }), []);
 });
 
 teste('"X de Y itens entregues" só quando os itens estão em etapas diferentes', () => {

@@ -27,7 +27,10 @@
   };
   var ICONE_METODO = { Transportadora: "caminhao", Entregamos: "caminhao", Correio: "carta", "Azul Cargo": "aviao", "Cliente Retira": "loja" };
 
-  var estado = { pedidos: [], dias: 180, filtro: "todos", busca: "", nome: "" };
+  var estado = { pedidos: [], empresas: [], empresa: "", dias: 180, filtro: "todos", busca: "", nome: "" };
+
+  // Mais de uma empresa liberada: cada pedido diz de qual é e aparece o filtro.
+  function variasEmpresas() { return estado.empresas.length > 1; }
 
   function irParaEntrar() { location.replace("/cliente/entrar"); }
 
@@ -116,8 +119,11 @@
       linhaEntregue = '<p class="cli-entregue">Entregue em ' + esc(R.dataHoraBr(p.entregue_em)) + (p.recebido_por ? ", recebido por " + esc(p.recebido_por) : "") + "</p>";
     }
     var progresso = R.progressoItens(p);
-    return '<article class="cli-pedido" aria-labelledby="ped-' + esc(p.pedido) + '">' +
-      '<div class="cli-pedido__topo"><div><h2 class="cli-pedido__num" id="ped-' + esc(p.pedido) + '">Pedido ' + esc(p.pedido) + "</h2>" +
+    // O mesmo nº de pedido pode existir em duas empresas: o id leva a empresa.
+    var idTitulo = "ped-" + esc(p.empresa_id == null ? "" : p.empresa_id) + "-" + esc(p.pedido);
+    var empresa = variasEmpresas() && p.empresa ? '<span class="cli-empresa">' + esc(p.empresa) + "</span>" : "";
+    return '<article class="cli-pedido" aria-labelledby="' + idTitulo + '">' +
+      '<div class="cli-pedido__topo"><div>' + empresa + '<h2 class="cli-pedido__num" id="' + idTitulo + '">Pedido ' + esc(p.pedido) + "</h2>" +
       (meta.length ? '<p class="cli-pedido__meta">' + meta.join(" · ") + "</p>" : "") +
       (progresso ? '<span class="cli-parcial">' + progresso.entregues + " de " + progresso.total + " itens entregues</span>" : "") +
       "</div>" + prazo + "</div>" + linhaEntregue + linhaDoTempo(p) + blocoDetalhes(p) + blocoItens(p) + "</article>";
@@ -129,7 +135,7 @@
 
   function desenharLista() {
     var lista = document.querySelector("[data-lista]");
-    var visiveis = R.filtrar(estado.pedidos, { filtro: estado.filtro, busca: estado.busca });
+    var visiveis = R.filtrar(estado.pedidos, { filtro: estado.filtro, busca: estado.busca, empresa: estado.empresa });
     if (!visiveis.length) {
       lista.innerHTML = '<div class="cli-vazio">' + ICONES.caixa + "<p>" + (estado.pedidos.length ? "Nenhum pedido encontrado com esse filtro." : "Nenhum pedido nesse período.") + "</p></div>";
       return;
@@ -138,7 +144,7 @@
   }
 
   function desenharResumo() {
-    var r = R.resumo(estado.pedidos);
+    var r = R.resumo(R.filtrar(estado.pedidos, { empresa: estado.empresa }));
     document.querySelector("[data-resumo]").innerHTML =
       '<div class="cli-numero cli-numero--producao"><strong>' + r.producao + "</strong><span>Em produção</span></div>" +
       '<div class="cli-numero cli-numero--caminho"><strong>' + r.caminho + "</strong><span>A caminho</span></div>" +
@@ -153,12 +159,32 @@
       if (r.status === 401) { irParaEntrar(); return; }
       if (!r.dados || !r.dados.ok) throw new Error("falha");
       estado.pedidos = r.dados.pedidos || [];
+      estado.empresas = r.dados.empresas || [];
+      if (!estado.empresas.some(function (e) { return String(e.id) === estado.empresa; })) estado.empresa = "";
+      desenharEmpresas();
       desenharResumo();
       desenharLista();
     }).catch(function () {
       lista.innerHTML = '<div class="cli-vazio">' + ICONES.alerta + "<p>Não conseguimos carregar seus pedidos agora.</p>" +
         '<button class="btn btn-secondary" type="button" data-tentar>Tentar de novo</button></div>';
     }).then(function () { lista.setAttribute("aria-busy", "false"); });
+  }
+
+  function desenharEmpresas() {
+    var caixa = document.querySelector("[data-empresas]");
+    if (!variasEmpresas()) { caixa.hidden = true; caixa.innerHTML = ""; return; }
+    caixa.hidden = false;
+    caixa.innerHTML = '<label class="cli-oculto" for="empresa">Empresa</label>' +
+      '<select class="cli-input" id="empresa" data-empresa><option value="">Todas as empresas</option>' +
+      estado.empresas.map(function (e) {
+        var id = String(e.id);
+        return '<option value="' + esc(id) + '"' + (id === estado.empresa ? " selected" : "") + ">" + esc(e.nome) + "</option>";
+      }).join("") + "</select>";
+    caixa.querySelector("[data-empresa]").addEventListener("change", function (ev) {
+      estado.empresa = ev.target.value;
+      desenharResumo();
+      desenharLista();
+    });
   }
 
   function telaPedidos(primeiroNome) {
@@ -172,6 +198,7 @@
       '<button class="cli-chip" type="button" data-filtro="todos" aria-pressed="true">Todos</button>' +
       '<button class="cli-chip" type="button" data-filtro="aberto" aria-pressed="false">Em aberto</button>' +
       '<button class="cli-chip" type="button" data-filtro="entregue" aria-pressed="false">Entregues</button></div>' +
+      '<div class="cli-empresas" data-empresas hidden></div>' +
       '<label class="cli-oculto" for="periodo">Período</label>' +
       '<select class="cli-input" id="periodo" data-periodo><option value="90">Últimos 90 dias</option><option value="180" selected>Últimos 6 meses</option>' +
       '<option value="365">Último ano</option><option value="730">Últimos 2 anos</option></select></div></div>' +

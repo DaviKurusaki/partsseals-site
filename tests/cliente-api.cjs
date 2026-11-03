@@ -99,7 +99,9 @@ global.fetch = async (url, opcoes = {}) => {
     if (nome === 'site_cliente_meus_pedidos') {
       estado.pedidosChamados.push(corpo);
       const c = estado.cadastros.get(corpo.p_auth_user_id);
-      return json(200, { pedidos: c?.status === 'aprovado' ? [{ pedido: '30001', etapa: 'em_producao', itens: [] }] : [] });
+      if (c?.status !== 'aprovado') return json(200, { pedidos: [], empresas: [] });
+      return json(200, { pedidos: [{ pedido: '30001', empresa_id: 1, empresa: 'ACME', etapa: 'em_producao', itens: [] }],
+        empresas: [{ id: 1, nome: 'ACME', cnpj: '11222333000181' }, { id: 2, nome: 'BETA' }] });
     }
     return json(404, { code: 'PGRST202', message: 'função inexistente' });
   }
@@ -234,6 +236,8 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
     const b = await entrarComo('maria@acme.com.br');
     const p = await b.chamar('GET', 'pedidos', { query: { dias: '90', p_auth_user_id: 'outro-id', auth_user_id: 'outro-id' } });
     assert.equal(p.corpo.pedidos.length, 1);
+    assert.equal(p.corpo.pedidos[0].empresa, 'ACME');
+    assert.deepEqual(p.corpo.empresas, [{ id: 1, nome: 'ACME' }, { id: 2, nome: 'BETA' }], 'empresas liberadas só com id e nome');
     assert.equal(estado.pedidosChamados.at(-1).p_auth_user_id, usuarioPorEmail('maria@acme.com.br').id);
     assert.equal(estado.pedidosChamados.at(-1).p_dias, 90);
   });
