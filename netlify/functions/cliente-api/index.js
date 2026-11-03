@@ -285,7 +285,7 @@ async function rotaArquivo(evento) {
   if(!d || !['pdf','xml','boleto'].includes(d.tipo) || !/^\d{1,9}$/.test(d.numero)) return erro(404,'Documento indisponível.',{},s.cookies);
   const bytes=await servico.baixarDocumento(d),xml=d.tipo==='xml';
   const r={statusCode:200,isBase64Encoded:true,body:bytes.toString('base64'),headers:{
-    'Content-Type':xml?'application/xml; charset=utf-8':'application/pdf',
+    'Content-Type':xml?'application/xml':'application/pdf',
     'Content-Disposition':`${xml?'attachment':'inline'}; filename="${d.tipo}-NF-${d.numero}.${xml?'xml':'pdf'}"`,
     'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-Robots-Tag':'noindex, nofollow',
     'Content-Security-Policy':"default-src 'none'; sandbox",
