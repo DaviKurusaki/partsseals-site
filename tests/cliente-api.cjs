@@ -268,7 +268,7 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
 
   await teste('Central Técnica: página servida só para sessão aprovada', async () => {
     zerar();
-    const pagina = async b => api.handler({ path: '/cliente/api/central-pagina', httpMethod: 'GET',
+    const pagina = async b => api.handler({ path: '/cliente/central', httpMethod: 'GET',
       headers: { cookie: b ? [...b.jar].map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('; ') : '' } });
     assert.equal((await pagina()).statusCode, 302);
     await navegador().chamar('POST', 'cadastro', { corpo: valido() });

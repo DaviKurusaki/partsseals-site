@@ -279,7 +279,7 @@ const ROTAS = {
   'POST esqueci-senha': rotaEsqueci, 'POST nova-senha': rotaNovaSenha,
   'GET eu': rotaEu, 'GET pedidos': rotaPedidos, 'GET empresas': rotaEmpresas,
   'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
-  'GET central-pagina': rotaCentralPagina,
+  'GET central': rotaCentralPagina, 'GET central-pagina': rotaCentralPagina,
 };
 
 async function rotaDocumentos(evento) {
