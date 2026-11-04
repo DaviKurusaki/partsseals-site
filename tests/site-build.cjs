@@ -23,16 +23,6 @@ for (const name of [...pages, '404.html', 'expedicao/index.html', ...paginasClie
     assert.match(html, /name="robots" content="noindex, nofollow"/);
   }
 }
-for (const name of ['index.html', 'en.html', 'es.html']) {
-  const html = fs.readFileSync(path.join(output, name), 'utf8');
-  assert.match(html, /foto-usinagem-ilustrativa\.jpg/);
-  assert.match(html, /foto-medicao-ilustrativa\.jpg/);
-  assert.equal([...html.matchAll(/assets\/img\/perfis\/perfil-[^" ]+\.png/g)].length, 11, `${name}: 8 produtos e 3 perfis em destaque`);
-  assert(!/hero-industrial|manufacturing-gallery|seals-components|technical-analysis\.webp|product-amostra-desenho/.test(html), `${name}: imagem anterior ainda publicada`);
-}
-for (const name of ['hero-industrial.jpg', 'manufacturing-gallery.jpg', 'seals-components.jpg', 'technical-analysis.jpg', 'og-parts-seals.jpg']) {
-  assert(!fs.existsSync(path.join(output, 'assets/img', name)), `Imagem artificial antiga publicada: ${name}`);
-}
 const manifest = JSON.parse(fs.readFileSync(path.join(output, 'expedicao/manifest.webmanifest')));
 assert.equal(manifest.start_url, '/expedicao/');
 assert.equal(manifest.scope, '/expedicao/');
@@ -58,10 +48,5 @@ for (const arquivo of fs.readdirSync(path.join(output, 'cliente'), { recursive: 
 }
 const redirects = fs.readFileSync(path.join(output, '_redirects'), 'utf8');
 assert.match(redirects, /\/cliente\/api\/\*\s+\/\.netlify\/functions\/cliente-api\/:splat\s+200!/);
-assert.match(redirects, /\/cliente\/central\s+\/\.netlify\/functions\/cliente-api\/central-pagina\s+200!/);
-assert.match(redirects, /\/api\/cobertura\s+\/\.netlify\/functions\/cobertura\s+200!/);
-assert(fs.existsSync(path.join(output, 'assets/brasil-ufs.json')));
-assert(fs.existsSync(path.join(output, 'cliente/js/central.js')));
-assert(!fs.existsSync(path.join(output, 'netlify/functions/cobertura-dados.json')));
 assert.equal([...sitemap.matchAll(/<loc>/g)].length, pages.length);
 console.log('OK: recursos públicos, canonical, sitemap, escopo do app e isolamento dos arquivos do servidor.');

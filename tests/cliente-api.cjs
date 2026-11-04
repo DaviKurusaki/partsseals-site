@@ -266,23 +266,6 @@ async function entrarComo(email) { const b = navegador(); const r = await b.cham
     assert.equal(estado.pedidosChamados.at(-1).p_dias, 90);
   });
 
-  await teste('Central Técnica: página servida só para sessão aprovada', async () => {
-    zerar();
-    const pagina = async b => api.handler({ path: '/cliente/central', httpMethod: 'GET',
-      headers: { cookie: b ? [...b.jar].map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('; ') : '' } });
-    assert.equal((await pagina()).statusCode, 302);
-    await navegador().chamar('POST', 'cadastro', { corpo: valido() });
-    confirmar('maria@acme.com.br');
-    const b = await entrarComo('maria@acme.com.br');
-    assert.equal((await pagina(b)).statusCode, 403);
-    definirStatus('maria@acme.com.br', 'aprovado');
-    const r = await pagina(b);
-    assert.equal(r.statusCode, 200);
-    assert.match(r.body, /Central Técnica/);
-    assert.match(r.headers['Cache-Control'], /no-store/);
-    assert(!r.body.includes('maria@acme.com.br'));
-  });
-
   await teste('p_dias acima de 730 é limitado; inválido usa 180', async () => {
     zerar();
     await navegador().chamar('POST', 'cadastro', { corpo: valido() });

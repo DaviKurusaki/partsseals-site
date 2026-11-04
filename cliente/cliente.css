@@ -222,9 +222,3 @@
 .cli-documento:hover, .cli-documento:focus-visible { border-color: var(--accent-light); background: #ffffff0d; }
 .cli-documento span { font-size: .9rem; color: #b3c0ce; }
 .cli-documentos p { margin-top: 16px; color: #bac2cc; }
-.cli-dashboard { display: grid; gap: 10px; margin: 18px 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
-.cli-dashboard h2 { font-size: 1.1rem; margin: 0; }
-.cli-dashboard p { color: var(--muted); font-size: .88rem; }
-.cli-dashboard__atalhos { display: flex; flex-wrap: wrap; gap: 12px; }
-.cli-dashboard__atalhos a { color: var(--accent-light); font-weight: 700; text-underline-offset: 3px; }
-.cli-resumo button.cli-numero { color: inherit; font: inherit; cursor: pointer; text-align: left; }
