@@ -33,6 +33,7 @@
 const auth = require('./supabase-auth.cjs');
 const servico = require('./supabase-servico.cjs');
 const { validarCadastro, emailValido, texto, digitos, cnpjValido } = require('./validacao.cjs');
+const paginaCentral = require('./central-template.cjs');
 
 const BASE = String(process.env.SITE_CLIENTE_URL || 'https://parts-seals.com.br/cliente').replace(/\/+$/, '');
 const COOKIE_ACESSO = 'ps_cli_at';
@@ -259,11 +260,26 @@ async function rotaEmpresas(evento) {
   return responder(200, { ok: true, empresas });
 }
 
+async function rotaCentralPagina(evento) {
+  const s = await sessao(evento);
+  if (!s) return { statusCode: 302, headers: { Location: '/cliente/entrar', 'Cache-Control': 'no-store' }, body: '' };
+  const cadastro = await servico.rpc('site_cliente_meu_cadastro', { p_auth_user_id: s.usuario.id });
+  if (cadastro?.status !== 'aprovado') return { statusCode: 403, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' },
+    body: '<!doctype html><html lang="pt-BR"><meta charset="utf-8"><title>Acesso indisponível</title><p>Esta área precisa de um cadastro aprovado.</p><a href="/cliente">Voltar à Área do Cliente</a></html>' };
+  const idLocal = require('node:crypto').createHash('sha256').update(s.usuario.id).digest('hex');
+  return { statusCode: 200, headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store',
+    'X-Robots-Tag': 'noindex, nofollow', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer',
+    'Content-Security-Policy': "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'" },
+    multiValueHeaders: s.cookies.length ? { 'Set-Cookie': s.cookies } : undefined,
+    body: paginaCentral.replace('<div id="central" data-central>', `<div id="central" data-central data-user-key="${idLocal}">`) };
+}
+
 const ROTAS = {
   'POST cadastro': rotaCadastro, 'POST entrar': rotaEntrar, 'POST sair': rotaSair,
   'POST esqueci-senha': rotaEsqueci, 'POST nova-senha': rotaNovaSenha,
   'GET eu': rotaEu, 'GET pedidos': rotaPedidos, 'GET empresas': rotaEmpresas,
   'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
+  'GET central-pagina': rotaCentralPagina,
 };
 
 async function rotaDocumentos(evento) {

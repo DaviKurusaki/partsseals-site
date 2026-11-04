@@ -1,0 +1,38 @@
+.tec-busca { max-width: 460px; margin: 20px 0; }
+.tec-grupos { display: grid; gap: 28px; }
+.tec-grupo h2 { font-size: 1.25rem; margin: 0 0 12px; }
+.tec-grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 12px; }
+.tec-card { min-height: 118px; text-align: left; display: grid; align-content: center; gap: 6px; padding: 18px; border-radius: 12px; border: 1px solid var(--line-strong); background: var(--surface); color: var(--text); cursor: pointer; font: inherit; }
+.tec-card:hover, .tec-card:focus-visible { border-color: var(--accent-bright); background: var(--surface-2); }
+.tec-card strong { font-size: 1.05rem; }
+.tec-card span { color: var(--muted); font-size: .88rem; }
+.tec-ferramenta { display: grid; gap: 18px; margin-top: 16px; }
+.tec-ferramenta h2 { margin: 0; }
+.tec-ferramenta a { color: var(--accent-light); }
+.tec-form, .tec-ferramenta [data-conteudo] { display: grid; gap: 18px; }
+.tec-campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(210px, 100%), 1fr)); gap: 14px; }
+.tec-acoes { display: flex; flex-wrap: wrap; gap: 10px; }
+.tec-resultado { padding: 18px; background: rgba(24, 168, 91, .12); border: 1px solid rgba(24, 168, 91, .6); border-radius: 10px; font-size: 1.06rem; font-weight: 700; white-space: pre-wrap; overflow-wrap: anywhere; }
+.tec-resultado--erro { background: rgba(var(--accent-rgb), .12); border-color: var(--accent-bright); }
+.tec-nota { color: var(--muted); font-size: .92rem; }
+.tec-desenho { width: min(260px, 100%); height: auto; fill: none; stroke: var(--muted); stroke-width: 2; }
+.tec-desenho text { fill: var(--text); stroke: none; font-size: 11px; }
+.tec-passos { border: 1px solid var(--line); background: var(--bg-2); padding: 16px; border-radius: 10px; display: grid; gap: 8px; }
+.tec-salvar { display: grid; gap: 8px; justify-items: start; padding-top: 12px; border-top: 1px solid var(--line); }
+.tec-salvar small { color: var(--muted); }
+.tec-comparacao-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tec-comparacao-grid article, .tec-historico-item, .tec-visuais li { border: 1px solid var(--line); background: var(--bg-2); padding: 16px; border-radius: 10px; min-width: 0; overflow-wrap: anywhere; }
+.tec-comparacao-grid article { display: grid; gap: 12px; align-content: start; }
+.tec-comparacao-grid h3 { margin: 0; }
+.tec-comparacao-grid p { font-size: .92rem; }
+.tec-visuais { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); gap: 10px; }
+.tec-visuais li { display: grid; gap: 6px; }
+.tec-visuais span, .tec-historico-item small { color: var(--muted); }
+.tec-historico-item { display: grid; gap: 8px; margin-bottom: 10px; }
+.tec-historico-item p { white-space: pre-wrap; }
+.tec-historico-item button { background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+[data-faq] details { border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; margin-top: 8px; }
+[data-faq] summary { cursor: pointer; font-weight: 700; }
+[data-faq] p { margin-top: 8px; }
+.cli-corpo :is(.tec-card, .tec-historico-item button, [data-faq] summary):focus-visible { outline: 3px solid var(--accent-light); outline-offset: 2px; }
+@media (max-width: 640px) { .tec-comparacao-grid { grid-template-columns: 1fr; } .cli-topo__acoes { gap: 4px; } .cli-topo__acoes .btn { padding: .4rem; font-size: .78rem; } }

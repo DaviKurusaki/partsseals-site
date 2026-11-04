@@ -1,6 +1,8 @@
 /index.html           /                               301!
+/api/cobertura       /.netlify/functions/cobertura     200!
 # Área do Cliente: API (função cliente-api) e páginas sem .html.
 /cliente/api/*        /.netlify/functions/cliente-api/:splat  200!
+/cliente/central      /.netlify/functions/cliente-api/central-pagina  200!
 /cliente              /cliente/index.html             200!
 /cliente/             /cliente/index.html             200!
 /cliente/index.html   /cliente                        301!

@@ -11,6 +11,11 @@ A Área do Cliente fica em `/cliente` (cadastro, entrar e acompanhamento de
 pedidos), com a API em `netlify/functions/cliente-api/`. Variáveis, Supabase
 Auth e roteiro de teste em [docs/area-do-cliente.md](docs/area-do-cliente.md).
 
+A evolução do mapa e da Central Técnica está descrita em
+[docs/parts-seals/RELATORIO_FINAL_E_TESTES.md](docs/parts-seals/RELATORIO_FINAL_E_TESTES.md).
+O mapa começa sem UFs destacadas até haver comprovação aprovada; a fonte manual
+fica na função de servidor, fora de `dist/`.
+
 ## Como rodar no Live Server
 
 1. Abra esta pasta no VS Code.
@@ -71,18 +76,9 @@ Edite os textos diretamente no HTML do idioma correspondente (`index.html`, `en.
 
 ## Como alterar imagens
 
-As imagens principais ficam em `assets/img/`:
+As duas fotografias editoriais ficam em `assets/img/foto-*.jpg`. Elas mostram cenas reais de terceiros e são identificadas no site como **ilustrativas**, sem atribuí-las à fábrica ou equipe da Parts Seals. Os oito perfis em `assets/img/perfis/` são esquemas genéricos, sem escala. Os SVGs fontes podem ser recriados com `node tools/gerar_imagens_tecnicas.cjs`; os PNGs de 1400 × 933 px são as versões publicadas, geradas a partir deles. A arte de compartilhamento é `assets/img/og-parts-seals-real.jpg`.
 
-- `hero-industrial.jpg`
-- `seals-components.jpg`
-- `technical-analysis.jpg`
-- `manufacturing-gallery.jpg`
-- `product-aneis-guia.jpg`
-- `product-vedacoes-pneumaticas.jpg`
-- `product-pecas-tecnicas.jpg`
-- `product-amostra-desenho.jpg`
-
-Para trocar uma imagem, substitua o arquivo mantendo o mesmo nome ou altere o caminho no `src` correspondente em `index.html`. Mantenha imagens otimizadas, de preferência em JPG ou WebP, com largura entre 1200px e 1800px.
+Para substituir as fotos por imagens da Parts Seals, obtenha originais e autorização de uso, confirme as legendas e revise os três idiomas (`index.html`, `en.html`, `es.html`). Mantenha o crédito e a origem no inventário `docs/parts-seals/AUDITORIA_IMAGENS.md`. Não use fotos de terceiros como prova de instalações, pessoas ou produtos da empresa.
 
 ## Onde trocar WhatsApp e e-mail
 
@@ -116,10 +112,10 @@ No footer do `index.html`, procure pelos comentários `EDITE`. Ali estão:
 ## Como publicar no Netlify
 
 1. Entre no Netlify.
-2. Crie um novo site.
-3. Faça upload da pasta do projeto ou conecte o repositório.
-4. Não configure comando de build.
-5. Use a pasta raiz como diretório de publicação.
+2. Conecte o repositório `partsseals-site`.
+3. Mantenha o `netlify.toml`: ele executa `node tools/build_site.cjs` e publica somente `dist/`.
+4. Configure as variáveis de servidor da Área do Cliente conforme `docs/area-do-cliente.md`.
+5. Confira uma prévia de implantação antes de publicar no domínio principal.
 
 Depois de publicar, atualize a meta tag `og:image` em `index.html` para uma URL absoluta do Netlify. Isso melhora o preview no WhatsApp.
 

@@ -74,7 +74,11 @@
       '<a class="cli-ferramenta" href="#pedidos"><span class="cli-ferramenta__icone">' + ICONES.caixa + '</span>' +
       '<span class="cli-ferramenta__texto"><strong>Status do meu pedido</strong>' +
       '<span>Acompanhe a produção, o despacho e as notas fiscais dos seus pedidos.</span>' +
-      '<span class="cli-ferramenta__abrir">Consultar meus pedidos ' + ICONES.seta + '</span></span></a></nav>');
+      '<span class="cli-ferramenta__abrir">Consultar meus pedidos ' + ICONES.seta + '</span></span></a>' +
+      '<a class="cli-ferramenta" href="/cliente/central"><span class="cli-ferramenta__icone">' + ICONES.lupa + '</span>' +
+      '<span class="cli-ferramenta__texto"><strong>Central Técnica</strong>' +
+      '<span>Consulte materiais, compare opções e use as ferramentas de apoio técnico.</span>' +
+      '<span class="cli-ferramenta__abrir">Abrir Central Técnica ' + ICONES.seta + '</span></span></a></nav>');
   }
 
   function navegar() {

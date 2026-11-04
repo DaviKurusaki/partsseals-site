@@ -356,6 +356,27 @@ ul {
   object-position: center right;
 }
 
+.image-note {
+  color: #f5f7fa;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
+  background: rgba(8, 10, 14, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 0.42rem 0.6rem;
+}
+
+.image-note--hero {
+  display: inline-block;
+  max-width: 550px;
+  margin: 1rem 0 0;
+}
+
+.image-note--hero + .hero-badges {
+  margin-top: 0.75rem;
+}
+
 .hero-media::after {
   content: "";
   position: absolute;
@@ -748,6 +769,12 @@ ul {
   object-fit: cover;
   background: var(--surface-2);
   border-bottom: 1px solid var(--line);
+}
+
+.product-illustration-note {
+  margin: -0.2rem 0 1rem;
+  color: var(--muted);
+  font-size: 0.84rem;
 }
 
 .product-card:nth-child(3n) img {
@@ -1147,8 +1174,18 @@ ul {
 
 .consult-image img {
   width: 100%;
-  min-height: 420px;
+  height: clamp(360px, 35vw, 520px);
   object-fit: cover;
+  object-position: center 43%;
+}
+
+.image-note--consult {
+  position: absolute;
+  right: 0.8rem;
+  bottom: 0.8rem;
+  left: 0.8rem;
+  width: fit-content;
+  max-width: calc(100% - 1.6rem);
 }
 
 .materials-grid {
@@ -1839,6 +1876,13 @@ ul {
 .reveal {
   opacity: 1;
   transform: translateY(0);
+}
+
+.js .product-card.reveal,
+.js .consult-image.reveal,
+.js .gallery-item.reveal {
+  opacity: 1;
+  transform: none;
 }
 
 @media (max-width: 1120px) {
@@ -2547,3 +2591,29 @@ html[data-campaign="natal"] .campaign-badge__ribbon { fill: #e6c579; }
   text-decoration: underline;
   cursor: pointer;
 }
+/* Cobertura nacional: mesma paleta e largura do restante da home. */
+.stats-grid--cobertura { grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr)); }
+.cobertura { border-block: 1px solid var(--line); }
+.cobertura .section-header { max-width: 750px; }
+.cobertura [data-cobertura] { display: grid; gap: 16px; }
+.cobertura-barra { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.cobertura-barra [role="group"], .cobertura [data-regioes] { display: flex; flex-wrap: wrap; gap: 8px; }
+.cobertura button { cursor: pointer; color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 8px 12px; }
+.cobertura button[aria-pressed="true"], .cobertura button.selecionado { border-color: var(--accent-bright); background: rgba(var(--accent-rgb), .18); }
+.cobertura button:focus-visible, .cobertura-estado:focus-visible { outline: 3px solid var(--accent-light); outline-offset: 2px; }
+.cobertura-layout { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(260px, .8fr); gap: 24px; align-items: start; }
+.cobertura-mapa { min-width: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); padding: 12px; }
+.cobertura-mapa svg { width: 100%; height: auto; }
+.cobertura-estado { fill: var(--surface-3); stroke: var(--muted-2); stroke-width: 1.1; cursor: pointer; transition: fill .15s ease; }
+.cobertura-estado.atendido { fill: var(--red); stroke: var(--accent-light); }
+.cobertura-estado:hover, .cobertura-estado.selecionado { fill: var(--accent-bright); stroke: var(--text); stroke-width: 2; }
+.cobertura-painel { display: grid; gap: 12px; min-width: 0; }
+.cobertura-painel [data-detalhe] { min-height: 88px; padding: 16px; border: 1px solid var(--line-strong); border-radius: var(--radius); background: var(--surface); }
+.cobertura-painel [data-detalhe] strong { font-size: 1.1rem; }
+.cobertura-painel input { width: 100%; min-height: 44px; color: var(--text); background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--radius); padding: 8px 12px; font: inherit; }
+.cobertura-lista { display: grid; gap: 5px; max-height: 260px; overflow-y: auto; }
+.cobertura-lista button { text-align: left; min-height: 42px; }
+.cobertura-legenda, .cobertura small { color: var(--muted); }
+.cobertura [data-regioes][hidden] { display: none; }
+@media (max-width: 760px) { .cobertura-layout { grid-template-columns: 1fr; } .cobertura-mapa { max-width: 600px; width: 100%; margin-inline: auto; } }
+@media (prefers-reduced-motion: reduce) { .cobertura-estado { transition: none; } }
