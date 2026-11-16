@@ -9,7 +9,7 @@
  *   POST /cliente/api/nova-senha     troca a senha com o token do link do e-mail
  *   GET  /cliente/api/eu             cadastro e status (pendente/aprovado/...)
  *   GET  /cliente/api/croqui-*       Croqui (sql/162): perfis, pedir desenho, salvar,
- *                                    listar, abrir, excluir e baixar o PDF
+ *                                    listar, abrir e baixar o PDF (o cliente não exclui)
  *   GET  /cliente/api/pedidos?dias=  pedidos de todas as empresas liberadas ao
  *                                    contato aprovado (até 730 dias)
  *
@@ -268,7 +268,7 @@ const ROTAS = {
   'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
   'GET croqui-inicio': rotaCroquiInicio, 'GET croqui-molde': rotaCroquiMolde, 'POST croqui-gerar': rotaCroquiGerar, 'GET croqui-pedido': rotaCroquiPedido,
   'POST croqui-salvar': rotaCroquiSalvar, 'GET croquis': rotaCroquis, 'GET croqui': rotaCroqui,
-  'POST croqui-excluir': rotaCroquiExcluir, 'GET croqui-pdf': rotaCroquiPdf,
+  'GET croqui-pdf': rotaCroquiPdf,
 };
 
 // --- Croqui (sql/162 do Kuru) -----------------------------------------------------
@@ -344,12 +344,6 @@ function rotaCroqui(evento) { return comCroqui(evento, async (s) => {
   const r = await servico.rpc('site_cliente_croqui', { p_auth_user_id: s.usuario.id, p_id: id });
   if (!r) return erro(404, 'Croqui não encontrado.', {}, s.cookies);
   return responder(200, { ok: true, croqui: r }, s.cookies);
-}); }
-function rotaCroquiExcluir(evento) { return comCroqui(evento, async (s) => {
-  const c = lerCorpo(evento);
-  if (!c || !UUID.test(c.id || '')) return erro(400, 'Dados inválidos.', {}, s.cookies);
-  const ok = await servico.rpc('site_cliente_croqui_excluir', { p_auth_user_id: s.usuario.id, p_id: c.id });
-  return responder(200, { ok: Boolean(ok) }, s.cookies);
 }); }
 function rotaCroquiPdf(evento) { return comCroqui(evento, async (s) => {
   const id = (evento.queryStringParameters || {}).id;

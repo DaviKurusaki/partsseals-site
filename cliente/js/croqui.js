@@ -18,7 +18,8 @@
   var UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
   var ESPERA_DIGITACAO = 250, INTERVALO_CONSULTA = 400, LIMITE_ESPERA = 60000;
   var DESENHOS = new Map(), MOLDES = new Map(), MAX_DESENHOS = 120;
-  var NUMERO = /^\d{1,5}(?:[.,]\d{1,4})?$/;
+  var NUMERO = /^\d{1,5}(?:[.,]\d{1,4})?$/, INTEIRO = /^[1-9]\d{0,2}$/;
+  function valido(o, v) { return o.inteiro ? INTEIRO.test(v) : NUMERO.test(v); }
   // Sem o sql/163 (ou perfil ainda sem molde): pede as três medidas genéricas.
   var MOLDE_GENERICO = { referencia: false, esqueleto: "", materiais: [], obrigatorias: [
     { k: "dint", rotulo: "Diâmetro interno (mm)" }, { k: "dext", rotulo: "Diâmetro externo (mm)" }, { k: "h", rotulo: "Altura (mm)" }] };
@@ -158,16 +159,8 @@
           "<strong>" + esc(c.titulo) + "</strong><span>" + esc(c.nome_perfil) + " · " + esc(resumo(c.resumo)) + "</span>" +
           '<span class="cq-item__data">Atualizado ' + esc(dataHora(c.atualizado_em)) + "</span></a>" +
           '<div class="cq-item__acoes">' + (c.pdf_pronto ? '<a class="btn btn-secondary" href="/cliente/api/croqui-pdf?id=' + esc(c.id) + '">' + ICONES.pdf + " PDF</a>" :
-            '<span class="cq-pill">' + (c.pdf_erro ? "PDF com erro" : "Gerando PDF…") + "</span>") +
-          '<button class="btn btn-secondary" type="button" data-excluir="' + esc(c.id) + '" aria-label="Excluir ' + esc(c.titulo) + '">' + ICONES.lixo + "</button></div></article>";
+            '<span class="cq-pill">' + (c.pdf_erro ? "PDF com erro" : "Gerando PDF…") + "</span>") + "</div></article>";
       }).join("") : '<div class="cli-vazio">' + ICONES.regua + "<p>Você ainda não salvou nenhum croqui.</p></div>";
-      lista.querySelectorAll("[data-excluir]").forEach(function (b) {
-        b.addEventListener("click", function () {
-          if (!window.confirm("Excluir este croqui? Não dá para desfazer.")) return;
-          b.disabled = true;
-          C.api("POST", "croqui-excluir", { id: b.dataset.excluir }).then(function () { telaLista(); }).catch(function () { b.disabled = false; });
-        });
-      });
     }).catch(function () { if (minha === vivo) telaErro(C.FALHA_REDE); });
   }
 
@@ -267,7 +260,7 @@
       } else {
         grade.hidden = false;
         grade.innerHTML = m.obrigatorias.map(function (o) {
-          return '<label class="cq-campo"><span>' + esc(o.rotulo) + (o.opcional ? " · opcional" : "") + '</span><input inputmode="decimal" autocomplete="off" data-inicial="' + esc(o.k) + '" value="' + esc(est.valores[o.k] == null ? "" : est.valores[o.k]) + '"></label>';
+          return '<label class="cq-campo"><span>' + esc(o.rotulo) + (o.opcional ? " · opcional" : "") + '</span><input inputmode="' + (o.inteiro ? "numeric" : "decimal") + '" autocomplete="off" data-inicial="' + esc(o.k) + '" value="' + esc(est.valores[o.k] == null ? "" : est.valores[o.k]) + '"></label>';
         }).join("");
       }
       $("[data-materiais]").innerHTML = (m.materiais || []).map(htmlMaterial).join("");
@@ -278,7 +271,7 @@
     function faltando() {
       var m = est.molde || MOLDE_GENERICO;
       if (m.referencia) return ["interno", "externo", "altura"].filter(function (k) { return !NUMERO.test(String((est.referencia && est.referencia.valores[k]) || "").trim()); });
-      return m.obrigatorias.filter(function (o) { var v = String(est.valores[o.k] == null ? "" : est.valores[o.k]).trim(); return o.opcional ? v !== "" && !NUMERO.test(v) : !NUMERO.test(v); }).map(function (o) { return o.k; });
+      return m.obrigatorias.filter(function (o) { var v = String(est.valores[o.k] == null ? "" : est.valores[o.k]).trim(); return o.opcional ? v !== "" && !valido(o, v) : !valido(o, v); }).map(function (o) { return o.k; });
     }
     function validarIniciais() {
       var f = faltando(), botao = $("[data-gerar-inicial]");
@@ -313,7 +306,12 @@
       if (r.referencia && !est.referencia) est.referencia = { modo: r.referencia.modo, valores: Object.assign({}, r.referencia.valores) };
       mostrarReferencia();
       // Material
-      $("[data-materiais]").innerHTML = (r.campos || []).filter(function (c) { return c.controle === "select"; }).map(htmlMaterial).join("");
+      // Medidas obrigatórias sem cota no desenho (ex.: quantidade de intermediárias do chevron) continuam editáveis aqui.
+      var alvos = cotas.map(function (c) { return c.alvo; });
+      var extras = ((est.molde && est.molde.obrigatorias) || []).filter(function (o) { return o.inteiro && alvos.indexOf(o.k) < 0; });
+      $("[data-materiais]").innerHTML = extras.map(function (o) {
+        return '<label class="cq-campo"><span>' + esc(o.rotulo) + '</span><input inputmode="numeric" autocomplete="off" data-k="' + esc(o.k) + '" data-inteiro value="' + esc(est.valores[o.k] == null ? "" : est.valores[o.k]) + '"></label>';
+      }).join("") + (r.campos || []).filter(function (c) { return c.controle === "select"; }).map(htmlMaterial).join("");
       // Desenho
       var folha = $("[data-folha]");
       folha.innerHTML = g.vistasSvg ? svgSeguro(g.vistasSvg) : '<div class="cli-vazio"><p>' + esc(r.erro || "Complete as medidas para ver o desenho.") + "</p></div>";
@@ -434,7 +432,11 @@
     popEscolha.addEventListener("change", function () { abrirCota(popEscolha.value, popEscolha._alvo, popEscolha._opcoes); });
     $("[data-pop-ok]").addEventListener("click", function () { fecharCota(); });
 
-    $("[data-materiais]").addEventListener("change", function (e) { if (e.target.dataset.k) mudarValor(e.target.dataset.k, e.target.value); });
+    $("[data-materiais]").addEventListener("change", function (e) {
+      if (!e.target.dataset.k) return;
+      if (e.target.hasAttribute("data-inteiro") && !INTEIRO.test(String(e.target.value).trim())) { status("Informe a quantidade de intermediárias (número inteiro, a partir de 1).", "erro"); return; }
+      mudarValor(e.target.dataset.k, String(e.target.value).trim());
+    });
     $("[data-iniciais-campos]").addEventListener("input", function (e) {
       var k = e.target.dataset.inicial; if (!k) return;
       est.valores[k] = e.target.value.trim(); alterou();
@@ -501,7 +503,11 @@
     }
 
     atualizarPdf();
-    if (est.resultado) { desenhar(); if (est.id && !est.pdfPronto) esperarPdf(minha); }
+    if (est.resultado) {
+      desenhar(); if (est.id && !est.pdfPronto) esperarPdf(minha);
+      // Croqui salvo: o molde traz as medidas sem cota (intermediárias do chevron) para seguirem editáveis.
+      buscarMolde(est.perfil).then(function (m) { if (minha === vivo && !est.molde) { est.molde = m; desenhar(); } }).catch(function () {});
+    }
     else {
       // Novo croqui: esqueleto na hora (o molde quase sempre já veio ao passar o mouse no perfil).
       desenharMedidas();

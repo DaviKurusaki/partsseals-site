@@ -31,7 +31,6 @@ const FUNCOES_PERMITIDAS = Object.freeze([
   'site_cliente_croqui_salvar',
   'site_cliente_croquis',
   'site_cliente_croqui',
-  'site_cliente_croqui_excluir',
   'site_cliente_croqui_pdf',
 ]);
 
