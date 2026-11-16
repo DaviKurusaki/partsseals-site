@@ -99,6 +99,39 @@
       });
   }
 
+  function semNotaFiscal(pedido) { return /S\s*\/?\s*NF/i.test(texto(pedido && pedido.pedido_cliente)); }
+
+  /** O que o cartão Rastreio mostra. Pedido que já saiu nunca fica sem nada:
+   *  sem código, diz como saiu (retirada, entrega própria) ou pede ao Comercial. */
+  function situacaoRastreio(pedido) {
+    var codigos = rastreios(pedido);
+    if (codigos.length) return { tipo: "codigos", codigos: codigos };
+    var etapa = texto(pedido && pedido.etapa), metodo = texto(pedido && pedido.metodo_entrega);
+    if (etapaDoSite(etapa) !== "despachado") {
+      return { tipo: "texto", titulo: etapa === "aguardando_retirada" ? "Retirada na Parts Seals" : "Disponível após o despacho" };
+    }
+    var quando = pedido.entregue_em ? dataHoraBr(pedido.entregue_em) : "";
+    var por = texto(pedido.recebido_por);
+    if (metodo === "Cliente Retira") {
+      return { tipo: "texto", titulo: "Retirado na Parts Seals",
+        detalhe: [quando, por ? "por " + por : ""].filter(Boolean).join(", ") || null };
+    }
+    if (metodo === "Entregamos" || etapa === "em_rota") {
+      return { tipo: "texto", titulo: "Entrega própria Parts Seals",
+        detalhe: etapa === "entregue" ? ["Entregue", quando, por ? "a " + por : ""].filter(Boolean).join(" ") : "Em rota de entrega" };
+    }
+    return { tipo: "texto", titulo: "Código em atualização", detalhe: "Peça o rastreio ao Comercial", pedirComercial: true };
+  }
+
+  /** O que o cartão Nota Fiscal mostra quando ainda não há número. */
+  function situacaoNota(pedido) {
+    var nfs = ((pedido && pedido.nfs) || []).map(texto).filter(Boolean);
+    if (nfs.length) return { tipo: "notas", nfs: nfs };
+    if (semNotaFiscal(pedido)) return { tipo: "texto", titulo: "Pedido sem nota fiscal" };
+    if (etapaDoSite(pedido && pedido.etapa) === "despachado") return { tipo: "texto", titulo: "Nota em atualização", detalhe: "Peça a nota ao Comercial", pedirComercial: true };
+    return { tipo: "texto", titulo: "Emitida no faturamento" };
+  }
+
   /** "2026-11-02" -> "02/11/2026" (data pura, sem fuso). */
   function dataBr(iso) {
     var m = texto(iso).match(/^(\d{4})-(\d{2})-(\d{2})/);
@@ -151,7 +184,7 @@
 
   var api = {
     ETAPAS: ETAPAS, ROTULO_ETAPA: ROTULO_ETAPA, passos: passos, etapaDoSite: etapaDoSite, resumo: resumo,
-    filtrar: filtrar, progressoItens: progressoItens, rastreios: rastreios, dataBr: dataBr, dataHoraBr: dataHoraBr,
+    filtrar: filtrar, progressoItens: progressoItens, rastreios: rastreios, situacaoRastreio: situacaoRastreio, situacaoNota: situacaoNota, dataBr: dataBr, dataHoraBr: dataHoraBr,
     quantidade: quantidade, cnpjValido: cnpjValido, mascaraCnpj: mascaraCnpj, mascaraTelefone: mascaraTelefone, digitos: digitos,
   };
   if (typeof module !== "undefined" && module.exports) module.exports = api;

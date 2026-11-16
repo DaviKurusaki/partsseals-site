@@ -21,6 +21,7 @@
     loja: svg('<path d="M4 10v10h16V10M3 6l2-3h14l2 3v2a3 3 0 0 1-6 0 3 3 0 0 1-6 0 3 3 0 0 1-6 0z"/>'),
     caixa: svg('<path d="M21 8l-9-5-9 5 9 5 9-5zM3 8v8l9 5 9-5V8M12 13v8"/>'),
     nota: svg('<path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/>'),
+    boleto: svg('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 9v6M10 9v6M12.5 9v6M15 9v6M17 9v6"/>'),
     lupa: svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
     seta: svg('<path d="M9 6l6 6-6 6"/>'),
     regua: svg('<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'),
@@ -107,24 +108,44 @@
     }).join("") + "</ol>";
   }
 
+  function textoSituacao(s, assunto, p) {
+    var pedido = p.pedido_cliente ? " do pedido " + p.pedido_cliente : "";
+    return "<strong>" + esc(s.titulo) + "</strong>" + (s.detalhe
+      ? (s.pedirComercial
+        ? '<a class="cli-info__detalhe" target="_blank" rel="noopener noreferrer" href="' + esc(C.linkComercial("Olá! Gostaria " + assunto + pedido + ".")) + '">' + esc(s.detalhe) + " ↗</a>"
+        : '<em class="cli-info__detalhe">' + esc(s.detalhe) + "</em>")
+      : "");
+  }
+
+  // Quatro cartões fixos em todo pedido: Entrega, Nota fiscal, Rastreio e Boleto.
   function blocoDetalhes(p) {
     var partes = [];
-    if (p.metodo_entrega) {
-      partes.push('<div class="cli-info">' + ICONES[ICONE_METODO[p.metodo_entrega] || "caixa"] + "<div><span>Entrega</span><strong>" + esc(p.metodo_entrega) + "</strong></div></div>");
-    }
-    var nfs = (p.nfs || []).filter(Boolean);
-    if (nfs.length) partes.push('<div class="cli-info">' + ICONES.nota + '<div><span>Nota fiscal · documentos</span><div class="cli-nfs">' + nfs.map(function(nf) {
-      return '<button class="cli-nf" type="button" data-nf="'+esc(nf)+'" data-empresa="'+esc(p.empresa_id)+'" aria-label="Ver documentos da nota fiscal '+esc(nf)+'">'+esc(nf)+' <span aria-hidden="true">↗</span></button>';
-    }).join('') + '</div></div></div>');
-    var rs = R.rastreios(p);
-    if (rs.length) {
-      partes.push('<div class="cli-info">' + ICONES.caixa + "<div><span>Rastreio</span>" + rs.map(function (r) {
+    partes.push('<div class="cli-info">' + ICONES[ICONE_METODO[p.metodo_entrega] || "caixa"] + "<div><span>Entrega</span><strong>" +
+      esc(p.metodo_entrega || "A definir") + "</strong></div></div>");
+
+    var nota = R.situacaoNota(p);
+    partes.push('<div class="cli-info">' + ICONES.nota + "<div><span>Nota fiscal · documentos</span>" + (nota.tipo === "notas"
+      ? '<div class="cli-nfs">' + nota.nfs.map(function (nf) {
+        return '<button class="cli-nf" type="button" data-nf="' + esc(nf) + '" data-empresa="' + esc(p.empresa_id) + '" aria-label="Ver documentos da nota fiscal ' + esc(nf) + '">' + esc(nf) + ' <span aria-hidden="true">↗</span></button>';
+      }).join("") + "</div>"
+      : textoSituacao(nota, "da nota fiscal", p)) + "</div></div>");
+
+    var rastreio = R.situacaoRastreio(p);
+    partes.push('<div class="cli-info">' + ICONES.caixa + "<div><span>Rastreio</span>" + (rastreio.tipo === "codigos"
+      ? rastreio.codigos.map(function (r) {
         return '<div class="cli-rastreio">' + (r.correios
           ? '<a href="' + esc(r.link) + '" target="_blank" rel="noopener noreferrer">' + esc(r.codigo) + "</a>"
           : "<strong>" + esc(r.codigo) + '</strong><button class="cli-copiar" type="button" data-copiar="' + esc(r.codigo) + '">Copiar</button>') + "</div>";
-      }).join("") + "</div></div>");
-    }
-    return partes.length ? '<div class="cli-detalhes">' + partes.join("") + "</div>" : "";
+      }).join("")
+      : textoSituacao(rastreio, "do código de rastreio", p)) + "</div></div>");
+
+    partes.push('<div class="cli-info">' + ICONES.boleto + "<div><span>Boleto</span>" + (nota.tipo === "notas"
+      ? '<div class="cli-nfs">' + nota.nfs.map(function (nf) {
+        return '<button class="cli-nf" type="button" data-boleto="' + esc(nf) + '" data-empresa="' + esc(p.empresa_id) + '" aria-label="Ver boleto da nota fiscal ' + esc(nf) + '">' +
+          (nota.nfs.length > 1 ? "NF " + esc(nf) : "Ver boleto") + ' <span aria-hidden="true">↗</span></button>';
+      }).join("") + "</div>"
+      : "<strong>" + esc(nota.titulo === "Pedido sem nota fiscal" ? "Sem boleto vinculado" : "Disponível com a nota fiscal") + "</strong>") + "</div></div>");
+    return '<div class="cli-detalhes">' + partes.join("") + "</div>";
   }
 
   function blocoItens(p) {

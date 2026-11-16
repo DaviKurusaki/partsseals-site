@@ -86,6 +86,23 @@ teste('rastreio dos Correios vira link; outro código fica para copiar; PRESENCI
   assert.ok(!r[1].correios && r[1].link === null);
 });
 
+teste('pedido despachado nunca fica sem rastreio nem nota', () => {
+  const comCodigo = R.situacaoRastreio({ etapa: 'com_transportadora', rastreios: ['AE152099357BR'] });
+  assert.equal(comCodigo.tipo, 'codigos');
+  const correioSem = R.situacaoRastreio({ etapa: 'com_transportadora', metodo_entrega: 'Correio', rastreios: [] });
+  assert.ok(correioSem.titulo && correioSem.pedirComercial);
+  const retirada = R.situacaoRastreio({ etapa: 'entregue', metodo_entrega: 'Cliente Retira', rastreios: ['PRESENCIAL'],
+    entregue_em: '2026-11-03T01:30:00Z', recebido_por: 'André' });
+  assert.equal(retirada.titulo, 'Retirado na Parts Seals');
+  assert.ok(retirada.detalhe.includes('André'));
+  assert.equal(R.situacaoRastreio({ etapa: 'entregue', metodo_entrega: 'Entregamos' }).titulo, 'Entrega própria Parts Seals');
+  assert.equal(R.situacaoRastreio({ etapa: 'pronto' }).titulo, 'Disponível após o despacho');
+  assert.equal(R.situacaoNota({ nfs: ['10836'] }).tipo, 'notas');
+  assert.equal(R.situacaoNota({ etapa: 'entregue', pedido_cliente: '30839(S/ NF)' }).titulo, 'Pedido sem nota fiscal');
+  assert.ok(R.situacaoNota({ etapa: 'com_transportadora', pedido_cliente: '21515' }).pedirComercial);
+  assert.equal(R.situacaoNota({ etapa: 'em_producao' }).titulo, 'Emitida no faturamento');
+});
+
 teste('datas: data pura sem fuso e instante no fuso de São Paulo', () => {
   assert.equal(R.dataBr('2026-11-02'), '02/11/2026');
   assert.equal(R.dataBr(null), '');

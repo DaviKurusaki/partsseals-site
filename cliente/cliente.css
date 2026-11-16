@@ -167,7 +167,10 @@
 
 /* Entrega, NF e rastreio */
 .cli-detalhes { display: grid; gap: 10px; }
-@media (min-width: 760px) { .cli-detalhes { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 560px) { .cli-detalhes { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1000px) { .cli-detalhes { grid-template-columns: repeat(4, 1fr); } }
+.cli-info__detalhe { display: block; margin-top: 2px; font-size: 0.85rem; font-style: normal; color: var(--muted); }
+a.cli-info__detalhe { color: var(--accent-light); }
 .cli-info { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 10px; background: rgba(255, 255, 255, 0.04); border: 1px solid var(--line); min-width: 0; }
 .cli-info svg { width: 22px; height: 22px; flex: none; color: var(--accent-light); margin-top: 2px; }
 .cli-info span { display: block; color: var(--muted); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; }
