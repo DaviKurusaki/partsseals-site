@@ -23,6 +23,7 @@
     nota: svg('<path d="M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6"/>'),
     lupa: svg('<circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/>'),
     seta: svg('<path d="M9 6l6 6-6 6"/>'),
+    regua: svg('<path d="M3 17L17 3l4 4L7 21z"/><path d="M7 13l2 2M10 10l2 2M13 7l2 2"/>'),
     whats: svg('<path d="M20 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-4.2A8.5 8.5 0 1 1 20 11.5z"/><path d="M8.5 9c.5 2.5 2.5 4.5 5 5l1.2-1.2 2 .8c-.2 1.3-1.4 2-2.7 1.8-3.3-.6-5.8-3.1-6.4-6.4C7.4 7.7 8.1 6.5 9.4 6.3l.8 2z"/>'),
   };
   var ICONE_METODO = { Transportadora: "caminhao", Entregamos: "caminhao", Correio: "carta", "Azul Cargo": "aviao", "Cliente Retira": "loja" };
@@ -74,12 +75,17 @@
       '<a class="cli-ferramenta" href="#pedidos"><span class="cli-ferramenta__icone">' + ICONES.caixa + '</span>' +
       '<span class="cli-ferramenta__texto"><strong>Status do meu pedido</strong>' +
       '<span>Acompanhe a produção, o despacho e as notas fiscais dos seus pedidos.</span>' +
-      '<span class="cli-ferramenta__abrir">Consultar meus pedidos ' + ICONES.seta + '</span></span></a></nav>');
+      '<span class="cli-ferramenta__abrir">Consultar meus pedidos ' + ICONES.seta + '</span></span></a>' +
+      '<a class="cli-ferramenta" href="#croqui"><span class="cli-ferramenta__icone">' + ICONES.regua + '</span>' +
+      '<span class="cli-ferramenta__texto"><strong>Croqui</strong>' +
+      '<span>Monte o croqui de um perfil padrão clicando nas cotas e baixe o PDF.</span>' +
+      '<span class="cli-ferramenta__abrir">Montar um croqui ' + ICONES.seta + '</span></span></a></nav>');
   }
 
   function navegar() {
     if (!cadastro || cadastro.status !== "aprovado") return;
     if (location.hash === "#pedidos") telaPedidos();
+    else if (/^#croqui(\/|$)/.test(location.hash) && window.PSCroqui) { telaAtual = "croqui"; window.PSCroqui.abrir({ mostrar: mostrar, nome: estado.nome }); }
     else telaHub();
     var titulo = tela.querySelector("h1");
     if (titulo) { titulo.tabIndex = -1; titulo.focus({ preventScroll: true }); }

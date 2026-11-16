@@ -130,6 +130,31 @@ navegador ── /cliente/api/* ──> função Netlify cliente-api ──┬�
 Limite de tentativas: são os do próprio Supabase Auth (Authentication > Rate
 Limits). Não há tabela de tentativas própria.
 
+### Croqui (`/cliente#croqui`)
+
+Segunda ferramenta do hub. O cliente escolhe um perfil liberado, clica nas
+cotas do desenho (mesmo esquema do Castor no Kuru), troca os valores, dá um
+nome, salva e baixa o PDF. Rotas da tela: `#croqui` (meus croquis),
+`#croqui/novo` e `#croqui/<id>` (`cliente/js/croqui.js`).
+
+**O motor do Castor não vem para o site.** Cada mudança vira
+`POST /cliente/api/croqui-gerar`; o Kuru da estação de jobs roda o motor e
+devolve só o desenho e as cotas (sem programa, bucha ou custo). A tela consulta
+`GET croqui-pedido` a cada 0,8 s, até 60 s. Sem a estação ligada, o desenho não
+sai e a tela avisa. Salvar usa o desenho gerado pela estação (nunca SVG do
+navegador) e a estação gera o PDF com as marcas d'água; `GET croqui-pdf` baixa.
+
+Rotas: `croqui-inicio`, `croqui-gerar`, `croqui-pedido`, `croqui-salvar`,
+`croquis`, `croqui`, `croqui-excluir`, `croqui-pdf`. Banco: executar no
+Supabase o `sql/162_site_croqui.sql` do Kuru (depois do 141/142/146). Cada
+chamada confere contato aprovado e Croqui liberado; o Kuru bloqueia por
+contato em Comercial > Site > Croquis do site e escolhe os perfis liberados.
+
+O SVG do motor passa por lista fechada de tags/atributos; as classes da folha
+de estilos dele viram atributos de traço/cor, porque o CSP (`style-src 'self'`)
+não aplica `<style>` nem `style=""`. Teste visual (Electron, API simulada,
+desenho real do motor): `scripts/test-site-croqui-visual.cjs` no Kuru.
+
 ## Variáveis de ambiente (Netlify)
 
 Site configuration > Environment variables, com escopo **Functions**:

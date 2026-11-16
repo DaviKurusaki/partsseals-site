@@ -8,6 +8,8 @@
  *   POST /cliente/api/esqueci-senha  manda o link de nova senha (resposta sempre igual)
  *   POST /cliente/api/nova-senha     troca a senha com o token do link do e-mail
  *   GET  /cliente/api/eu             cadastro e status (pendente/aprovado/...)
+ *   GET  /cliente/api/croqui-*       Croqui (sql/162): perfis, pedir desenho, salvar,
+ *                                    listar, abrir, excluir e baixar o PDF
  *   GET  /cliente/api/pedidos?dias=  pedidos de todas as empresas liberadas ao
  *                                    contato aprovado (até 730 dias)
  *
@@ -264,7 +266,86 @@ const ROTAS = {
   'POST esqueci-senha': rotaEsqueci, 'POST nova-senha': rotaNovaSenha,
   'GET eu': rotaEu, 'GET pedidos': rotaPedidos, 'GET empresas': rotaEmpresas,
   'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
+  'GET croqui-inicio': rotaCroquiInicio, 'POST croqui-gerar': rotaCroquiGerar, 'GET croqui-pedido': rotaCroquiPedido,
+  'POST croqui-salvar': rotaCroquiSalvar, 'GET croquis': rotaCroquis, 'GET croqui': rotaCroqui,
+  'POST croqui-excluir': rotaCroquiExcluir, 'GET croqui-pdf': rotaCroquiPdf,
 };
+
+// --- Croqui (sql/162 do Kuru) -----------------------------------------------------
+// O motor do Castor nunca vem para o site: aqui só se pede o desenho, que a
+// estação do Kuru gera e devolve pelo banco. As funções conferem o contato
+// aprovado e o Croqui liberado em TODA chamada (bloquear corta na hora).
+var UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
+function erroCroqui(err, s) {
+  if (err?.codigo === '42501') return erro(403, err.message || 'Acesso indisponível.', { semAcesso: true }, s.cookies);
+  if (err?.codigo === '54000') return erro(429, err.message, {}, s.cookies);
+  if (err?.codigo === '22023') return erro(400, err.message, {}, s.cookies);
+  if (err?.codigo === 'P0002') return erro(404, err.message, {}, s.cookies);
+  throw err;
+}
+async function comCroqui(evento, fn) {
+  const s = await sessao(evento);
+  if (!s) return semSessao();
+  try { return await fn(s); } catch (err) { return erroCroqui(err, s); }
+}
+function rotaCroquiInicio(evento) { return comCroqui(evento, async (s) => {
+  const r = await servico.rpc('site_cliente_croqui_inicio', { p_auth_user_id: s.usuario.id });
+  return responder(200, { ok: true, permitido: Boolean(r?.permitido), bloqueado: Boolean(r?.bloqueado),
+    perfis: (Array.isArray(r?.perfis) ? r.perfis : []).map((p) => ({ perfil: texto(p.perfil), nome: texto(p.nome) })), estacao: r?.estacao || null }, s.cookies);
+}); }
+function rotaCroquiGerar(evento) { return comCroqui(evento, async (s) => {
+  const c = lerCorpo(evento);
+  if (!c || !/^[a-z0-9_]{1,30}$/.test(c.perfil || '') || !c.entrada || typeof c.entrada !== 'object') return erro(400, 'Medidas inválidas.', {}, s.cookies);
+  const entrada = JSON.stringify(c.entrada);
+  if (entrada.length > 8000) return erro(400, 'Medidas inválidas.', {}, s.cookies);
+  const id = await servico.rpc('site_cliente_croqui_pedir', { p_auth_user_id: s.usuario.id, p_perfil: c.perfil, p_entrada: JSON.parse(entrada) });
+  return responder(200, { ok: true, id }, s.cookies);
+}); }
+function rotaCroquiPedido(evento) { return comCroqui(evento, async (s) => {
+  const id = (evento.queryStringParameters || {}).id;
+  if (!UUID.test(id || '')) return erro(404, 'Pedido não encontrado.', {}, s.cookies);
+  const r = await servico.rpc('site_cliente_croqui_pedido', { p_auth_user_id: s.usuario.id, p_id: id });
+  if (!r) return erro(404, 'Pedido não encontrado.', {}, s.cookies);
+  return responder(200, { ok: true, status: r.status, resultado: r.resultado || null, erro: r.erro || null, fila: r.fila ?? null }, s.cookies);
+}); }
+function rotaCroquiSalvar(evento) { return comCroqui(evento, async (s) => {
+  const c = lerCorpo(evento);
+  if (!c || !UUID.test(c.pedido || '') || (c.croqui && !UUID.test(c.croqui))) return erro(400, 'Dados inválidos.', {}, s.cookies);
+  const titulo = texto(c.titulo).slice(0, 120);
+  const r = await servico.rpc('site_cliente_croqui_salvar', { p_auth_user_id: s.usuario.id, p_pedido: c.pedido, p_titulo: titulo, p_croqui: c.croqui || null });
+  return responder(200, { ok: true, id: r?.id, numero: r?.numero }, s.cookies);
+}); }
+function rotaCroquis(evento) { return comCroqui(evento, async (s) => {
+  const r = await servico.rpc('site_cliente_croquis', { p_auth_user_id: s.usuario.id });
+  return responder(200, { ok: true, croquis: Array.isArray(r) ? r : [] }, s.cookies);
+}); }
+function rotaCroqui(evento) { return comCroqui(evento, async (s) => {
+  const id = (evento.queryStringParameters || {}).id;
+  if (!UUID.test(id || '')) return erro(404, 'Croqui não encontrado.', {}, s.cookies);
+  const r = await servico.rpc('site_cliente_croqui', { p_auth_user_id: s.usuario.id, p_id: id });
+  if (!r) return erro(404, 'Croqui não encontrado.', {}, s.cookies);
+  return responder(200, { ok: true, croqui: r }, s.cookies);
+}); }
+function rotaCroquiExcluir(evento) { return comCroqui(evento, async (s) => {
+  const c = lerCorpo(evento);
+  if (!c || !UUID.test(c.id || '')) return erro(400, 'Dados inválidos.', {}, s.cookies);
+  const ok = await servico.rpc('site_cliente_croqui_excluir', { p_auth_user_id: s.usuario.id, p_id: c.id });
+  return responder(200, { ok: Boolean(ok) }, s.cookies);
+}); }
+function rotaCroquiPdf(evento) { return comCroqui(evento, async (s) => {
+  const id = (evento.queryStringParameters || {}).id;
+  if (!UUID.test(id || '')) return erro(404, 'Croqui não encontrado.', {}, s.cookies);
+  const r = await servico.rpc('site_cliente_croqui_pdf', { p_auth_user_id: s.usuario.id, p_id: id });
+  if (!r?.pdf) return erro(404, 'O PDF ainda está sendo gerado. Tente de novo em alguns instantes.', {}, s.cookies);
+  const nome = `CQ-${String(r.numero).padStart(6, '0')}.pdf`;
+  const resposta = { statusCode: 200, isBase64Encoded: true, body: String(r.pdf).replace(/\s+/g, ''), headers: {
+    'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="${nome}"`,
+    'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff', 'X-Robots-Tag': 'noindex, nofollow',
+    'Content-Security-Policy': "default-src 'none'; sandbox",
+  } };
+  if (s.cookies.length) resposta.multiValueHeaders = { 'Set-Cookie': s.cookies };
+  return resposta;
+}); }
 
 async function rotaDocumentos(evento) {
   const s=await sessao(evento);

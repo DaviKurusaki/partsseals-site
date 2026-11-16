@@ -23,6 +23,15 @@ const FUNCOES_PERMITIDAS = Object.freeze([
   'site_cliente_buscar_empresa',
   'site_cliente_documentos',
   'site_cliente_documento',
+  // Croqui (sql/162 do Kuru): o desenho é gerado pela estação do Kuru.
+  'site_cliente_croqui_inicio',
+  'site_cliente_croqui_pedir',
+  'site_cliente_croqui_pedido',
+  'site_cliente_croqui_salvar',
+  'site_cliente_croquis',
+  'site_cliente_croqui',
+  'site_cliente_croqui_excluir',
+  'site_cliente_croqui_pdf',
 ]);
 
 class ErroServico extends Error {
