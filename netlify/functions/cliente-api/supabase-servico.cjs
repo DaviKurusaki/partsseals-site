@@ -25,6 +25,7 @@ const FUNCOES_PERMITIDAS = Object.freeze([
   'site_cliente_documento',
   // Croqui (sql/162 do Kuru): o desenho é gerado pela estação do Kuru.
   'site_cliente_croqui_inicio',
+  'site_cliente_croqui_molde',
   'site_cliente_croqui_pedir',
   'site_cliente_croqui_pedido',
   'site_cliente_croqui_salvar',

@@ -1,10 +1,14 @@
 /*
  * Área do Cliente — Croqui.
  *
- * O cliente escolhe um perfil liberado, clica nas cotas do desenho e troca os
- * valores — o mesmo esquema do Castor no Kuru. O desenho NUNCA é calculado
- * aqui: cada mudança vira um pedido (POST croqui-gerar); a estação do Kuru roda
+ * O cliente escolhe um perfil liberado e vê o ESQUELETO do perfil, sem cota
+ * nenhuma (molde do sql/163). Ele é obrigado a informar as medidas principais
+ * (interno, externo, altura...) antes do primeiro desenho; depois clica nas
+ * cotas e troca os valores — o mesmo esquema do Castor no Kuru. O desenho NUNCA
+ * é calculado aqui: cada mudança vira um pedido (POST croqui-gerar, que já
+ * volta com o desenho quando a estação atende rápido); a estação do Kuru roda
  * o motor do Castor e devolve o desenho e as cotas, que esta tela só mostra.
+ * Desenhos já pedidos ficam em memória: voltar a uma medida é instantâneo.
  * Salvar guarda o croqui no banco e a estação gera o PDF com as marcas d'água
  * da Parts Seals. Rotas: #croqui (meus croquis), #croqui/novo, #croqui/<id>.
  */
@@ -12,7 +16,23 @@
   "use strict";
   var C = window.PSCliente, esc = C.escapar;
   var UUID = /^[a-f0-9]{8}-(?:[a-f0-9]{4}-){3}[a-f0-9]{12}$/i;
-  var ESPERA_DIGITACAO = 500, INTERVALO_CONSULTA = 800, LIMITE_ESPERA = 60000;
+  var ESPERA_DIGITACAO = 250, INTERVALO_CONSULTA = 400, LIMITE_ESPERA = 60000;
+  var DESENHOS = new Map(), MOLDES = new Map(), MAX_DESENHOS = 120;
+  var NUMERO = /^\d{1,5}(?:[.,]\d{1,4})?$/;
+  // Sem o sql/163 (ou perfil ainda sem molde): pede as três medidas genéricas.
+  var MOLDE_GENERICO = { referencia: false, esqueleto: "", materiais: [], obrigatorias: [
+    { k: "dint", rotulo: "Diâmetro interno (mm)" }, { k: "dext", rotulo: "Diâmetro externo (mm)" }, { k: "h", rotulo: "Altura (mm)" }] };
+  function buscarMolde(perfil) {
+    if (MOLDES.has(perfil)) return MOLDES.get(perfil);
+    var pr = C.api("GET", "croqui-molde?perfil=" + encodeURIComponent(perfil)).then(function (r) {
+      if (r.status === 401) { location.replace("/cliente/entrar"); return null; }
+      if (!r.dados.ok) { MOLDES.delete(perfil); throw new Error(r.dados.erro || C.FALHA_REDE); }
+      if (!r.dados.molde) MOLDES.delete(perfil);
+      return r.dados.molde || MOLDE_GENERICO;
+    }, function (e) { MOLDES.delete(perfil); throw e; });
+    MOLDES.set(perfil, pr);
+    return pr;
+  }
 
   function svg(caminho) {
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + caminho + "</svg>";
@@ -170,6 +190,8 @@
         return '<button class="cq-perfil" type="button" data-perfil="' + esc(p.perfil) + '"><strong>' + esc(partes ? partes[1] : p.nome) + "</strong>" + (partes ? "<span>" + esc(partes[2]) + "</span>" : "") + "</button>";
       }).join("") : '<div class="cli-vazio"><p>Nenhum perfil disponível no momento.</p></div>';
       caixa.querySelectorAll("[data-perfil]").forEach(function (b) {
+        var adiantar = function () { buscarMolde(b.dataset.perfil).catch(function () {}); };
+        b.addEventListener("pointerenter", adiantar); b.addEventListener("focus", adiantar);
         b.addEventListener("click", function () {
           var p = perfis.filter(function (x) { return x.perfil === b.dataset.perfil; })[0];
           telaEditor({ perfil: p.perfil, nome_perfil: p.nome, titulo: "", entrada: { valores: {}, referencia: null } });
@@ -186,6 +208,7 @@
       titulo: croqui.titulo || "", valores: Object.assign({}, (croqui.entrada && croqui.entrada.valores) || {}),
       referencia: croqui.entrada && croqui.entrada.referencia ? { modo: croqui.entrada.referencia.modo, valores: Object.assign({}, croqui.entrada.referencia.valores) } : null,
       resultado: croqui.desenho || null, pedido: null, gerando: false, alterado: false, pdfPronto: Boolean(croqui.pdf_pronto),
+      fase: croqui.desenho ? "edicao" : "medidas", molde: null,
     };
     var espera = null, consulta = 0, cotaAberta = null;
     document.title = (est.numero ? numeroCroqui(est.numero) : "Novo croqui") + " | Área do Cliente | Parts Seals";
@@ -198,6 +221,8 @@
       '<div class="cq-referencia__grade">' + ["interno", "externo", "altura"].map(function (k) {
         return '<label class="cq-campo"><span data-rotulo-ref="' + k + '"></span><input inputmode="decimal" autocomplete="off" data-ref="' + k + '"></label>';
       }).join("") + "</div></div>" +
+      '<div class="cq-iniciais" data-iniciais hidden><div class="cq-iniciais__grade" data-iniciais-campos></div>' +
+      '<div class="cq-iniciais__acao"><button class="btn btn-primary" type="button" data-gerar-inicial disabled>Gerar croqui</button><small data-iniciais-dica></small></div></div>' +
       '<div class="cq-materiais" data-materiais></div>' +
       '<p class="cq-status" data-status role="status"></p>' +
       '<div class="cq-area"><div class="cq-palco" data-palco><div class="cq-folha" data-folha></div><div class="cq-marca" aria-hidden="true"></div>' +
@@ -210,8 +235,8 @@
 
     var raiz = document.querySelector(".cq-editor");
     var $ = function (s) { return raiz.querySelector(s); };
-    var marca = $(".cq-marca"), linhaMarca = "PARTS SEALS · CROQUI · " + (ctx.nome || "").toUpperCase() + " · ";
-    marca.innerHTML = new Array(16).join("<span>" + esc(new Array(5).join(linhaMarca)) + "</span>");
+    // Marca d'água: só a logo da Parts Seals, em grade densa por cima do desenho.
+    $(".cq-marca").innerHTML = new Array(61).join('<img src="/assets/logo.png" alt="">');
 
     function status(texto, tipo) { var el = $("[data-status]"); el.textContent = texto || ""; el.className = "cq-status" + (tipo ? " cq-status--" + tipo : ""); }
     function atualizarPdf() {
@@ -220,30 +245,75 @@
       if (!a.hidden) a.href = "/cliente/api/croqui-pdf?id=" + encodeURIComponent(est.id);
     }
 
+    // Fase "medidas": esqueleto do perfil, sem cota, até o cliente informar as medidas principais.
+    function desenharMedidas() {
+      var m = est.molde;
+      $("[data-palco]").classList.add("cq-palco--esqueleto");
+      if (!m) {
+        $("[data-folha]").innerHTML = '<div class="cq-esqueleto-aviso"><strong>Carregando o perfil…</strong></div>';
+        $("[data-iniciais]").hidden = true;
+        return;
+      }
+      $("[data-folha]").innerHTML = (m.esqueleto ? svgSeguro(m.esqueleto) : "") +
+        '<div class="cq-esqueleto-aviso"><strong>Informe as medidas para gerar o croqui</strong><span>' +
+        (m.referencia ? "Ø interno, Ø externo e altura" : m.obrigatorias.filter(function (o) { return !o.opcional; }).map(function (o) { return rotuloCurto(o.rotulo); }).join(", ")) + "</span></div>";
+      $("[data-lista-cotas]").innerHTML = "<strong>Cotas do desenho</strong><small>As cotas aparecem depois que você informar as medidas e gerar o croqui.</small>";
+      $("[data-iniciais]").hidden = false;
+      var grade = $("[data-iniciais-campos]");
+      if (m.referencia) {
+        grade.hidden = true;
+        if (!est.referencia) est.referencia = { modo: m.modoPadrao || "diametros_alojamento", valores: {} };
+        mostrarReferencia();
+      } else {
+        grade.hidden = false;
+        grade.innerHTML = m.obrigatorias.map(function (o) {
+          return '<label class="cq-campo"><span>' + esc(o.rotulo) + (o.opcional ? " · opcional" : "") + '</span><input inputmode="decimal" autocomplete="off" data-inicial="' + esc(o.k) + '" value="' + esc(est.valores[o.k] == null ? "" : est.valores[o.k]) + '"></label>';
+        }).join("");
+      }
+      $("[data-materiais]").innerHTML = (m.materiais || []).map(htmlMaterial).join("");
+      validarIniciais();
+      status("");
+    }
+    function rotuloCurto(r) { return String(r || "").replace(/\s*\([^)]*\)\s*$/, "").replace(/\s*·.*$/, "").toLowerCase(); }
+    function faltando() {
+      var m = est.molde || MOLDE_GENERICO;
+      if (m.referencia) return ["interno", "externo", "altura"].filter(function (k) { return !NUMERO.test(String((est.referencia && est.referencia.valores[k]) || "").trim()); });
+      return m.obrigatorias.filter(function (o) { var v = String(est.valores[o.k] == null ? "" : est.valores[o.k]).trim(); return o.opcional ? v !== "" && !NUMERO.test(v) : !NUMERO.test(v); }).map(function (o) { return o.k; });
+    }
+    function validarIniciais() {
+      var f = faltando(), botao = $("[data-gerar-inicial]");
+      botao.disabled = f.length > 0;
+      $("[data-iniciais-dica]").textContent = f.length ? "Preencha todas as medidas para liberar o desenho." : "Tudo certo: gere o croqui.";
+    }
+    function htmlMaterial(c) {
+      var atual = est.valores[c.k] != null ? est.valores[c.k] : c.valor;
+      return '<label class="cq-campo"><span>' + esc(c.rotulo) + '</span><select data-k="' + esc(c.k) + '">' + (c.opcoes || []).map(function (o) {
+        return '<option value="' + esc(o.valor) + '"' + (String(o.valor) === String(atual) ? " selected" : "") + ">" + esc(o.texto) + "</option>";
+      }).join("") + "</select></label>";
+    }
+    function mostrarReferencia() {
+      var caixaRef = $("[data-referencia]");
+      caixaRef.hidden = !est.referencia;
+      if (!est.referencia) return;
+      $("[data-modo]").value = est.referencia.modo;
+      var peca = est.referencia.modo === "peca";
+      $('[data-rotulo-ref="interno"]').textContent = peca ? "Ø do lábio interno da peça (mm)" : "Ø interno do alojamento (mm)";
+      $('[data-rotulo-ref="externo"]').textContent = peca ? "Ø do lábio externo da peça (mm)" : "Ø externo do alojamento (mm)";
+      $('[data-rotulo-ref="altura"]').textContent = est.referencia.modo === "alojamento" ? "Largura do alojamento (mm)" : "Altura da peça (mm)";
+      raiz.querySelectorAll("[data-ref]").forEach(function (i) { if (i !== document.activeElement) i.value = est.referencia.valores[i.dataset.ref] == null ? "" : String(est.referencia.valores[i.dataset.ref]); });
+    }
+
     function desenhar() {
       var r = est.resultado;
       if (!r) return;
+      $("[data-palco]").classList.remove("cq-palco--esqueleto");
+      $("[data-iniciais]").hidden = true;
       var g = r.geometria || {}, cotas = g.cotas || [];
       // Referência das medidas (gaxetas)
-      var caixaRef = $("[data-referencia]");
       if (r.referencia && !est.referencia) est.referencia = { modo: r.referencia.modo, valores: Object.assign({}, r.referencia.valores) };
-      caixaRef.hidden = !est.referencia;
-      if (est.referencia) {
-        $("[data-modo]").value = est.referencia.modo;
-        var peca = est.referencia.modo === "peca";
-        $('[data-rotulo-ref="interno"]').textContent = peca ? "Ø do lábio interno da peça (mm)" : "Ø interno do alojamento (mm)";
-        $('[data-rotulo-ref="externo"]').textContent = peca ? "Ø do lábio externo da peça (mm)" : "Ø externo do alojamento (mm)";
-        $('[data-rotulo-ref="altura"]').textContent = est.referencia.modo === "alojamento" ? "Largura do alojamento (mm)" : "Altura da peça (mm)";
-        raiz.querySelectorAll("[data-ref]").forEach(function (i) { if (i !== document.activeElement) i.value = est.referencia.valores[i.dataset.ref] == null ? "" : String(est.referencia.valores[i.dataset.ref]); });
-      }
+      mostrarReferencia();
       // Material
-      var mats = (r.campos || []).filter(function (c) { return c.controle === "select"; });
-      $("[data-materiais]").innerHTML = mats.map(function (c) {
-        var atual = est.valores[c.k] != null ? est.valores[c.k] : c.valor;
-        return '<label class="cq-campo"><span>' + esc(c.rotulo) + '</span><select data-k="' + esc(c.k) + '">' + (c.opcoes || []).map(function (o) {
-          return '<option value="' + esc(o.valor) + '"' + (String(o.valor) === String(atual) ? " selected" : "") + ">" + esc(o.texto) + "</option>";
-        }).join("") + "</select></label>";
-      }).join("");
+      $("[data-materiais]").innerHTML = (r.campos || []).filter(function (c) { return c.controle === "select"; }).map(htmlMaterial).join("");
       // Desenho
       var folha = $("[data-folha]");
       folha.innerHTML = g.vistasSvg ? svgSeguro(g.vistasSvg) : '<div class="cli-vazio"><p>' + esc(r.erro || "Complete as medidas para ver o desenho.") + "</p></div>";
@@ -269,33 +339,53 @@
       }
       alterou();
     }
-    function alterou() { est.alterado = true; atualizarPdf(); clearTimeout(espera); espera = setTimeout(gerar, ESPERA_DIGITACAO); }
+    function alterou() {
+      est.alterado = true; atualizarPdf();
+      if (est.fase === "medidas") { validarIniciais(); return; }
+      clearTimeout(espera); espera = setTimeout(gerar, ESPERA_DIGITACAO);
+    }
 
     function gerar() {
       var minhaConsulta = ++consulta;
+      var entrada = { valores: est.valores, referencia: est.referencia };
+      var chave = est.perfil + "|" + JSON.stringify(entrada);
+      var guardado = DESENHOS.get(chave);
+      if (guardado) { est.pedido = guardado.id; est.resultado = guardado.resultado; fim(); desenhar(); return Promise.resolve(true); }
       est.gerando = true; est.pedido = null;
       status("Gerando o desenho…", "carregando");
       $("[data-palco]").classList.add("cq-palco--gerando");
       var inicio = Date.now();
-      C.api("POST", "croqui-gerar", { perfil: est.perfil, entrada: { valores: est.valores, referencia: est.referencia } }).then(function (r) {
-        if (minhaConsulta !== consulta || minha !== vivo) return;
-        if (r.status === 401) { location.replace("/cliente/entrar"); return; }
-        if (!r.dados.ok) { fim(); status(r.dados.erro || C.FALHA_REDE, "erro"); if (r.dados.semAcesso) telaErro(r.dados.erro, true); return; }
-        (function consultar() {
-          setTimeout(function () {
-            if (minhaConsulta !== consulta || minha !== vivo) return;
-            C.api("GET", "croqui-pedido?id=" + encodeURIComponent(r.dados.id)).then(function (p) {
-              if (minhaConsulta !== consulta || minha !== vivo) return;
-              var d = p.dados || {};
-              if (d.status === "pronto") { fim(); est.pedido = r.dados.id; est.resultado = d.resultado; desenhar(); return; }
-              if (d.status === "erro" || !d.ok) { fim(); status(d.erro || "Não foi possível gerar o desenho. Confira as medidas.", "erro"); return; }
-              if (Date.now() - inicio > LIMITE_ESPERA) { fim(); status("O gerador de desenhos da Parts Seals não respondeu. Tente de novo em alguns minutos.", "erro"); return; }
-              status(d.fila ? "Na fila (" + d.fila + " antes de você)…" : "Gerando o desenho…", "carregando");
-              consultar();
-            }).catch(function () { if (minhaConsulta === consulta) { fim(); status(C.FALHA_REDE, "erro"); } });
-          }, INTERVALO_CONSULTA);
-        })();
-      }).catch(function () { if (minhaConsulta === consulta) { fim(); status(C.FALHA_REDE, "erro"); } });
+      return new Promise(function (resolver) {
+        var atual = function () { return minhaConsulta === consulta && minha === vivo; };
+        function pronto(id, resultado) {
+          fim(); DESENHOS.set(chave, { id: id, resultado: resultado });
+          if (DESENHOS.size > MAX_DESENHOS) DESENHOS.delete(DESENHOS.keys().next().value);
+          est.pedido = id; est.resultado = resultado; desenhar(); resolver(true);
+        }
+        function falhou(msg) { fim(); status(msg, "erro"); resolver(false); }
+        C.api("POST", "croqui-gerar", { perfil: est.perfil, entrada: entrada }).then(function (r) {
+          if (!atual()) return resolver(false);
+          if (r.status === 401) { location.replace("/cliente/entrar"); return resolver(false); }
+          var d = r.dados || {};
+          if (!d.ok) { falhou(d.erro || C.FALHA_REDE); if (d.semAcesso) telaErro(d.erro, true); return; }
+          if (d.status === "pronto") return pronto(d.id, d.resultado);
+          if (d.status === "erro") return falhou(d.erro || "Não foi possível gerar o desenho. Confira as medidas.");
+          (function consultar() {
+            setTimeout(function () {
+              if (!atual()) return resolver(false);
+              C.api("GET", "croqui-pedido?id=" + encodeURIComponent(d.id)).then(function (p) {
+                if (!atual()) return resolver(false);
+                var q = p.dados || {};
+                if (q.status === "pronto") return pronto(d.id, q.resultado);
+                if (q.status === "erro" || !q.ok) return falhou(q.erro || "Não foi possível gerar o desenho. Confira as medidas.");
+                if (Date.now() - inicio > LIMITE_ESPERA) return falhou("O gerador de desenhos da Parts Seals não respondeu. Tente de novo em alguns minutos.");
+                status(q.fila ? "Na fila (" + q.fila + " antes de você)…" : "Gerando o desenho…", "carregando");
+                consultar();
+              }).catch(function () { if (atual()) falhou(C.FALHA_REDE); else resolver(false); });
+            }, INTERVALO_CONSULTA);
+          })();
+        }).catch(function () { if (atual()) falhou(C.FALHA_REDE); else resolver(false); });
+      });
     }
     function fim() { est.gerando = false; $("[data-palco]").classList.remove("cq-palco--gerando"); }
 
@@ -345,11 +435,23 @@
     $("[data-pop-ok]").addEventListener("click", function () { fecharCota(); });
 
     $("[data-materiais]").addEventListener("change", function (e) { if (e.target.dataset.k) mudarValor(e.target.dataset.k, e.target.value); });
+    $("[data-iniciais-campos]").addEventListener("input", function (e) {
+      var k = e.target.dataset.inicial; if (!k) return;
+      est.valores[k] = e.target.value.trim(); alterou();
+    });
+    $("[data-gerar-inicial]").addEventListener("click", function () {
+      if (faltando().length) { validarIniciais(); return; }
+      est.fase = "edicao"; $("[data-iniciais]").hidden = true;
+      gerar();
+    });
+    raiz.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && est.fase === "medidas" && e.target.matches("[data-inicial],[data-ref]")) { e.preventDefault(); $("[data-gerar-inicial]").click(); }
+    });
     $("[data-titulo]").addEventListener("input", function (e) { est.titulo = e.target.value; });
     raiz.querySelectorAll("[data-ref]").forEach(function (i) {
       i.addEventListener("input", function () {
         if (!est.referencia) return;
-        if (i.value.trim() && !/^\d{1,5}(?:[.,]\d{1,4})?$/.test(i.value.trim())) { status("Use só números, como 98,5.", "erro"); return; }
+        if (i.value.trim() && !NUMERO.test(i.value.trim())) { status("Use só números, como 98,5.", "erro"); return; }
         est.referencia.valores[i.dataset.ref] = i.value.trim(); alterou();
       });
     });
@@ -361,17 +463,16 @@
         ? { interno: cota("intAp") != null ? cota("intAp") : med.dint, externo: cota("extAp") != null ? cota("extAp") : med.dext, altura: med.h }
         : { interno: nom.interno != null ? nom.interno : med.dint, externo: nom.externo != null ? nom.externo : med.dext, altura: nom.altura != null ? nom.altura : med.h } };
       if (anterior === "peca" && modo !== "peca") { delete est.valores.xLi; delete est.valores.xLe; }
+      if (est.fase === "medidas") { est.referencia.valores = {}; mostrarReferencia(); validarIniciais(); return; }
       desenhar(); alterou();
     });
 
     $("[data-salvar]").addEventListener("click", function () {
       var botao = $("[data-salvar]");
       if (!est.titulo.trim()) { status("Dê um nome ao croqui antes de salvar.", "erro"); $("[data-titulo]").focus(); return; }
-      if (est.gerando || !est.pedido) {
-        status(est.gerando ? "Espere o desenho terminar para salvar." : "Mude uma medida ou aguarde o desenho para salvar.", "erro");
-        if (!est.gerando && !est.pedido) gerar();
-        return;
-      }
+      if (est.fase === "medidas") { status("Informe as medidas e gere o croqui antes de salvar.", "erro"); return; }
+      if (est.gerando) { status("Espere o desenho terminar para salvar.", "erro"); return; }
+      if (!est.pedido) { botao.disabled = true; gerar().then(function (ok) { botao.disabled = false; if (ok) botao.click(); }); return; }
       if (est.resultado && est.resultado.erro) { status("Corrija as medidas antes de salvar: " + est.resultado.erro, "erro"); return; }
       botao.disabled = true;
       C.api("POST", "croqui-salvar", { pedido: est.pedido, titulo: est.titulo.trim(), croqui: est.id }).then(function (r) {
@@ -401,8 +502,14 @@
 
     atualizarPdf();
     if (est.resultado) { desenhar(); if (est.id && !est.pdfPronto) esperarPdf(minha); }
-    // Croqui salvo já tem o desenho; mesmo assim pede um pedido novo para poder salvar alterações.
-    gerar();
+    else {
+      // Novo croqui: esqueleto na hora (o molde quase sempre já veio ao passar o mouse no perfil).
+      desenharMedidas();
+      buscarMolde(est.perfil).then(function (m) {
+        if (minha !== vivo || est.fase !== "medidas") return;
+        est.molde = m; desenharMedidas();
+      }).catch(function () { if (minha === vivo && est.fase === "medidas") { est.molde = MOLDE_GENERICO; desenharMedidas(); } });
+    }
     editor = { fechar: function () { clearTimeout(espera); consulta++; } };
   }
 

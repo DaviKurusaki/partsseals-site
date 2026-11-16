@@ -266,7 +266,7 @@ const ROTAS = {
   'POST esqueci-senha': rotaEsqueci, 'POST nova-senha': rotaNovaSenha,
   'GET eu': rotaEu, 'GET pedidos': rotaPedidos, 'GET empresas': rotaEmpresas,
   'GET documentos': rotaDocumentos, 'GET arquivo': rotaArquivo,
-  'GET croqui-inicio': rotaCroquiInicio, 'POST croqui-gerar': rotaCroquiGerar, 'GET croqui-pedido': rotaCroquiPedido,
+  'GET croqui-inicio': rotaCroquiInicio, 'GET croqui-molde': rotaCroquiMolde, 'POST croqui-gerar': rotaCroquiGerar, 'GET croqui-pedido': rotaCroquiPedido,
   'POST croqui-salvar': rotaCroquiSalvar, 'GET croquis': rotaCroquis, 'GET croqui': rotaCroqui,
   'POST croqui-excluir': rotaCroquiExcluir, 'GET croqui-pdf': rotaCroquiPdf,
 };
@@ -291,7 +291,16 @@ async function comCroqui(evento, fn) {
 function rotaCroquiInicio(evento) { return comCroqui(evento, async (s) => {
   const r = await servico.rpc('site_cliente_croqui_inicio', { p_auth_user_id: s.usuario.id });
   return responder(200, { ok: true, permitido: Boolean(r?.permitido), bloqueado: Boolean(r?.bloqueado),
-    perfis: (Array.isArray(r?.perfis) ? r.perfis : []).map((p) => ({ perfil: texto(p.perfil), nome: texto(p.nome) })), estacao: r?.estacao || null }, s.cookies);
+    perfis: (Array.isArray(r?.perfis) ? r.perfis : []).map((p) => ({ perfil: texto(p.perfil), nome: texto(p.nome), pronto: p.pronto !== false })), estacao: r?.estacao || null }, s.cookies);
+}); }
+// Esqueleto do perfil (sem cotas) e as medidas obrigatórias — sql/163. Sem o 163, molde nulo.
+function rotaCroquiMolde(evento) { return comCroqui(evento, async (s) => {
+  const perfil = (evento.queryStringParameters || {}).perfil;
+  if (!/^[a-z0-9_]{1,30}$/.test(perfil || '')) return erro(400, 'Perfil inválido.', {}, s.cookies);
+  let molde = null;
+  try { molde = await servico.rpc('site_cliente_croqui_molde', { p_auth_user_id: s.usuario.id, p_perfil: perfil }); }
+  catch (err) { if (!['PGRST202', '42883'].includes(err?.codigo)) throw err; }
+  return responder(200, { ok: true, molde: molde || null }, s.cookies);
 }); }
 function rotaCroquiGerar(evento) { return comCroqui(evento, async (s) => {
   const c = lerCorpo(evento);
@@ -299,8 +308,18 @@ function rotaCroquiGerar(evento) { return comCroqui(evento, async (s) => {
   const entrada = JSON.stringify(c.entrada);
   if (entrada.length > 8000) return erro(400, 'Medidas inválidas.', {}, s.cookies);
   const id = await servico.rpc('site_cliente_croqui_pedir', { p_auth_user_id: s.usuario.id, p_perfil: c.perfil, p_entrada: JSON.parse(entrada) });
-  return responder(200, { ok: true, id }, s.cookies);
+  // Espera aqui o desenho (a estação atende em menos de 1 s): o navegador faz
+  // uma chamada só. Passando do prazo, devolve o id e o navegador consulta.
+  const fim = Date.now() + ESPERA_DESENHO_MS;
+  while (Date.now() < fim) {
+    await new Promise((ok) => setTimeout(ok, INTERVALO_DESENHO_MS));
+    const r = await servico.rpc('site_cliente_croqui_pedido', { p_auth_user_id: s.usuario.id, p_id: id });
+    if (!r) break;
+    if (r.status === 'pronto' || r.status === 'erro') return responder(200, { ok: true, id, status: r.status, resultado: r.resultado || null, erro: r.erro || null }, s.cookies);
+  }
+  return responder(200, { ok: true, id, status: 'pendente' }, s.cookies);
 }); }
+var ESPERA_DESENHO_MS = 7000, INTERVALO_DESENHO_MS = 120;
 function rotaCroquiPedido(evento) { return comCroqui(evento, async (s) => {
   const id = (evento.queryStringParameters || {}).id;
   if (!UUID.test(id || '')) return erro(404, 'Pedido não encontrado.', {}, s.cookies);

@@ -266,8 +266,19 @@
 .cq-folha .cli-vazio { color: #444; }
 .cq-texto-cota { cursor: pointer; stroke: transparent; stroke-width: 9px; paint-order: stroke fill; pointer-events: all; }
 .cq-texto-cota:hover, .cq-texto-cota:focus { fill: #0069c5; stroke: #d4eaff; outline: none; }
-.cq-marca { position: absolute; inset: -20%; pointer-events: none; display: grid; align-content: space-around; transform: rotate(-28deg); overflow: hidden; user-select: none; }
-.cq-marca span { white-space: nowrap; font-weight: 800; letter-spacing: 0.14em; font-size: 15px; color: rgba(200, 16, 46, 0.09); }
+.cq-marca { position: absolute; inset: -25%; pointer-events: none; display: grid; grid-template-columns: repeat(6, 1fr); align-content: space-around; gap: 34px 18px; transform: rotate(-28deg); overflow: hidden; user-select: none; }
+.cq-marca img { width: 100%; max-width: 150px; justify-self: center; opacity: 0.09; mix-blend-mode: multiply; }
+.cq-marca img:nth-child(12n+7), .cq-marca img:nth-child(12n+8), .cq-marca img:nth-child(12n+9), .cq-marca img:nth-child(12n+10), .cq-marca img:nth-child(12n+11), .cq-marca img:nth-child(12n+12) { transform: translateX(50%); }
+.cq-palco--esqueleto .cq-folha svg { opacity: 0.55; }
+.cq-esqueleto-aviso { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 2; display: grid; gap: 4px; text-align: center; padding: 14px 20px; border-radius: 14px; background: rgba(255, 255, 255, 0.94); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18); color: #1d1f23; max-width: 86%; }
+.cq-esqueleto-aviso strong { font-size: 1.05rem; }
+.cq-esqueleto-aviso span { color: #555; font-size: 0.9rem; }
+.cq-iniciais[hidden] { display: none; }
+.cq-iniciais { display: grid; gap: 12px; padding: 14px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--surface); }
+.cq-iniciais__grade { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+.cq-iniciais__grade[hidden] { display: none; }
+.cq-iniciais__acao { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.cq-iniciais__acao small { color: var(--muted); }
 .cq-pop { position: absolute; z-index: 3; width: min(300px, calc(100% - 16px)); box-sizing: border-box; display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: #15171b; color: #fff; box-shadow: 0 14px 36px rgba(0, 0, 0, 0.45); border: 1px solid var(--line-strong); }
 .cq-pop label { font-weight: 700; font-size: 0.9rem; min-width: 0; overflow-wrap: anywhere; }
 .cq-pop * { box-sizing: border-box; }

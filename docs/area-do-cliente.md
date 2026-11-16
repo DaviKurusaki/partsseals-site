@@ -132,21 +132,29 @@ Limits). Não há tabela de tentativas própria.
 
 ### Croqui (`/cliente#croqui`)
 
-Segunda ferramenta do hub. O cliente escolhe um perfil liberado, clica nas
-cotas do desenho (mesmo esquema do Castor no Kuru), troca os valores, dá um
-nome, salva e baixa o PDF. Rotas da tela: `#croqui` (meus croquis),
+Segunda ferramenta do hub. O cliente escolhe um perfil liberado e vê só o
+ESQUELETO do perfil, sem cota (molde do `sql/163`). Ele é obrigado a informar
+as medidas principais (interno, externo, altura; no O-ring, interno e secção)
+antes do primeiro desenho. Depois clica nas cotas (mesmo esquema do Castor no
+Kuru), troca os valores, dá um nome, salva e baixa o PDF. Rotas da tela: `#croqui` (meus croquis),
 `#croqui/novo` e `#croqui/<id>` (`cliente/js/croqui.js`).
 
 **O motor do Castor não vem para o site.** Cada mudança vira
 `POST /cliente/api/croqui-gerar`; o Kuru da estação de jobs roda o motor e
-devolve só o desenho e as cotas (sem programa, bucha ou custo). A tela consulta
-`GET croqui-pedido` a cada 0,8 s, até 60 s. Sem a estação ligada, o desenho não
+devolve só o desenho e as cotas (sem programa, bucha ou custo). A função espera
+o desenho no servidor (até 7 s, consultando a cada 0,12 s) e já responde com
+ele; só se passar disso a tela consulta `GET croqui-pedido` a cada 0,4 s, até
+60 s. Abrir o Croqui marca presença no banco e a estação passa a olhar a fila a
+cada 0,3 s (parada, 4 s). Desenhos já pedidos ficam em memória na tela e na
+estação: voltar a uma medida é instantâneo. Sem a estação ligada, o desenho não
 sai e a tela avisa. Salvar usa o desenho gerado pela estação (nunca SVG do
 navegador) e a estação gera o PDF com as marcas d'água; `GET croqui-pdf` baixa.
 
-Rotas: `croqui-inicio`, `croqui-gerar`, `croqui-pedido`, `croqui-salvar`,
+Rotas: `croqui-inicio`, `croqui-molde`, `croqui-gerar`, `croqui-pedido`, `croqui-salvar`,
 `croquis`, `croqui`, `croqui-excluir`, `croqui-pdf`. Banco: executar no
-Supabase o `sql/162_site_croqui.sql` do Kuru (depois do 141/142/146). Cada
+Supabase o `sql/162_site_croqui.sql` e o `sql/163_site_croqui_rapido.sql` do
+Kuru (depois do 141/142/146). Sem o 163 o Croqui funciona como antes (devagar e
+sem esqueleto: pede Ø interno, Ø externo e altura genéricos). Cada
 chamada confere contato aprovado e Croqui liberado; o Kuru bloqueia por
 contato em Comercial > Site > Croquis do site e escolhe os perfis liberados.
 
